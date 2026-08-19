@@ -1,0 +1,566 @@
+import React, { useState } from 'react';
+import {
+  TabType,
+  UserRole,
+  DiagnosisResult,
+  Professional,
+  Room,
+  Appointment,
+  NotificationItem,
+  ProblemCategory,
+  ClientProfile,
+  ProviderProfile,
+  ProviderJobLead
+} from './types';
+import {
+  INITIAL_CLIENT_PROFILE,
+  INITIAL_PROVIDER_PROFILE,
+  INITIAL_PROVIDER_LEADS,
+  INITIAL_DIAGNOSIS,
+  INITIAL_PROFESSIONALS,
+  INITIAL_ROOMS,
+  INITIAL_APPOINTMENTS,
+  INITIAL_NOTIFICATIONS
+} from './data/mockData';
+import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
+import { HomeScreen } from './components/HomeScreen';
+import { DiagnosisScreen } from './components/DiagnosisScreen';
+import { MinhaCasaScreen } from './components/MinhaCasaScreen';
+import { AgendaScreen } from './components/AgendaScreen';
+import { ProfileScreen } from './components/ProfileScreen';
+import { ProviderHomeScreen } from './components/ProviderHomeScreen';
+import { ProviderProfileScreen } from './components/ProviderProfileScreen';
+import { RegistrationModal } from './components/RegistrationModal';
+import {
+  VoiceModal,
+  PhotoModal,
+  GuidedWizardModal,
+  BookingModal,
+  ProfessionalProfileModal,
+  AddRoomModal,
+  NotificationsModal
+} from './components/Modals';
+
+export default function App() {
+  // Active Role and Profiles
+  const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
+  const [clientProfile, setClientProfile] = useState<ClientProfile>(INITIAL_CLIENT_PROFILE);
+  const [providerProfile, setProviderProfile] = useState<ProviderProfile>(INITIAL_PROVIDER_PROFILE);
+  const [providerLeads, setProviderLeads] = useState<ProviderJobLead[]>(INITIAL_PROVIDER_LEADS);
+
+  // Client Data States
+  const [activeTab, setActiveTab] = useState<TabType>('inicio');
+  const [diagnosis, setDiagnosis] = useState<DiagnosisResult>(INITIAL_DIAGNOSIS);
+  const [professionals, setProfessionals] = useState<Professional[]>(INITIAL_PROFESSIONALS);
+  const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
+  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  // Selected states
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('cozinha');
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // Modal open states
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isGuidedWizardOpen, setIsGuidedWizardOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+
+  // Counts
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const pendingProblemsCount = rooms.reduce((acc, r) => acc + r.problemCount, 0);
+
+  // Handler for Client: Dynamic AI diagnosis generator
+  const handleFindSolution = (problemText: string, imageSrc?: string) => {
+    const textLower = problemText.toLowerCase();
+
+    let category = 'Encanamento / Hidráulica';
+    let profType = 'Encanador';
+    let summary = 'Possível vazamento hidráulico';
+    let room = 'cozinha';
+    let urgencyPercentage = 50;
+    let urgency: 'baixa' | 'media' | 'alta' | 'critica' = 'media';
+    let diyTips = [
+      'Feche o registro geral de água se o vazamento for contínuo.',
+      'Coloque um balde ou pano absorvente sob o ponto de gotejamento.'
+    ];
+
+    if (
+      textLower.includes('eletric') ||
+      textLower.includes('disjuntor') ||
+      textLower.includes('luz') ||
+      textLower.includes('faísca') ||
+      textLower.includes('tomada') ||
+      textLower.includes('chuveiro')
+    ) {
+      category = 'Elétrica Residencial';
+      profType = 'Eletricista Certificado';
+      summary = 'Sobrecarga ou fuga de corrente detectada';
+      room = 'sala';
+      urgencyPercentage = 80;
+      urgency = 'alta';
+      diyTips = [
+        'Desarme o disjuntor geral imediatamente por segurança.',
+        'Não toque em cabos desencapados ou tomadas com cheiro de queimado.',
+        'Desconecte aparelhos pesados da mesma tomada.'
+      ];
+    } else if (
+      textLower.includes('ar') ||
+      textLower.includes('split') ||
+      textLower.includes('gela') ||
+      textLower.includes('ar condicionado')
+    ) {
+      category = 'Climatização e Refrigeração';
+      profType = 'Técnico de Ar Condicionado';
+      summary = 'Obstrução de dreno ou falta de fluido refrigerante';
+      room = 'quarto1';
+      urgencyPercentage = 40;
+      urgency = 'baixa';
+      diyTips = [
+        'Desligue o aparelho para evitar vazamento na parede.',
+        'Limpe os filtros de tela sob água corrente morna.'
+      ];
+    } else if (
+      textLower.includes('chave') ||
+      textLower.includes('tranca') ||
+      textLower.includes('porta') ||
+      textLower.includes('fechadura')
+    ) {
+      category = 'Chaveiro e Segurança';
+      profType = 'Chaveiro 24h';
+      summary = 'Desgaste do miolo da fechadura ou travamento de lingueta';
+      room = 'sala';
+      urgencyPercentage = 60;
+      urgency = 'media';
+      diyTips = [
+        'Aplique grafite em pó na entrada da chave (nunca óleo de cozinha).',
+        'Não force a chave para não quebrá-la dentro do cilindro.'
+      ];
+    }
+
+    const newDiagnosis: DiagnosisResult = {
+      id: `diag-${Date.now()}`,
+      title: 'Diagnóstico Concluído',
+      problemSummary: summary,
+      category,
+      professionalType: profType,
+      urgency,
+      urgencyPercentage,
+      room,
+      diyTips,
+      estimatedCostRange: { min: 100, max: 180 },
+      createdAt: 'Agora mesmo'
+    };
+
+    setDiagnosis(newDiagnosis);
+    setSelectedRoomId(room);
+    setActiveTab('problemas');
+
+    // Also automatically create an incoming lead for providers!
+    const newLead: ProviderJobLead = {
+      id: `lead-${Date.now()}`,
+      clientName: clientProfile.name,
+      serviceTitle: problemText || summary,
+      category,
+      room: room === 'cozinha' ? 'Cozinha' : room === 'sala' ? 'Sala' : 'Residência',
+      neighborhood: `${clientProfile.address.neighborhood} (a 2.1 km)`,
+      distanceKm: 2.1,
+      urgency,
+      suggestedBudget: 120,
+      description: problemText || 'Problema diagnosticado pela IA Resolva Já no imóvel do cliente.',
+      imageUrl: imageSrc,
+      status: 'aberto',
+      createdAt: 'Agora mesmo'
+    };
+    setProviderLeads((prev) => [newLead, ...prev]);
+  };
+
+  const handleSelectCategory = (cat: ProblemCategory) => {
+    const labels: Record<ProblemCategory, string> = {
+      eletrica: 'Problema elétrico geral',
+      hidraulica: 'Vazamento ou entupimento hidráulico',
+      ar_condicionado: 'Ar condicionado não gela ou vaza',
+      geral: 'Reparo e fixação geral',
+      pintura: 'Pintura e acabamento',
+      fechadura: 'Fechadura travada ou substituição'
+    };
+    handleFindSolution(labels[cat]);
+  };
+
+  const handleBooking = (prof: Professional) => {
+    setSelectedProfessional(prof);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleConfirmBooking = (appointment: Appointment) => {
+    setAppointments((prev) => [appointment, ...prev]);
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: 'Agendamento Confirmado',
+      message: `Visita com ${appointment.professionalName} confirmada para ${appointment.date}.`,
+      time: 'Agora mesmo',
+      read: false,
+      type: 'success'
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+    setActiveTab('agenda');
+  };
+
+  const handleAddRoom = (name: string, icon: string) => {
+    const newRoom: Room = {
+      id: `room-${Date.now()}`,
+      name,
+      icon,
+      status: 'normal',
+      statusText: 'Tudo normal',
+      problemCount: 0,
+      items: [
+        {
+          id: `item-${Date.now()}`,
+          name: 'Iluminação Geral',
+          brand: 'Padrão LED',
+          lastReview: '08/2024',
+          status: 'ok',
+          statusText: 'OK',
+          iconName: 'Lightbulb'
+        }
+      ]
+    };
+    setRooms((prev) => [...prev, newRoom]);
+  };
+
+  const handleReportProblemInRoom = (roomId: string, deviceName?: string) => {
+    const room = rooms.find((r) => r.id === roomId);
+    const text = deviceName
+      ? `Problema com ${deviceName} na ${room?.name || 'residência'}`
+      : `Preciso de avaliação técnica para ${room?.name || 'cômodo'}`;
+    handleFindSolution(text);
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  // Provider Actions
+  const handleSendProviderQuote = (leadId: string, value: number) => {
+    setProviderLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, status: 'orcamento_enviado', suggestedBudget: value } : l))
+    );
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: 'Proposta Enviada',
+      message: `Você enviou uma proposta de R$ ${value} para o chamado selecionado.`,
+      time: 'Agora mesmo',
+      read: false,
+      type: 'info'
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+  };
+
+  const handleToggleProviderAvailability = () => {
+    setProviderProfile((prev) => ({
+      ...prev,
+      availability: prev.availability === 'Disponível Agora' ? 'Ocupado' : 'Disponível Agora'
+    }));
+  };
+
+  // Registration Handlers
+  const handleRegisterClient = (newClient: ClientProfile) => {
+    setClientProfile(newClient);
+    setCurrentRole('cliente');
+    setActiveTab('inicio');
+  };
+
+  const handleRegisterProvider = (newProvider: ProviderProfile) => {
+    setProviderProfile(newProvider);
+    setCurrentRole('prestador');
+    setActiveTab('inicio');
+  };
+
+  return (
+    <div className="bg-[#fff7fa] text-[#241822] min-h-screen flex flex-col font-sans antialiased selection:bg-[#fee8f7] selection:text-[#a200ac]">
+      {/* Top App Header with Role Switcher & New Registration CTA */}
+      <Header
+        notifications={notifications}
+        unreadCount={unreadCount}
+        currentRole={currentRole}
+        onRoleChange={(role) => {
+          setCurrentRole(role);
+          setActiveTab('inicio');
+        }}
+        onOpenRegistration={() => setIsRegistrationModalOpen(true)}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenSystemStatus={() => {
+          alert(
+            currentRole === 'cliente'
+              ? 'Sistema SOLVI IoT Online • 14 sensores conectados no imóvel.'
+              : 'Solvi PRO Radar Ativo • 8 chamados abertos no seu raio de atendimento.'
+          );
+        }}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 px-4 sm:px-6 pt-5 pb-24 md:pl-28 max-w-4xl mx-auto w-full">
+        {/* ================= CLIENT ROLE SCREENS ================= */}
+        {currentRole === 'cliente' && (
+          <>
+            {activeTab === 'inicio' && (
+              <HomeScreen
+                onFindSolution={handleFindSolution}
+                onSelectCategory={handleSelectCategory}
+                onOpenVoiceInput={() => setIsVoiceModalOpen(true)}
+                onOpenPhotoInput={() => setIsPhotoModalOpen(true)}
+                onOpenGuidedWizard={() => setIsGuidedWizardOpen(true)}
+                onNavigateToRoom={(roomId) => {
+                  setSelectedRoomId(roomId);
+                  setActiveTab('minhacasa');
+                }}
+                onNavigateToMinhaCasa={() => setActiveTab('minhacasa')}
+                problemRooms={rooms.filter((r) => r.problemCount > 0)}
+                selectedPhoto={selectedPhoto}
+                onClearPhoto={() => setSelectedPhoto(null)}
+              />
+            )}
+
+            {activeTab === 'problemas' && (
+              <DiagnosisScreen
+                diagnosis={diagnosis}
+                professionals={professionals}
+                rooms={rooms}
+                selectedRoom={selectedRoomId}
+                onSelectRoom={(rId) => setSelectedRoomId(rId)}
+                onSelectProfessional={handleBooking}
+                onViewProfessionalProfile={(prof) => {
+                  setSelectedProfessional(prof);
+                  setIsProfileModalOpen(true);
+                }}
+                onRunNewDiagnosis={() => setActiveTab('inicio')}
+              />
+            )}
+
+            {activeTab === 'minhacasa' && (
+              <MinhaCasaScreen
+                rooms={rooms}
+                activeRoomId={selectedRoomId}
+                onOpenRoomDetail={(rId) => setSelectedRoomId(rId)}
+                onBackToOverview={() => setSelectedRoomId('')}
+                onReportProblemInRoom={handleReportProblemInRoom}
+                onOpenAddRoom={() => setIsAddRoomModalOpen(true)}
+                onOpenAddDevice={(rId) => {
+                  alert(`Adicionando novo equipamento para o cômodo selecionado.`);
+                }}
+              />
+            )}
+
+            {activeTab === 'agenda' && (
+              <AgendaScreen
+                appointments={appointments}
+                onCancelAppointment={(id) => {
+                  setAppointments((prev) => prev.filter((a) => a.id !== id));
+                }}
+                onNewService={() => setActiveTab('inicio')}
+              />
+            )}
+
+            {activeTab === 'perfil' && (
+              <ProfileScreen
+                client={clientProfile}
+                onSwitchToProvider={() => {
+                  setCurrentRole('prestador');
+                  setActiveTab('inicio');
+                }}
+                onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
+              />
+            )}
+          </>
+        )}
+
+        {/* ================= PROVIDER ROLE SCREENS ================= */}
+        {currentRole === 'prestador' && (
+          <>
+            {activeTab === 'inicio' && (
+              <ProviderHomeScreen
+                provider={providerProfile}
+                leads={providerLeads}
+                onSendQuote={handleSendProviderQuote}
+                onToggleAvailability={handleToggleProviderAvailability}
+                onViewClientPhoto={(url) => {
+                  setSelectedPhoto(url);
+                  setIsPhotoModalOpen(true);
+                }}
+              />
+            )}
+
+            {activeTab === 'problemas' && (
+              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#241822] tracking-tight">
+                    Orçamentos & Propostas
+                  </h1>
+                  <p className="text-xs text-[#867083]">Acompanhe suas propostas enviadas aos clientes</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-2xl p-4 border border-[#f2dceb] shadow-xs">
+                    <span className="text-2xl font-extrabold text-[#a200ac]">12</span>
+                    <p className="text-xs text-[#544151] mt-1 font-semibold">Propostas Enviadas</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 border border-[#f2dceb] shadow-xs">
+                    <span className="text-2xl font-extrabold text-[#006c49]">85%</span>
+                    <p className="text-xs text-[#544151] mt-1 font-semibold">Taxa de Conversão</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-bold text-[#241822]">Histórico Recente</h3>
+                  {providerLeads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      className="bg-white rounded-2xl p-4 border border-[#d9bfd3] shadow-xs flex justify-between items-center"
+                    >
+                      <div>
+                        <h4 className="text-sm font-bold text-[#241822]">{lead.serviceTitle}</h4>
+                        <p className="text-xs text-[#867083]">{lead.clientName} • {lead.neighborhood}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-extrabold text-[#a200ac]">R$ {lead.suggestedBudget}</span>
+                        <span className="block text-[10px] font-bold text-[#006c49] uppercase">
+                          {lead.status === 'orcamento_enviado' ? 'Aguardando Cliente' : 'Aberto'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'agenda' && (
+              <AgendaScreen
+                appointments={appointments}
+                onCancelAppointment={(id) => {
+                  setAppointments((prev) => prev.filter((a) => a.id !== id));
+                }}
+                onNewService={() => setActiveTab('inicio')}
+              />
+            )}
+
+            {activeTab === 'minhacasa' && (
+              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#241822] tracking-tight">
+                    Serviços & Ferramentas
+                  </h1>
+                  <p className="text-xs text-[#867083]">Gerencie sua tabela de preços e ferramentas</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-[#f2dceb] shadow-xs flex flex-col gap-3">
+                  <h3 className="text-sm font-bold text-[#241822]">Serviços Habilitados</h3>
+                  <div className="space-y-2">
+                    {[
+                      { title: 'Caça-Vazamentos com Geofone', rate: 'R$ 150' },
+                      { title: 'Troca de Torneira e Misturador', rate: 'R$ 100' },
+                      { title: 'Desentupimento de Sifão', rate: 'R$ 90' },
+                      { title: 'Substituição de Válvula Hydra', rate: 'R$ 130' }
+                    ].map((s, i) => (
+                      <div key={i} className="flex justify-between items-center p-2.5 rounded-xl bg-[#fff7fa] border border-[#f2dceb] text-xs">
+                        <span className="font-semibold text-[#241822]">{s.title}</span>
+                        <span className="font-bold text-[#a200ac]">{s.rate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'perfil' && (
+              <ProviderProfileScreen
+                provider={providerProfile}
+                onUpdateProvider={(updated) => setProviderProfile((prev) => ({ ...prev, ...updated }))}
+                onSwitchToClient={() => {
+                  setCurrentRole('cliente');
+                  setActiveTab('inicio');
+                }}
+                onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Bottom & Desktop Navigation */}
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        pendingProblemsCount={pendingProblemsCount}
+        currentRole={currentRole}
+      />
+
+      {/* Registration Modal for Clients & Providers */}
+      <RegistrationModal
+        isOpen={isRegistrationModalOpen}
+        onClose={() => setIsRegistrationModalOpen(false)}
+        initialRole={currentRole}
+        onRegisterClient={handleRegisterClient}
+        onRegisterProvider={handleRegisterProvider}
+      />
+
+      {/* Modals */}
+      <VoiceModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onTranscriptComplete={(text) => handleFindSolution(text)}
+      />
+
+      <PhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        onPhotoSelected={(photoUrl) => {
+          setSelectedPhoto(photoUrl);
+          handleFindSolution('Problema identificado a partir da foto enviada', photoUrl);
+        }}
+      />
+
+      <GuidedWizardModal
+        isOpen={isGuidedWizardOpen}
+        onClose={() => setIsGuidedWizardOpen(false)}
+        onComplete={(symptomText) => handleFindSolution(symptomText)}
+      />
+
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        professional={selectedProfessional}
+        onConfirmBooking={handleConfirmBooking}
+      />
+
+      <ProfessionalProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        professional={selectedProfessional}
+        onHire={handleBooking}
+      />
+
+      <AddRoomModal
+        isOpen={isAddRoomModalOpen}
+        onClose={() => setIsAddRoomModalOpen(false)}
+        onAddRoom={handleAddRoom}
+      />
+
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications}
+        onMarkAllAsRead={handleMarkAllNotificationsRead}
+      />
+    </div>
+  );
+}
