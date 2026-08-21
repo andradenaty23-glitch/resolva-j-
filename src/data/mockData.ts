@@ -6,7 +6,10 @@ import {
   NotificationItem,
   ClientProfile,
   ProviderProfile,
-  ProviderJobLead
+  ProviderJobLead,
+  PaymentMethod,
+  TransactionRecord,
+  ProviderEarningData
 } from '../types';
 
 export const INITIAL_CLIENT_PROFILE: ClientProfile = {
@@ -26,6 +29,8 @@ export const INITIAL_CLIENT_PROFILE: ClientProfile = {
     cep: '05422-010'
   },
   plan: 'Resolva Já Plus',
+  walletBalance: 120.00,
+  cashbackBalance: 28.50,
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
   registeredAt: 'Janeiro de 2024'
 };
@@ -294,3 +299,129 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     type: 'success'
   }
 ];
+
+export const INITIAL_PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: 'pm-1',
+    type: 'credit_card',
+    brand: 'mastercard',
+    last4: '4291',
+    holderName: 'NATALIA ANDRADE',
+    expiry: '08/29',
+    isDefault: true,
+    nickname: 'Nubank Roxinho'
+  },
+  {
+    id: 'pm-2',
+    type: 'credit_card',
+    brand: 'visa',
+    last4: '8834',
+    holderName: 'NATALIA ANDRADE',
+    expiry: '11/27',
+    isDefault: false,
+    nickname: 'Itaú Personalité'
+  },
+  {
+    id: 'pm-3',
+    type: 'pix',
+    isDefault: false,
+    nickname: 'Pix Automático (Chave CPF)'
+  }
+];
+
+export const INITIAL_TRANSACTIONS: TransactionRecord[] = [
+  {
+    id: 'tx-101',
+    serviceTitle: 'Reparo e Vedação de Torneira Monocomando',
+    providerName: 'Ricardo Silva',
+    providerAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
+    providerCategory: 'Hidráulica',
+    amount: 120.00,
+    date: '18 Ago 2026, 14:30',
+    status: 'em_custodia',
+    paymentMethodType: 'Cartão de Crédito',
+    paymentMethodDetails: 'Mastercard •••• 4291 (1x)',
+    installments: 1,
+    invoiceCode: 'RJ-2026-8941',
+    warrantyUntil: '16 Nov 2026 (90 dias)'
+  },
+  {
+    id: 'tx-102',
+    serviceTitle: 'Troca de Resistência e Fiação Chuveiro Duo Shower',
+    providerName: 'Carlos Mendonça',
+    providerAvatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?auto=format&fit=crop&w=256&q=80',
+    providerCategory: 'Elétrica',
+    amount: 150.00,
+    date: '02 Jul 2026, 10:15',
+    status: 'pago',
+    paymentMethodType: 'Pix Instantâneo',
+    paymentMethodDetails: 'Chave Pix com 5% cashback',
+    invoiceCode: 'RJ-2026-7732',
+    warrantyUntil: '30 Set 2026'
+  },
+  {
+    id: 'tx-103',
+    serviceTitle: 'Higienização e Carga de Gás Ar Condicionado 12.000 BTUs',
+    providerName: 'Juliana Paes Clima',
+    providerAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
+    providerCategory: 'Ar Condicionado',
+    amount: 320.00,
+    date: '15 Mai 2026, 16:00',
+    status: 'pago',
+    paymentMethodType: 'Cartão de Crédito',
+    paymentMethodDetails: 'Visa •••• 8834 (3x de R$ 106,66 sem juros)',
+    installments: 3,
+    invoiceCode: 'RJ-2026-5519',
+    warrantyUntil: '15 Ago 2026'
+  },
+  {
+    id: 'tx-104',
+    serviceTitle: 'Manutenção Preventiva de Fechadura Biométrica',
+    providerName: 'Roberto Chaves',
+    providerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
+    providerCategory: 'Chaveiro & Acesso',
+    amount: 90.00,
+    date: '20 Mar 2026, 09:40',
+    status: 'pago',
+    paymentMethodType: 'Saldo Carteira Resolva Já',
+    paymentMethodDetails: 'Débito em saldo de cashback',
+    invoiceCode: 'RJ-2026-3304',
+    warrantyUntil: '18 Jun 2026'
+  }
+];
+
+export const PROVIDER_EARNINGS_HISTORY: ProviderEarningData[] = [
+  { month: 'Mar', faturamento: 3450, meta: 3500, servicos: 24, propostas: 28, taxaConversao: 85.7, ticketMedio: 143.75 },
+  { month: 'Abr', faturamento: 4120, meta: 4000, servicos: 29, propostas: 33, taxaConversao: 87.8, ticketMedio: 142.06 },
+  { month: 'Mai', faturamento: 3890, meta: 4200, servicos: 26, propostas: 31, taxaConversao: 83.8, ticketMedio: 149.61 },
+  { month: 'Jun', faturamento: 4850, meta: 4500, servicos: 34, propostas: 38, taxaConversao: 89.4, ticketMedio: 142.64 },
+  { month: 'Jul', faturamento: 5120, meta: 4800, servicos: 36, propostas: 40, taxaConversao: 90.0, ticketMedio: 142.22 },
+  { month: 'Ago (Atual)', faturamento: 5480, meta: 5000, servicos: 39, propostas: 44, taxaConversao: 88.6, ticketMedio: 140.51 }
+];
+
+export const PROVIDER_CATEGORY_DISTRIBUTION = [
+  { name: 'Vazamentos & Reparos', value: 45, count: 18, color: '#a200ac' },
+  { name: 'Troca de Registros', value: 25, count: 10, color: '#cb00d8' },
+  { name: 'Instalação de Misturadores', value: 18, count: 7, color: '#006c49' },
+  { name: 'Caça-Vazamento Geofone', value: 12, count: 4, color: '#2563eb' }
+];
+
+export const PROVIDER_WEEKLY_DEMAND = [
+  { day: 'Seg', chamados: 8, propostas: 6, faturamento: 720 },
+  { day: 'Ter', chamados: 12, propostas: 10, faturamento: 1140 },
+  { day: 'Qua', chamados: 15, propostas: 13, faturamento: 1450 },
+  { day: 'Qui', chamados: 11, propostas: 9, faturamento: 980 },
+  { day: 'Sex', chamados: 14, propostas: 12, faturamento: 1380 },
+  { day: 'Sáb', chamados: 9, propostas: 7, faturamento: 890 },
+  { day: 'Dom', chamados: 4, propostas: 3, faturamento: 420 }
+];
+
+export const PROVIDER_HOURLY_PEAK = [
+  { hour: '07h-09h', demanda: 45, label: 'Manhã Cedo' },
+  { hour: '09h-12h', demanda: 92, label: 'Pico Manhã' },
+  { hour: '12h-14h', demanda: 60, label: 'Almoço' },
+  { hour: '14h-18h', demanda: 98, label: 'Pico Tarde' },
+  { hour: '18h-21h', demanda: 78, label: 'Noite / Emergência' },
+  { hour: '21h-00h', demanda: 25, label: 'Plantão Noturno' }
+];
+

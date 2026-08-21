@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Wrench, Calendar, LayoutGrid, User, Radar, Briefcase, FileText } from 'lucide-react';
+import { Home, Wrench, Calendar, LayoutGrid, User, Radar, Briefcase, FileText, CreditCard, BarChart3 } from 'lucide-react';
 import { TabType, UserRole } from '../types';
 
 interface BottomNavProps {
@@ -18,14 +18,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const clientTabs = [
     { id: 'inicio' as TabType, label: 'Início', icon: Home },
     { id: 'problemas' as TabType, label: 'Problemas', icon: Wrench, badge: pendingProblemsCount },
+    { id: 'pagamentos' as TabType, label: 'Pagamentos', icon: CreditCard },
     { id: 'agenda' as TabType, label: 'Agenda', icon: Calendar },
     { id: 'minhacasa' as TabType, label: 'Minha Casa', icon: LayoutGrid },
     { id: 'perfil' as TabType, label: 'Perfil', icon: User }
   ];
 
   const providerTabs = [
-    { id: 'inicio' as TabType, label: 'Radar', icon: Radar },
-    { id: 'problemas' as TabType, label: 'Orçamentos', icon: FileText, badge: 3 },
+    { id: 'inicio' as TabType, label: 'Painel & Gráficos', icon: BarChart3 },
+    { id: 'problemas' as TabType, label: 'Orçamentos', icon: FileText, badge: 1 },
     { id: 'agenda' as TabType, label: 'Agenda', icon: Calendar },
     { id: 'minhacasa' as TabType, label: 'Serviços', icon: Briefcase },
     { id: 'perfil' as TabType, label: 'Perfil PRO', icon: User }
@@ -36,7 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <>
       {/* Mobile Bottom Bar */}
-      <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center pt-2 pb-5 px-2 bg-[#fff7fa]/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-[#f2dceb]/70 z-50 md:hidden">
+      <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center pt-2 pb-5 px-2 bg-white/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-[#e4e4e7] z-50 md:hidden">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -51,20 +52,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               <div
                 className={`flex items-center justify-center rounded-full transition-all duration-200 ${
                   isActive
-                    ? 'bg-[#a200ac] text-white px-5 py-1.5 shadow-sm'
-                    : 'text-[#544151] hover:bg-[#fee8f7] p-1.5'
+                    ? 'bg-[#18181b] text-[#ea580c] px-5 py-1.5 shadow-sm'
+                    : 'text-[#71717a] hover:bg-[#f4f4f5] p-1.5'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute top-0 right-3 w-4 h-4 bg-[#ba1a1a] text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute top-0 right-3 w-4 h-4 bg-rose-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}
               </div>
               <span
                 className={`text-[11px] font-medium tracking-tight mt-1 truncate ${
-                  isActive ? 'text-[#a200ac] font-bold' : 'text-[#867083]'
+                  isActive ? 'text-[#18181b] font-bold' : 'text-[#71717a]'
                 }`}
               >
                 {tab.label}
@@ -75,8 +76,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       </nav>
 
       {/* Desktop Side Bar */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-full w-24 bg-[#fff7fa] border-r border-[#f2dceb] z-40 flex-col items-center py-6 gap-6 shadow-sm">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#a200ac] to-[#cb00d8] flex items-center justify-center text-white font-extrabold text-sm tracking-tighter shadow-md mb-4">
+      <aside className="hidden md:flex fixed top-0 left-0 h-full w-24 bg-white border-r border-[#e4e4e7] z-40 flex-col items-center py-6 gap-6 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-[#18181b] flex items-center justify-center text-[#ea580c] font-extrabold text-sm tracking-tighter shadow-md mb-4 border border-[#27272a]">
           RJ
         </div>
 
@@ -92,8 +93,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 onClick={() => onTabChange(tab.id)}
                 className={`flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all duration-200 w-full relative cursor-pointer ${
                   isActive
-                    ? 'bg-[#a200ac] text-white shadow-md'
-                    : 'text-[#544151] hover:bg-[#fee8f7]'
+                    ? 'bg-[#18181b] text-[#ea580c] shadow-md'
+                    : 'text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b]'
                 }`}
                 title={tab.label}
               >
@@ -102,7 +103,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   {tab.label}
                 </span>
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute top-1 right-2 w-4 h-4 bg-[#ba1a1a] text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute top-1 right-2 w-4 h-4 bg-rose-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}

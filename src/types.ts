@@ -1,8 +1,46 @@
 export type UserRole = 'cliente' | 'prestador';
 
-export type TabType = 'inicio' | 'problemas' | 'agenda' | 'minhacasa' | 'perfil';
+export type TabType = 'inicio' | 'problemas' | 'agenda' | 'minhacasa' | 'pagamentos' | 'perfil';
 
 export type ProblemCategory = 'eletrica' | 'hidraulica' | 'ar_condicionado' | 'geral' | 'pintura' | 'fechadura';
+
+export interface PaymentMethod {
+  id: string;
+  type: 'credit_card' | 'debit_card' | 'pix' | 'boleto' | 'wallet';
+  brand?: 'mastercard' | 'visa' | 'elo' | 'hipercard' | 'amex';
+  last4?: string;
+  holderName?: string;
+  expiry?: string;
+  isDefault: boolean;
+  nickname?: string;
+  icon?: string;
+}
+
+export interface TransactionRecord {
+  id: string;
+  serviceTitle: string;
+  providerName: string;
+  providerAvatar: string;
+  providerCategory: string;
+  amount: number;
+  date: string;
+  status: 'pago' | 'em_custodia' | 'processando' | 'estornado';
+  paymentMethodType: string;
+  paymentMethodDetails?: string;
+  installments?: number;
+  invoiceCode: string;
+  warrantyUntil: string;
+}
+
+export interface ProviderEarningData {
+  month: string;
+  faturamento: number;
+  meta: number;
+  servicos: number;
+  propostas: number;
+  taxaConversao: number;
+  ticketMedio: number;
+}
 
 export interface ClientProfile {
   id: string;
@@ -20,7 +58,9 @@ export interface ClientProfile {
     state: string;
     cep: string;
   };
-  plan: 'Solvi Free' | 'Solvi Plus' | 'Solvi Premium';
+  plan: 'Resolva Já Free' | 'Resolva Já Plus' | 'Resolva Já Premium';
+  walletBalance: number;
+  cashbackBalance: number;
   avatar: string;
   registeredAt: string;
 }

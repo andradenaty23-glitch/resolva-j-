@@ -10,7 +10,9 @@ import {
   ProblemCategory,
   ClientProfile,
   ProviderProfile,
-  ProviderJobLead
+  ProviderJobLead,
+  PaymentMethod,
+  TransactionRecord
 } from './types';
 import {
   INITIAL_CLIENT_PROFILE,
@@ -20,7 +22,9 @@ import {
   INITIAL_PROFESSIONALS,
   INITIAL_ROOMS,
   INITIAL_APPOINTMENTS,
-  INITIAL_NOTIFICATIONS
+  INITIAL_NOTIFICATIONS,
+  INITIAL_PAYMENT_METHODS,
+  INITIAL_TRANSACTIONS
 } from './data/mockData';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -29,6 +33,7 @@ import { DiagnosisScreen } from './components/DiagnosisScreen';
 import { MinhaCasaScreen } from './components/MinhaCasaScreen';
 import { AgendaScreen } from './components/AgendaScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { ClientPaymentsScreen } from './components/ClientPaymentsScreen';
 import { ProviderHomeScreen } from './components/ProviderHomeScreen';
 import { ProviderProfileScreen } from './components/ProviderProfileScreen';
 import { RegistrationModal } from './components/RegistrationModal';
@@ -56,6 +61,8 @@ export default function App() {
   const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(INITIAL_PAYMENT_METHODS);
+  const [transactions, setTransactions] = useState<TransactionRecord[]>(INITIAL_TRANSACTIONS);
 
   // Selected states
   const [selectedRoomId, setSelectedRoomId] = useState<string>('cozinha');
@@ -200,16 +207,67 @@ export default function App() {
 
   const handleConfirmBooking = (appointment: Appointment) => {
     setAppointments((prev) => [appointment, ...prev]);
+
+    // Create a secure custody transaction
+    const newTx: TransactionRecord = {
+      id: `tx-${Date.now()}`,
+      serviceTitle: appointment.serviceTitle,
+      providerName: appointment.professionalName,
+      providerAvatar: appointment.professionalAvatar,
+      providerCategory: appointment.role,
+      amount: appointment.totalCost,
+      date: `${appointment.date}, ${appointment.time}`,
+      status: 'em_custodia',
+      paymentMethodType: 'Cartão de Crédito',
+      paymentMethodDetails: 'Mastercard •••• 4291 (1x)',
+      installments: 1,
+      invoiceCode: `RJ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      warrantyUntil: '90 dias após conclusão'
+    };
+    setTransactions((prev) => [newTx, ...prev]);
+
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
-      title: 'Agendamento Confirmado',
-      message: `Visita com ${appointment.professionalName} confirmada para ${appointment.date}.`,
+      title: 'Agendamento e Pagamento Seguro',
+      message: `Visita com ${appointment.professionalName} confirmada. R$ ${appointment.totalCost} retido em custódia segura.`,
       time: 'Agora mesmo',
       read: false,
       type: 'success'
     };
     setNotifications((prev) => [newNotif, ...prev]);
     setActiveTab('agenda');
+  };
+
+  // Payment Methods Handlers
+  const handleAddPaymentMethod = (newMethod: PaymentMethod) => {
+    setPaymentMethods((prev) => {
+      if (newMethod.isDefault) {
+        return [...prev.map((m) => ({ ...m, isDefault: false })), newMethod];
+      }
+      return [...prev, newMethod];
+    });
+    const notif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: 'Cartão Adicionado',
+      message: `Novo método de pagamento (${newMethod.nickname || newMethod.brand}) cadastrado com sucesso.`,
+      time: 'Agora mesmo',
+      read: false,
+      type: 'success'
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const handleSetDefaultPaymentMethod = (id: string) => {
+    setPaymentMethods((prev) =>
+      prev.map((m) => ({
+        ...m,
+        isDefault: m.id === id
+      }))
+    );
+  };
+
+  const handleDeletePaymentMethod = (id: string) => {
+    setPaymentMethods((prev) => prev.filter((m) => m.id !== id));
   };
 
   const handleAddRoom = (name: string, icon: string) => {
@@ -284,7 +342,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-[#fff7fa] text-[#241822] min-h-screen flex flex-col font-sans antialiased selection:bg-[#fee8f7] selection:text-[#a200ac]">
+    <div className="bg-[#f8fafc] text-[#0f172a] min-h-screen flex flex-col font-sans antialiased selection:bg-[#dbeafe] selection:text-[#1d4ed8]">
       {/* Top App Header with Role Switcher & New Registration CTA */}
       <Header
         notifications={notifications}
@@ -368,14 +426,31 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'pagamentos' && (
+              <ClientPaymentsScreen
+                client={clientProfile}
+                paymentMethods={paymentMethods}
+                transactions={transactions}
+                onAddPaymentMethod={handleAddPaymentMethod}
+                onSetDefaultPaymentMethod={handleSetDefaultPaymentMethod}
+                onDeletePaymentMethod={handleDeletePaymentMethod}
+                onOpenUpgradePlan={() => {
+                  alert('Plano atual: Resolva Já Plus (R$ 29,90/mês). Para upgrade para Premium (R$ 49,90/mês com 2 visitas inclusas), o plano foi atualizado!');
+                  setClientProfile((prev) => ({ ...prev, plan: 'Resolva Já Premium' }));
+                }}
+              />
+            )}
+
             {activeTab === 'perfil' && (
               <ProfileScreen
                 client={clientProfile}
+                onUpdateClient={(updated) => setClientProfile((prev) => ({ ...prev, ...updated }))}
                 onSwitchToProvider={() => {
                   setCurrentRole('prestador');
                   setActiveTab('inicio');
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
+                onNavigateToPayments={() => setActiveTab('pagamentos')}
               />
             )}
           </>
@@ -400,37 +475,37 @@ export default function App() {
             {activeTab === 'problemas' && (
               <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#241822] tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
                     Orçamentos & Propostas
                   </h1>
-                  <p className="text-xs text-[#867083]">Acompanhe suas propostas enviadas aos clientes</p>
+                  <p className="text-xs text-[#71717a]">Acompanhe suas propostas enviadas aos clientes</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white rounded-2xl p-4 border border-[#f2dceb] shadow-xs">
-                    <span className="text-2xl font-extrabold text-[#a200ac]">12</span>
-                    <p className="text-xs text-[#544151] mt-1 font-semibold">Propostas Enviadas</p>
+                  <div className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs">
+                    <span className="text-2xl font-extrabold text-[#ea580c]">12</span>
+                    <p className="text-xs text-[#52525b] mt-1 font-semibold">Propostas Enviadas</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-4 border border-[#f2dceb] shadow-xs">
-                    <span className="text-2xl font-extrabold text-[#006c49]">85%</span>
-                    <p className="text-xs text-[#544151] mt-1 font-semibold">Taxa de Conversão</p>
+                  <div className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs">
+                    <span className="text-2xl font-extrabold text-emerald-700">85%</span>
+                    <p className="text-xs text-[#52525b] mt-1 font-semibold">Taxa de Conversão</p>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-bold text-[#241822]">Histórico Recente</h3>
+                  <h3 className="text-sm font-bold text-[#18181b]">Histórico Recente</h3>
                   {providerLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="bg-white rounded-2xl p-4 border border-[#d9bfd3] shadow-xs flex justify-between items-center"
+                      className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs flex justify-between items-center"
                     >
                       <div>
-                        <h4 className="text-sm font-bold text-[#241822]">{lead.serviceTitle}</h4>
-                        <p className="text-xs text-[#867083]">{lead.clientName} • {lead.neighborhood}</p>
+                        <h4 className="text-sm font-bold text-[#18181b]">{lead.serviceTitle}</h4>
+                        <p className="text-xs text-[#71717a]">{lead.clientName} • {lead.neighborhood}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-extrabold text-[#a200ac]">R$ {lead.suggestedBudget}</span>
-                        <span className="block text-[10px] font-bold text-[#006c49] uppercase">
+                        <span className="text-sm font-extrabold text-[#ea580c]">R$ {lead.suggestedBudget}</span>
+                        <span className="block text-[10px] font-bold text-emerald-700 uppercase">
                           {lead.status === 'orcamento_enviado' ? 'Aguardando Cliente' : 'Aberto'}
                         </span>
                       </div>
@@ -453,14 +528,14 @@ export default function App() {
             {activeTab === 'minhacasa' && (
               <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#241822] tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
                     Serviços & Ferramentas
                   </h1>
-                  <p className="text-xs text-[#867083]">Gerencie sua tabela de preços e ferramentas</p>
+                  <p className="text-xs text-[#71717a]">Gerencie sua tabela de preços e ferramentas</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-[#f2dceb] shadow-xs flex flex-col gap-3">
-                  <h3 className="text-sm font-bold text-[#241822]">Serviços Habilitados</h3>
+                <div className="bg-white rounded-2xl p-5 border border-[#e4e4e7] shadow-xs flex flex-col gap-3">
+                  <h3 className="text-sm font-bold text-[#18181b]">Serviços Habilitados</h3>
                   <div className="space-y-2">
                     {[
                       { title: 'Caça-Vazamentos com Geofone', rate: 'R$ 150' },
@@ -468,9 +543,9 @@ export default function App() {
                       { title: 'Desentupimento de Sifão', rate: 'R$ 90' },
                       { title: 'Substituição de Válvula Hydra', rate: 'R$ 130' }
                     ].map((s, i) => (
-                      <div key={i} className="flex justify-between items-center p-2.5 rounded-xl bg-[#fff7fa] border border-[#f2dceb] text-xs">
-                        <span className="font-semibold text-[#241822]">{s.title}</span>
-                        <span className="font-bold text-[#a200ac]">{s.rate}</span>
+                      <div key={i} className="flex justify-between items-center p-2.5 rounded-xl bg-[#fafafa] border border-[#e4e4e7] text-xs">
+                        <span className="font-semibold text-[#18181b]">{s.title}</span>
+                        <span className="font-bold text-[#ea580c]">{s.rate}</span>
                       </div>
                     ))}
                   </div>

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Professional, Appointment, NotificationItem } from '../types';
+import { SafeAvatar } from './SafeAvatar';
 
 // 1. Voice Recognition Modal
 interface VoiceModalProps {
@@ -77,13 +78,13 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5 border border-[#d9bfd3] text-center animate-scaleUp">
+      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5 border border-[#e4e4e7] text-center animate-scaleUp">
         <div className="flex justify-between items-center w-full">
-          <span className="text-xs font-bold text-[#867083] uppercase tracking-wider">
+          <span className="text-xs font-bold text-[#71717a] uppercase tracking-wider">
             Reconhecimento de Voz SOLVI
           </span>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
@@ -91,32 +92,32 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
         <div className="relative flex items-center justify-center my-2">
           {isRecording && (
             <>
-              <div className="absolute w-24 h-24 bg-[#cb00d8]/20 rounded-full animate-ping"></div>
-              <div className="absolute w-20 h-20 bg-[#cb00d8]/30 rounded-full animate-pulse"></div>
+              <div className="absolute w-24 h-24 bg-[#ea580c]/20 rounded-full animate-ping"></div>
+              <div className="absolute w-20 h-20 bg-[#ea580c]/30 rounded-full animate-pulse"></div>
             </>
           )}
-          <div className="w-16 h-16 rounded-full bg-[#cb00d8] text-white flex items-center justify-center shadow-lg relative z-10">
+          <div className="w-16 h-16 rounded-full bg-[#ea580c] text-white flex items-center justify-center shadow-lg relative z-10">
             {isRecording ? <Mic className="w-8 h-8 animate-bounce" /> : <Check className="w-8 h-8" />}
           </div>
         </div>
 
         <div>
-          <h3 className="text-base font-bold text-[#241822]">
+          <h3 className="text-base font-bold text-[#18181b]">
             {isRecording ? 'Ouvindo o seu relato...' : 'Relato gravado com sucesso!'}
           </h3>
-          <p className="text-xs text-[#867083] mt-1">
+          <p className="text-xs text-[#71717a] mt-1">
             {isRecording ? `Fale pausadamente (${seconds}s)` : 'A IA interpretou a sua fala:'}
           </p>
         </div>
 
-        <div className="w-full bg-[#fff7fa] p-3.5 rounded-2xl border border-[#f2dceb] text-xs text-[#241822] min-h-[64px] flex items-center justify-center italic">
+        <div className="w-full bg-[#fafafa] p-3.5 rounded-2xl border border-[#e4e4e7] text-xs text-[#18181b] min-h-[64px] flex items-center justify-center italic">
           {transcript || 'Detectando ondas sonoras...'}
         </div>
 
         <div className="flex gap-2 w-full">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-[#d9bfd3] text-xs font-bold text-[#544151]"
+            className="flex-1 py-2.5 rounded-full border border-[#e4e4e7] text-xs font-bold text-[#52525b] hover:bg-[#fafafa]"
           >
             Cancelar
           </button>
@@ -126,7 +127,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
               onTranscriptComplete(transcript);
               onClose();
             }}
-            className="flex-1 py-2.5 rounded-full bg-[#a200ac] hover:bg-[#8e0097] text-white text-xs font-bold shadow-xs disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold shadow-xs disabled:opacity-50 cursor-pointer"
           >
             Usar relato
           </button>
@@ -180,23 +181,23 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3] animate-scaleUp">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] animate-scaleUp">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-[#a200ac]" />
-            <h3 className="text-base font-bold text-[#241822]">Mostrar por Foto</h3>
+            <Camera className="w-5 h-5 text-[#ea580c]" />
+            <h3 className="text-base font-bold text-[#18181b]">Mostrar por Foto</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
-        <p className="text-xs text-[#544151]">
+        <p className="text-xs text-[#52525b]">
           A IA analisa visualmente fiações, vazamentos, tubulações e rachaduras para gerar o diagnóstico.
         </p>
 
         {preview ? (
-          <div className="relative rounded-2xl overflow-hidden border border-[#d9bfd3] h-48 bg-black/5 flex items-center justify-center">
+          <div className="relative rounded-2xl overflow-hidden border border-[#e4e4e7] h-48 bg-black/5 flex items-center justify-center">
             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
             <button
               onClick={() => setPreview(null)}
@@ -206,16 +207,16 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
             </button>
           </div>
         ) : (
-          <label className="border-2 border-dashed border-[#d9bfd3] hover:border-[#a200ac] rounded-2xl p-6 flex flex-col items-center justify-center gap-2 bg-[#fff7fa] cursor-pointer transition-colors text-center">
-            <Upload className="w-8 h-8 text-[#a200ac]" />
-            <span className="text-xs font-bold text-[#241822]">Tirar foto ou carregar arquivo</span>
-            <span className="text-[11px] text-[#867083]">PNG, JPG até 10MB</span>
+          <label className="border-2 border-dashed border-[#e4e4e7] hover:border-[#ea580c] rounded-2xl p-6 flex flex-col items-center justify-center gap-2 bg-[#fafafa] cursor-pointer transition-colors text-center">
+            <Upload className="w-8 h-8 text-[#ea580c]" />
+            <span className="text-xs font-bold text-[#18181b]">Tirar foto ou carregar arquivo</span>
+            <span className="text-[11px] text-[#71717a]">PNG, JPG até 10MB</span>
             <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
           </label>
         )}
 
         <div className="flex flex-col gap-2 mt-1">
-          <span className="text-[11px] font-bold text-[#867083] uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
             Ou escolha uma foto de exemplo:
           </span>
           <div className="grid grid-cols-3 gap-2">
@@ -223,10 +224,10 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
               <button
                 key={idx}
                 onClick={() => setPreview(s.url)}
-                className="rounded-xl overflow-hidden border border-[#d9bfd3] hover:border-[#a200ac] relative group text-left"
+                className="rounded-xl overflow-hidden border border-[#e4e4e7] hover:border-[#ea580c] relative group text-left"
               >
                 <img src={s.url} alt={s.title} className="w-full h-16 object-cover" />
-                <span className="block text-[9px] font-semibold text-[#241822] p-1 truncate bg-white">
+                <span className="block text-[9px] font-semibold text-[#18181b] p-1 truncate bg-white">
                   {s.title}
                 </span>
               </button>
@@ -234,10 +235,10 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2 border-t border-[#f2dceb]">
+        <div className="flex gap-2 pt-2 border-t border-[#e4e4e7]">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-[#d9bfd3] text-xs font-bold text-[#544151]"
+            className="flex-1 py-2.5 rounded-full border border-[#e4e4e7] text-xs font-bold text-[#52525b]"
           >
             Cancelar
           </button>
@@ -249,7 +250,7 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
                 onClose();
               }
             }}
-            className="flex-1 py-2.5 rounded-full bg-[#a200ac] hover:bg-[#8e0097] text-white text-xs font-bold shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="w-4 h-4" /> Diagnosticar foto
           </button>
@@ -286,27 +287,27 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3] animate-scaleUp">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] animate-scaleUp">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#a200ac]" />
-            <h3 className="text-base font-bold text-[#241822]">Assistente Guiado de Sintomas</h3>
+            <HelpCircle className="w-5 h-5 text-[#ea580c]" />
+            <h3 className="text-base font-bold text-[#18181b]">Assistente Guiado de Sintomas</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
         {/* Step Indicator */}
         <div className="flex gap-1.5">
-          <div className={`flex-1 h-1.5 rounded-full ${step >= 1 ? 'bg-[#a200ac]' : 'bg-gray-200'}`} />
-          <div className={`flex-1 h-1.5 rounded-full ${step >= 2 ? 'bg-[#a200ac]' : 'bg-gray-200'}`} />
-          <div className={`flex-1 h-1.5 rounded-full ${step >= 3 ? 'bg-[#a200ac]' : 'bg-gray-200'}`} />
+          <div className={`flex-1 h-1.5 rounded-full ${step >= 1 ? 'bg-[#ea580c]' : 'bg-zinc-200'}`} />
+          <div className={`flex-1 h-1.5 rounded-full ${step >= 2 ? 'bg-[#ea580c]' : 'bg-zinc-200'}`} />
+          <div className={`flex-1 h-1.5 rounded-full ${step >= 3 ? 'bg-[#ea580c]' : 'bg-zinc-200'}`} />
         </div>
 
         {step === 1 && (
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold text-[#241822]">1. Qual é o principal sinal estranho?</h4>
+            <h4 className="text-sm font-bold text-[#18181b]">1. Qual é o principal sinal estranho?</h4>
             {[
               { id: 'agua', title: 'Água pingando, poça ou pressão fraca', icon: '💧' },
               { id: 'eletricidade', title: 'Luz piscando, faíscas ou disjuntor caindo', icon: '⚡' },
@@ -319,7 +320,7 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
                   setSymptomType(opt.title);
                   setStep(2);
                 }}
-                className="p-3 rounded-xl border border-[#d9bfd3] hover:border-[#a200ac] hover:bg-[#fee8f7] text-left text-xs font-semibold text-[#241822] flex items-center gap-3 transition-colors"
+                className="p-3 rounded-xl border border-[#e4e4e7] hover:border-[#ea580c] hover:bg-[#fff7ed] text-left text-xs font-semibold text-[#18181b] flex items-center gap-3 transition-colors cursor-pointer"
               >
                 <span className="text-lg">{opt.icon}</span>
                 <span>{opt.title}</span>
@@ -330,7 +331,7 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
 
         {step === 2 && (
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold text-[#241822]">2. Onde isso acontece?</h4>
+            <h4 className="text-sm font-bold text-[#18181b]">2. Onde isso acontece?</h4>
             {['Cozinha / Bancada', 'Banheiro / Chuveiro', 'Lavanderia / Tanque', 'Sala / Geral'].map(
               (loc) => (
                 <button
@@ -339,7 +340,7 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
                     setLocation(loc);
                     setStep(3);
                   }}
-                  className="p-3 rounded-xl border border-[#d9bfd3] hover:border-[#a200ac] hover:bg-[#fee8f7] text-left text-xs font-semibold text-[#241822] transition-colors"
+                  className="p-3 rounded-xl border border-[#e4e4e7] hover:border-[#ea580c] hover:bg-[#fff7ed] text-left text-xs font-semibold text-[#18181b] transition-colors cursor-pointer"
                 >
                   {loc}
                 </button>
@@ -350,7 +351,7 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
 
         {step === 3 && (
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold text-[#241822]">3. Com que frequência ocorre?</h4>
+            <h4 className="text-sm font-bold text-[#18181b]">3. Com que frequência ocorre?</h4>
             {[
               'Contínuo e urgente (não para)',
               'Apenas quando ligo o equipamento',
@@ -363,7 +364,7 @@ export const GuidedWizardModal: React.FC<GuidedWizardModalProps> = ({
                   setFrequency(freq);
                   handleFinish();
                 }}
-                className="p-3 rounded-xl border border-[#d9bfd3] hover:border-[#a200ac] hover:bg-[#fee8f7] text-left text-xs font-semibold text-[#241822] transition-colors"
+                className="p-3 rounded-xl border border-[#e4e4e7] hover:border-[#ea580c] hover:bg-[#fff7ed] text-left text-xs font-semibold text-[#18181b] transition-colors cursor-pointer"
               >
                 {freq}
               </button>
@@ -426,40 +427,41 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3] animate-scaleUp">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] animate-scaleUp">
         {isSuccess ? (
           <div className="py-8 flex flex-col items-center text-center gap-3 animate-fadeIn">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1">
               <CheckCircle className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-bold text-[#241822]">Visita Confirmada!</h3>
-            <p className="text-xs text-[#544151] max-w-xs">
+            <h3 className="text-xl font-bold text-[#18181b]">Visita Confirmada!</h3>
+            <p className="text-xs text-[#52525b] max-w-xs">
               {professional.name} foi notificado e comparecerá no horário agendado.
             </p>
-            <div className="bg-[#fff7fa] p-3 rounded-xl border border-[#f2dceb] text-xs font-semibold text-[#a200ac] mt-2">
+            <div className="bg-[#fff7ed] p-3 rounded-xl border border-[#fed7aa] text-xs font-semibold text-[#ea580c] mt-2">
               {selectedDate} • {selectedSlot}
             </div>
           </div>
         ) : (
           <>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-[#241822]">Confirmar Contratação</h3>
-              <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
+              <h3 className="text-lg font-bold text-[#18181b]">Confirmar Contratação</h3>
+              <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+                <X className="w-5 h-5 text-zinc-500" />
               </button>
             </div>
 
             {/* Professional Summary */}
-            <div className="flex items-center gap-3 bg-[#fff7fa] p-3.5 rounded-2xl border border-[#f2dceb]">
-              <img
+            <div className="flex items-center gap-3 bg-[#fafafa] p-3.5 rounded-2xl border border-[#e4e4e7]">
+              <SafeAvatar
                 src={professional.avatar}
-                alt={professional.name}
-                className="w-12 h-12 rounded-xl object-cover"
+                name={professional.name}
+                size="sm"
+                className="w-12 h-12 rounded-xl"
               />
               <div className="flex-1">
-                <h4 className="text-sm font-bold text-[#241822]">{professional.name}</h4>
-                <p className="text-xs text-[#544151]">{professional.role}</p>
-                <p className="text-xs font-extrabold text-[#a200ac] mt-0.5">
+                <h4 className="text-sm font-bold text-[#18181b]">{professional.name}</h4>
+                <p className="text-xs text-[#52525b]">{professional.role}</p>
+                <p className="text-xs font-extrabold text-[#ea580c] mt-0.5">
                   Valor Estimado: R$ {professional.totalCost}
                 </p>
               </div>
@@ -467,17 +469,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
             {/* Date Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#241822]">Escolha a data:</label>
+              <label className="text-xs font-bold text-[#18181b]">Escolha a data:</label>
               <div className="grid grid-cols-2 gap-2">
                 {['Hoje, 18 de Agosto', 'Amanhã, 19 de Agosto'].map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setSelectedDate(d)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                       selectedDate === d
-                        ? 'bg-[#a200ac] text-white border-[#a200ac]'
-                        : 'bg-white text-[#544151] border-[#d9bfd3]'
+                        ? 'bg-[#ea580c] text-white border-[#ea580c]'
+                        : 'bg-white text-[#52525b] border-[#e4e4e7] hover:bg-[#fff7ed]'
                     }`}
                   >
                     {d}
@@ -488,17 +490,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
             {/* Time Slot Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#241822]">Horário de preferência:</label>
+              <label className="text-xs font-bold text-[#18181b]">Horário de preferência:</label>
               <div className="grid grid-cols-3 gap-2">
                 {['10:00 - 11:30', '14:00 - 15:30', '16:00 - 17:30'].map((slot) => (
                   <button
                     key={slot}
                     type="button"
                     onClick={() => setSelectedSlot(slot)}
-                    className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-colors ${
+                    className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                       selectedSlot === slot
-                        ? 'bg-[#a200ac] text-white border-[#a200ac]'
-                        : 'bg-white text-[#544151] border-[#d9bfd3]'
+                        ? 'bg-[#ea580c] text-white border-[#ea580c]'
+                        : 'bg-white text-[#52525b] border-[#e4e4e7] hover:bg-[#fff7ed]'
                     }`}
                   >
                     {slot}
@@ -508,8 +510,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             {/* Address Review */}
-            <div className="bg-[#dee8ff]/50 p-3 rounded-xl border border-[#d8e3fb] text-xs text-[#111c2d] flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-[#004ac6] shrink-0 mt-0.5" />
+            <div className="bg-[#fff7ed] p-3 rounded-xl border border-[#fed7aa] text-xs text-[#9a3412] flex items-start gap-2">
+              <MapPin className="w-4 h-4 text-[#ea580c] shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Endereço da visita:</span>
                 <p>Rua das Palmeiras, 450 - Apto 82, Pinheiros - SP</p>
@@ -517,11 +519,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             {/* Payment info */}
-            <div className="flex items-center justify-between text-xs text-[#544151] pt-1">
+            <div className="flex items-center justify-between text-xs text-[#52525b] pt-1">
               <span className="flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-[#a200ac]" /> Pagamento seguro no app após serviço
+                <CreditCard className="w-4 h-4 text-[#ea580c]" /> Pagamento seguro no app após serviço
               </span>
-              <span className="font-extrabold text-sm text-[#241822]">
+              <span className="font-extrabold text-sm text-[#18181b]">
                 R$ {professional.totalCost}
               </span>
             </div>
@@ -530,13 +532,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="flex gap-2 pt-2">
               <button
                 onClick={onClose}
-                className="flex-1 py-3 rounded-full border border-[#d9bfd3] text-xs font-bold text-[#544151]"
+                className="flex-1 py-3 rounded-full border border-[#e4e4e7] text-xs font-bold text-[#52525b] hover:bg-[#fafafa] cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 py-3 rounded-full bg-[#a200ac] hover:bg-[#8e0097] text-white text-xs font-bold shadow-md active:scale-98 transition-all"
+                className="flex-1 py-3 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold shadow-md active:scale-98 transition-all cursor-pointer"
               >
                 Confirmar Agendamento
               </button>
@@ -566,63 +568,64 @@ export const ProfessionalProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3] animate-scaleUp max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] animate-scaleUp max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-[#867083] uppercase tracking-wider">
+          <span className="text-xs font-bold text-[#71717a] uppercase tracking-wider">
             Perfil Verificado Solvi
           </span>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
         <div className="flex items-center gap-4">
-          <img
+          <SafeAvatar
             src={professional.avatar}
-            alt={professional.name}
-            className="w-16 h-16 rounded-2xl object-cover border-2 border-[#a200ac]"
+            name={professional.name}
+            size="md"
+            className="w-16 h-16 rounded-2xl border-2 border-[#ea580c]"
           />
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-lg font-bold text-[#241822]">{professional.name}</h3>
-              <CheckCircle className="w-4 h-4 text-[#006c49]" />
+              <h3 className="text-lg font-bold text-[#18181b]">{professional.name}</h3>
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
             </div>
-            <p className="text-xs text-[#544151]">{professional.role}</p>
+            <p className="text-xs text-[#52525b]">{professional.role}</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs font-bold text-amber-600 flex items-center gap-0.5">
                 <Star className="w-3.5 h-3.5 fill-amber-500" /> {professional.rating}
               </span>
-              <span className="text-xs text-[#867083]">({professional.reviewsCount} avaliações)</span>
+              <span className="text-xs text-[#71717a]">({professional.reviewsCount} avaliações)</span>
             </div>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 bg-[#fff7fa] p-3 rounded-2xl border border-[#f2dceb] text-center">
+        <div className="grid grid-cols-3 gap-2 bg-[#fafafa] p-3 rounded-2xl border border-[#e4e4e7] text-center">
           <div>
-            <span className="text-xs font-extrabold text-[#a200ac]">{professional.completedJobs}+</span>
-            <p className="text-[10px] text-[#867083]">Serviços Feitos</p>
+            <span className="text-xs font-extrabold text-[#ea580c]">{professional.completedJobs}+</span>
+            <p className="text-[10px] text-[#71717a]">Serviços Feitos</p>
           </div>
           <div>
-            <span className="text-xs font-extrabold text-[#006c49]">{professional.trustIndex}/100</span>
-            <p className="text-[10px] text-[#867083]">Índice Confiança</p>
+            <span className="text-xs font-extrabold text-emerald-600">{professional.trustIndex}/100</span>
+            <p className="text-[10px] text-[#71717a]">Índice Confiança</p>
           </div>
           <div>
-            <span className="text-xs font-extrabold text-[#241822]">100%</span>
-            <p className="text-[10px] text-[#867083]">Garantia 90d</p>
+            <span className="text-xs font-extrabold text-[#18181b]">100%</span>
+            <p className="text-[10px] text-[#71717a]">Garantia 90d</p>
           </div>
         </div>
 
         {/* Specialties */}
         <div>
-          <h4 className="text-xs font-bold text-[#241822] uppercase tracking-wider mb-2">
+          <h4 className="text-xs font-bold text-[#18181b] uppercase tracking-wider mb-2">
             Especialidades
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {professional.specialties.map((spec, i) => (
               <span
                 key={i}
-                className="text-[11px] bg-[#fee8f7] text-[#a200ac] font-semibold px-2.5 py-1 rounded-full"
+                className="text-[11px] bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] font-semibold px-2.5 py-1 rounded-full"
               >
                 {spec}
               </span>
@@ -632,19 +635,19 @@ export const ProfessionalProfileModal: React.FC<ProfileModalProps> = ({
 
         {/* Recent Client Reviews */}
         <div>
-          <h4 className="text-xs font-bold text-[#241822] uppercase tracking-wider mb-2">
+          <h4 className="text-xs font-bold text-[#18181b] uppercase tracking-wider mb-2">
             Últimas Avaliações
           </h4>
-          <div className="space-y-2 text-xs text-[#544151]">
-            <div className="bg-[#fff7fa] p-3 rounded-xl border border-[#f2dceb]">
-              <div className="flex justify-between font-semibold text-[#241822] mb-0.5">
+          <div className="space-y-2 text-xs text-[#52525b]">
+            <div className="bg-[#fafafa] p-3 rounded-xl border border-[#e4e4e7]">
+              <div className="flex justify-between font-semibold text-[#18181b] mb-0.5">
                 <span>Mariana F.</span>
                 <span className="text-amber-500">★★★★★</span>
               </div>
               <p className="text-[11px]">"Chegou no horário, resolveu o vazamento sem sujeira e explicou tudo direitinho."</p>
             </div>
-            <div className="bg-[#fff7fa] p-3 rounded-xl border border-[#f2dceb]">
-              <div className="flex justify-between font-semibold text-[#241822] mb-0.5">
+            <div className="bg-[#fafafa] p-3 rounded-xl border border-[#e4e4e7]">
+              <div className="flex justify-between font-semibold text-[#18181b] mb-0.5">
                 <span>Eduardo T.</span>
                 <span className="text-amber-500">★★★★★</span>
               </div>
@@ -658,7 +661,7 @@ export const ProfessionalProfileModal: React.FC<ProfileModalProps> = ({
             onClose();
             onHire(professional);
           }}
-          className="w-full py-3 rounded-full bg-[#a200ac] hover:bg-[#8e0097] text-white font-bold text-sm shadow-md transition-all mt-2"
+          className="w-full py-3 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm shadow-md transition-all mt-2 cursor-pointer"
         >
           Contratar {professional.name} (R$ {professional.totalCost})
         </button>
@@ -694,28 +697,28 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3]">
+      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7]">
         <div className="flex justify-between items-center">
-          <h3 className="text-base font-bold text-[#241822]">Novo Cômodo</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <h3 className="text-base font-bold text-[#18181b]">Novo Cômodo</h3>
+          <button type="button" onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
         <div>
-          <label className="text-xs font-bold text-[#241822] block mb-1">Nome do cômodo</label>
+          <label className="text-xs font-bold text-[#18181b] block mb-1">Nome do cômodo</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Varanda Gourmet, Escritório"
-            className="w-full p-2.5 rounded-xl border border-[#d9bfd3] text-sm focus:border-[#a200ac] focus:outline-hidden"
+            className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-sm focus:border-[#ea580c] focus:outline-hidden"
           />
         </div>
 
         <div>
-          <label className="text-xs font-bold text-[#241822] block mb-1">Ícone</label>
+          <label className="text-xs font-bold text-[#18181b] block mb-1">Ícone</label>
           <div className="grid grid-cols-4 gap-2">
             {[
               { id: 'Armchair', label: 'Estar' },
@@ -727,8 +730,8 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
                 type="button"
                 key={ic.id}
                 onClick={() => setIcon(ic.id)}
-                className={`p-2.5 rounded-xl border text-xs font-bold text-center ${
-                  icon === ic.id ? 'bg-[#a200ac] text-white border-[#a200ac]' : 'bg-[#fff7fa] border-[#d9bfd3]'
+                className={`p-2.5 rounded-xl border text-xs font-bold text-center cursor-pointer ${
+                  icon === ic.id ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-[#fafafa] border-[#e4e4e7]'
                 }`}
               >
                 {ic.label}
@@ -741,13 +744,13 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-[#d9bfd3] text-xs font-bold text-[#544151]"
+            className="flex-1 py-2.5 rounded-full border border-[#e4e4e7] text-xs font-bold text-[#52525b] hover:bg-[#fafafa]"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="flex-1 py-2.5 rounded-full bg-[#a200ac] text-white text-xs font-bold shadow-xs"
+            className="flex-1 py-2.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold shadow-xs cursor-pointer"
           >
             Salvar Cômodo
           </button>
@@ -775,17 +778,17 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#d9bfd3] max-h-[85vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] max-h-[85vh] overflow-y-auto">
         <div className="flex justify-between items-center">
-          <h3 className="text-base font-bold text-[#241822]">Notificações do Sistema</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-500" />
+          <h3 className="text-base font-bold text-[#18181b]">Notificações do Sistema</h3>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100">
+            <X className="w-5 h-5 text-zinc-500" />
           </button>
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <span className="text-[#867083]">{notifications.length} avisos</span>
-          <button onClick={onMarkAllAsRead} className="text-[#a200ac] font-bold hover:underline">
+          <span className="text-[#71717a]">{notifications.length} avisos</span>
+          <button onClick={onMarkAllAsRead} className="text-[#ea580c] font-bold hover:underline cursor-pointer">
             Marcar todas como lidas
           </button>
         </div>
@@ -795,14 +798,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             <div
               key={n.id}
               className={`p-3.5 rounded-2xl border transition-all ${
-                n.read ? 'bg-[#fff7fa] border-[#f2dceb]' : 'bg-white border-[#cb00d8] shadow-xs'
+                n.read ? 'bg-[#fafafa] border-[#e4e4e7]' : 'bg-white border-[#ea580c] shadow-xs'
               }`}
             >
               <div className="flex justify-between items-start gap-2">
-                <h4 className="text-xs font-bold text-[#241822]">{n.title}</h4>
-                <span className="text-[10px] text-[#867083]">{n.time}</span>
+                <h4 className="text-xs font-bold text-[#18181b]">{n.title}</h4>
+                <span className="text-[10px] text-[#71717a]">{n.time}</span>
               </div>
-              <p className="text-xs text-[#544151] mt-1">{n.message}</p>
+              <p className="text-xs text-[#52525b] mt-1">{n.message}</p>
             </div>
           ))}
         </div>
