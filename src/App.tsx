@@ -463,6 +463,7 @@ export default function App() {
               <ProviderHomeScreen
                 provider={providerProfile}
                 leads={providerLeads}
+                appointments={appointments}
                 onSendQuote={handleSendProviderQuote}
                 onToggleAvailability={handleToggleProviderAvailability}
                 onViewClientPhoto={(url) => {
@@ -473,7 +474,7 @@ export default function App() {
             )}
 
             {activeTab === 'problemas' && (
-              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
+              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16 animate-fadeIn">
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
                     Orçamentos & Propostas
@@ -483,34 +484,46 @@ export default function App() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs">
-                    <span className="text-2xl font-extrabold text-[#ea580c]">12</span>
+                    <span className="text-2xl font-extrabold text-[#ea580c]">
+                      {providerLeads.filter((l) => l.status === 'orcamento_enviado').length}
+                    </span>
                     <p className="text-xs text-[#52525b] mt-1 font-semibold">Propostas Enviadas</p>
                   </div>
                   <div className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs">
-                    <span className="text-2xl font-extrabold text-emerald-700">85%</span>
+                    <span className="text-2xl font-extrabold text-emerald-700">
+                      {providerLeads.filter((l) => l.status === 'orcamento_enviado').length > 0
+                        ? `${Math.round((appointments.length / providerLeads.filter((l) => l.status === 'orcamento_enviado').length) * 100)}%`
+                        : '100%'}
+                    </span>
                     <p className="text-xs text-[#52525b] mt-1 font-semibold">Taxa de Conversão</p>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-bold text-[#18181b]">Histórico Recente</h3>
-                  {providerLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs flex justify-between items-center"
-                    >
-                      <div>
-                        <h4 className="text-sm font-bold text-[#18181b]">{lead.serviceTitle}</h4>
-                        <p className="text-xs text-[#71717a]">{lead.clientName} • {lead.neighborhood}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-extrabold text-[#ea580c]">R$ {lead.suggestedBudget}</span>
-                        <span className="block text-[10px] font-bold text-emerald-700 uppercase">
-                          {lead.status === 'orcamento_enviado' ? 'Aguardando Cliente' : 'Aberto'}
-                        </span>
-                      </div>
+                  <h3 className="text-sm font-bold text-[#18181b]">Histórico de Chamados</h3>
+                  {providerLeads.length === 0 ? (
+                    <div className="p-6 rounded-2xl border border-dashed border-[#e4e4e7] text-center text-xs text-[#71717a]">
+                      Nenhum chamado aberto no momento na sua região de atendimento.
                     </div>
-                  ))}
+                  ) : (
+                    providerLeads.map((lead) => (
+                      <div
+                        key={lead.id}
+                        className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs flex justify-between items-center"
+                      >
+                        <div>
+                          <h4 className="text-sm font-bold text-[#18181b]">{lead.serviceTitle}</h4>
+                          <p className="text-xs text-[#71717a]">{lead.clientName || 'Cliente'} • {lead.neighborhood}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-extrabold text-[#ea580c]">R$ {lead.suggestedBudget}</span>
+                          <span className="block text-[10px] font-bold text-emerald-700 uppercase">
+                            {lead.status === 'orcamento_enviado' ? 'Proposta Enviada' : 'Aberto'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -526,27 +539,32 @@ export default function App() {
             )}
 
             {activeTab === 'minhacasa' && (
-              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
-                    Serviços & Ferramentas
-                  </h1>
-                  <p className="text-xs text-[#71717a]">Gerencie sua tabela de preços e ferramentas</p>
+              <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16 animate-fadeIn">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+                      Serviços & Especialidades
+                    </h1>
+                    <p className="text-xs text-[#71717a]">Gerencie sua tabela de preços e área de atuação</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('perfil')}
+                    className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white border border-[#fed7aa] px-3 py-1.5 rounded-full transition-all cursor-pointer"
+                  >
+                    Editar no Perfil
+                  </button>
                 </div>
 
                 <div className="bg-white rounded-2xl p-5 border border-[#e4e4e7] shadow-xs flex flex-col gap-3">
-                  <h3 className="text-sm font-bold text-[#18181b]">Serviços Habilitados</h3>
-                  <div className="space-y-2">
-                    {[
-                      { title: 'Caça-Vazamentos com Geofone', rate: 'R$ 150' },
-                      { title: 'Troca de Torneira e Misturador', rate: 'R$ 100' },
-                      { title: 'Desentupimento de Sifão', rate: 'R$ 90' },
-                      { title: 'Substituição de Válvula Hydra', rate: 'R$ 130' }
-                    ].map((s, i) => (
-                      <div key={i} className="flex justify-between items-center p-2.5 rounded-xl bg-[#fafafa] border border-[#e4e4e7] text-xs">
-                        <span className="font-semibold text-[#18181b]">{s.title}</span>
-                        <span className="font-bold text-[#ea580c]">{s.rate}</span>
-                      </div>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-[#18181b]">Especialidades Cadastradas</h3>
+                    <span className="text-xs font-bold text-emerald-700">Taxa Base: R$ {providerProfile.laborBaseRate}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(providerProfile.specialties || []).map((s, i) => (
+                      <span key={i} className="px-3 py-1 bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] rounded-full text-xs font-bold">
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -614,6 +632,13 @@ export default function App() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         professional={selectedProfessional}
+        clientAddress={
+          clientProfile.address?.street
+            ? `${clientProfile.address.street}, ${clientProfile.address.number || ''} ${clientProfile.address.complement || ''} - ${clientProfile.address.neighborhood || ''}, ${clientProfile.address.city || 'São Paulo'}`
+            : 'Endereço principal cadastrado'
+        }
+        serviceTitle={diagnosis?.problemSummary || 'Reparo e manutenção técnica'}
+        roomName={diagnosis?.room || 'Residência'}
         onConfirmBooking={handleConfirmBooking}
       />
 

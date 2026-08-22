@@ -304,7 +304,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </h4>
                 <p className="text-xs font-medium text-rose-600 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
-                  {problemRooms[0].statusText} (Torneira)
+                  {problemRooms[0].statusText}
                 </p>
               </div>
             </div>

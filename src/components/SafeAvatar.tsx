@@ -58,7 +58,7 @@ export const SafeAvatar: React.FC<SafeAvatarProps> = ({
         />
       ) : (
         <div
-          className={`rounded-2xl bg-gradient-to-br from-[#2563eb] to-[#1e40af] text-white font-black flex items-center justify-center shadow-xs border border-white/20 ${sizeClasses[size]} ${className}`}
+          className={`rounded-2xl bg-gradient-to-br from-[#18181b] to-[#27272a] text-[#ea580c] font-black flex items-center justify-center shadow-xs border border-white/20 ${sizeClasses[size]} ${className}`}
         >
           {initials || <User className="w-1/2 h-1/2" />}
         </div>

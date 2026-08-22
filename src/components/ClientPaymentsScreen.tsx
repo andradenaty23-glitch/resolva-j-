@@ -419,61 +419,73 @@ export const ClientPaymentsScreen: React.FC<ClientPaymentsScreenProps> = ({
         </div>
 
         <div className="flex flex-col gap-3">
-          {filteredTransactions.map((tx) => (
-            <div
-              key={tx.id}
-              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e4e4e7] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#ea580c] transition-all"
-            >
-              <div className="flex items-start gap-3.5">
-                <SafeAvatar
-                  src={tx.providerAvatar}
-                  name={tx.providerName}
-                  size="sm"
-                  className="w-12 h-12 rounded-xl shrink-0"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-[#18181b]">
-                      {tx.serviceTitle}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-[#52525b] mt-0.5">
-                    Profissional: <strong>{tx.providerName}</strong> ({tx.providerCategory})
-                  </p>
-                  <div className="flex items-center gap-3 text-[11px] text-[#71717a] mt-1">
-                    <span>{tx.date}</span>
-                    <span>•</span>
-                    <span>{tx.paymentMethodDetails || tx.paymentMethodType}</span>
-                  </div>
-                </div>
+          {filteredTransactions.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 border border-dashed border-[#e4e4e7] flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#fafafa] border border-[#e4e4e7] flex items-center justify-center text-[#71717a]">
+                <Receipt className="w-6 h-6" />
               </div>
-
-              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e4e4e7]">
-                <div className="text-left sm:text-right">
-                  <span className="text-base font-extrabold text-[#18181b] block">
-                    R$ {tx.amount.toFixed(2)}
-                  </span>
-                  <span
-                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block uppercase ${
-                      tx.status === 'em_custodia'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {tx.status === 'em_custodia' ? 'Retido em Custódia' : 'Pago com Garantia'}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => setSelectedReceipt(tx)}
-                  className="text-xs font-bold text-[#ea580c] hover:text-[#c2410c] flex items-center gap-1 hover:underline sm:mt-1 cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Ver Recibo</span>
-                </button>
-              </div>
+              <h4 className="text-sm font-bold text-[#18181b]">Nenhum registro encontrado</h4>
+              <p className="text-xs text-[#71717a] max-w-xs">
+                Seus comprovantes, recibos e ordens de serviço aparecerão aqui assim que realizar um atendimento.
+              </p>
             </div>
-          ))}
+          ) : (
+            filteredTransactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e4e4e7] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#ea580c] transition-all"
+              >
+                <div className="flex items-start gap-3.5">
+                  <SafeAvatar
+                    src={tx.providerAvatar}
+                    name={tx.providerName}
+                    size="sm"
+                    className="w-12 h-12 rounded-xl shrink-0"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-[#18181b]">
+                        {tx.serviceTitle}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-[#52525b] mt-0.5">
+                      Profissional: <strong>{tx.providerName}</strong> ({tx.providerCategory})
+                    </p>
+                    <div className="flex items-center gap-3 text-[11px] text-[#71717a] mt-1">
+                      <span>{tx.date}</span>
+                      <span>•</span>
+                      <span>{tx.paymentMethodDetails || tx.paymentMethodType}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#e4e4e7]">
+                  <div className="text-left sm:text-right">
+                    <span className="text-base font-extrabold text-[#18181b] block">
+                      R$ {tx.amount.toFixed(2)}
+                    </span>
+                    <span
+                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block uppercase ${
+                        tx.status === 'em_custodia'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {tx.status === 'em_custodia' ? 'Retido em Custódia' : 'Pago com Garantia'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedReceipt(tx)}
+                    className="text-xs font-bold text-[#ea580c] hover:text-[#c2410c] flex items-center gap-1 hover:underline sm:mt-1 cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Ver Recibo</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

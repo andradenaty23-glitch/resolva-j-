@@ -39,35 +39,35 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
 
   // Client form state
-  const [clientPhoto, setClientPhoto] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80');
-  const [clientName, setClientName] = useState('Natália Andrade');
-  const [clientEmail, setClientEmail] = useState('andradenaty23@gmail.com');
-  const [clientPhone, setClientPhone] = useState('(11) 98123-4567');
-  const [clientCpf, setClientCpf] = useState('382.491.028-44');
+  const [clientPhoto, setClientPhoto] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientCpf, setClientCpf] = useState('');
   const [residenceType, setResidenceType] = useState<'apartamento' | 'casa' | 'comercial'>('apartamento');
-  const [street, setStreet] = useState('Rua das Palmeiras');
-  const [number, setNumber] = useState('450');
-  const [complement, setComplement] = useState('Apto 82, Bloco B');
-  const [neighborhood, setNeighborhood] = useState('Pinheiros');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('São Paulo');
-  const [cep, setCep] = useState('05422-010');
+  const [cep, setCep] = useState('');
 
   // Provider form state
-  const [providerPhoto, setProviderPhoto] = useState('https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80');
-  const [providerName, setProviderName] = useState('Ricardo Silva');
-  const [providerEmail, setProviderEmail] = useState('ricardo.silva.reparos@gmail.com');
-  const [providerPhone, setProviderPhone] = useState('(11) 98765-4321');
-  const [providerDocument, setProviderDocument] = useState('29.384.102/0001-92');
+  const [providerPhoto, setProviderPhoto] = useState('');
+  const [providerName, setProviderName] = useState('');
+  const [providerEmail, setProviderEmail] = useState('');
+  const [providerPhone, setProviderPhone] = useState('');
+  const [providerDocument, setProviderDocument] = useState('');
   const [category, setCategory] = useState('Encanamento / Hidráulica');
-  const [experienceYears, setExperienceYears] = useState(12);
+  const [experienceYears, setExperienceYears] = useState(5);
   const [laborBaseRate, setLaborBaseRate] = useState(100);
   const [operatingRadius, setOperatingRadius] = useState(15);
-  const [pixKey, setPixKey] = useState('ricardo.silva.reparos@gmail.com');
-  const [bio, setBio] = useState('Técnico hidráulico certificado com mais de 12 anos de experiência em edifícios residenciais e comerciais em São Paulo.');
+  const [pixKey, setPixKey] = useState('');
+  const [bio, setBio] = useState('');
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('andradenaty23@gmail.com');
-  const [loginPassword, setLoginPassword] = useState('••••••••');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -78,24 +78,24 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     e.preventDefault();
     const newClient: ClientProfile = {
       id: `client-${Date.now()}`,
-      name: clientName.trim() || 'Natália Andrade',
-      email: clientEmail.trim() || 'andradenaty23@gmail.com',
-      phone: clientPhone.trim() || '(11) 98123-4567',
-      cpf: clientCpf.trim() || '382.491.028-44',
+      name: clientName.trim() || 'Usuário',
+      email: clientEmail.trim() || 'usuario@exemplo.com',
+      phone: clientPhone.trim(),
+      cpf: clientCpf.trim(),
       residenceType,
       address: {
-        street: street.trim() || 'Rua das Palmeiras',
-        number: number.trim() || '450',
-        complement: complement.trim() || 'Apto 82',
-        neighborhood: neighborhood.trim() || 'Pinheiros',
+        street: street.trim(),
+        number: number.trim(),
+        complement: complement.trim(),
+        neighborhood: neighborhood.trim(),
         city: city.trim() || 'São Paulo',
         state: 'SP',
-        cep: cep.trim() || '05422-010'
+        cep: cep.trim()
       },
-      plan: 'Resolva Já Plus',
-      walletBalance: 120.00,
-      cashbackBalance: 28.50,
-      avatar: clientPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+      plan: 'Resolva Já Free',
+      walletBalance: 0.00,
+      cashbackBalance: 0.00,
+      avatar: clientPhoto,
       registeredAt: 'Agora'
     };
 
@@ -113,28 +113,28 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     e.preventDefault();
     const newProvider: ProviderProfile = {
       id: `provider-${Date.now()}`,
-      name: providerName.trim() || 'Ricardo Silva',
-      email: providerEmail.trim() || 'ricardo.silva.reparos@gmail.com',
-      phone: providerPhone.trim() || '(11) 98765-4321',
-      document: providerDocument.trim() || '29.384.102/0001-92',
+      name: providerName.trim() || 'Profissional',
+      email: providerEmail.trim() || 'prestador@exemplo.com',
+      phone: providerPhone.trim(),
+      document: providerDocument.trim(),
       category,
-      specialties: [category, 'Vazamentos & Reparos', 'Troca de Registros', 'Instalação de Misturadores'],
-      experienceYears: Number(experienceYears) || 10,
+      specialties: [category, 'Reparos Residenciais', 'Instalação e Manutenção'],
+      experienceYears: Number(experienceYears) || 5,
       laborBaseRate: Number(laborBaseRate) || 100,
       operatingRadiusKm: Number(operatingRadius) || 15,
       availability: 'Disponível Agora',
       verified: true,
-      trustIndex: 95,
-      rating: 4.9,
-      reviewsCount: 142,
-      completedJobsCount: 310,
-      bio: bio || 'Profissional credenciado Resolva Já PRO.',
-      avatar: providerPhoto || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
+      trustIndex: 90,
+      rating: 5.0,
+      reviewsCount: 1,
+      completedJobsCount: 1,
+      bio: bio.trim() || 'Profissional credenciado Resolva Já PRO.',
+      avatar: providerPhoto,
       bankAccount: {
-        bank: 'Banco Inter (077)',
-        pixKey: pixKey || providerEmail
+        bank: 'Banco Principal',
+        pixKey: pixKey.trim() || providerEmail.trim()
       },
-      totalEarningsMonth: 4680,
+      totalEarningsMonth: 0,
       registeredAt: 'Agora'
     };
 
@@ -154,24 +154,24 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const existingClient: ClientProfile = {
         id: 'client-1',
         name: clientName || 'Natália Andrade',
-        email: loginEmail || 'andradenaty23@gmail.com',
-        phone: clientPhone || '(11) 98123-4567',
-        cpf: clientCpf || '382.491.028-44',
+        email: loginEmail || clientEmail || 'andradenaty23@gmail.com',
+        phone: clientPhone || '',
+        cpf: clientCpf || '',
         residenceType,
         address: {
-          street,
-          number,
+          street: street || 'Av. Paulista',
+          number: number || '1000',
           complement,
-          neighborhood,
-          city,
+          neighborhood: neighborhood || 'Bela Vista',
+          city: city || 'São Paulo',
           state: 'SP',
-          cep
+          cep: cep || '01310-100'
         },
-        plan: 'Resolva Já Plus',
-        walletBalance: 120.00,
-        cashbackBalance: 28.50,
-        avatar: clientPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
-        registeredAt: 'Janeiro de 2024'
+        plan: 'Resolva Já Free',
+        walletBalance: 0.00,
+        cashbackBalance: 0.00,
+        avatar: clientPhoto,
+        registeredAt: 'Conta ativa'
       };
       setSuccessMessage(`Login realizado com sucesso! Bem-vinda, ${existingClient.name}`);
       setIsSuccess(true);
@@ -184,7 +184,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       const existingProvider: ProviderProfile = {
         id: 'provider-1',
         name: providerName || 'Ricardo Silva',
-        email: loginEmail || 'ricardo.silva.reparos@gmail.com',
+        email: loginEmail || providerEmail || 'ricardo.silva.reparos@gmail.com',
         phone: providerPhone || '(11) 98765-4321',
         document: providerDocument || '29.384.102/0001-92',
         category,
@@ -198,14 +198,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         rating: 4.9,
         reviewsCount: 142,
         completedJobsCount: 310,
-        bio,
+        bio: bio || 'Técnico hidráulico certificado com mais de 12 anos de experiência em edifícios residenciais e comerciais em São Paulo.',
         avatar: providerPhoto || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
         bankAccount: {
           bank: 'Banco Inter (077)',
           pixKey: pixKey || 'ricardo.silva.reparos@gmail.com'
         },
         totalEarningsMonth: 4680,
-        registeredAt: 'Março de 2023'
+        registeredAt: 'Março de 2024'
       };
       setSuccessMessage(`Login realizado com sucesso! Bem-vindo, ${existingProvider.name}`);
       setIsSuccess(true);
@@ -318,7 +318,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 {/* Photo in Login with change option */}
                 <PhotoUploader
                   currentPhoto={selectedRole === 'cliente' ? clientPhoto : providerPhoto}
-                  userName={selectedRole === 'cliente' ? clientName : providerName}
+                  userName={selectedRole === 'cliente' ? (clientName || 'Cliente') : (providerName || 'Prestador')}
                   role={selectedRole}
                   onPhotoSelected={(url) => {
                     if (selectedRole === 'cliente') {
@@ -327,8 +327,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       setProviderPhoto(url);
                     }
                   }}
-                  title="Foto do seu Perfil (Adicione ou Atualize)"
-                  subtitle="Selecione do celular/PC para atualizar sua foto de perfil"
+                  title="Foto do seu Perfil (Opcional)"
+                  subtitle="Selecione do celular/PC para adicionar ou atualizar sua foto"
                 />
 
                 <div>
@@ -339,7 +339,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       type="email"
                       required
                       placeholder="seu.email@exemplo.com"
-                      value={selectedRole === 'cliente' ? clientEmail : providerEmail}
+                      value={loginEmail || (selectedRole === 'cliente' ? clientEmail : providerEmail)}
                       onChange={(e) => {
                         if (selectedRole === 'cliente') setClientEmail(e.target.value);
                         else setProviderEmail(e.target.value);
@@ -391,7 +391,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     {/* PHOTO UPLOADER FOR CLIENT */}
                     <PhotoUploader
                       currentPhoto={clientPhoto}
-                      userName={clientName || 'Natália Andrade'}
+                      userName={clientName || 'Cliente'}
                       role="cliente"
                       onPhotoSelected={setClientPhoto}
                       title="Adicionar Foto de Perfil"
@@ -404,18 +404,17 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="text"
                           required
-                          placeholder="Ex: Natália Andrade"
+                          placeholder="Seu nome completo"
                           value={clientName}
                           onChange={(e) => setClientName(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">CPF (válido)</label>
+                        <label className="text-xs font-bold text-[#18181b] block mb-1">CPF (opcional)</label>
                         <input
                           type="text"
-                          required
-                          placeholder="382.491.028-44"
+                          placeholder="000.000.000-00"
                           value={clientCpf}
                           onChange={(e) => setClientCpf(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -429,7 +428,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="email"
                           required
-                          placeholder="andradenaty23@gmail.com"
+                          placeholder="seu.email@exemplo.com"
                           value={clientEmail}
                           onChange={(e) => setClientEmail(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -439,8 +438,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <label className="text-xs font-bold text-[#18181b] block mb-1">WhatsApp / Telefone</label>
                         <input
                           type="tel"
-                          required
-                          placeholder="(11) 98123-4567"
+                          placeholder="(11) 90000-0000"
                           value={clientPhone}
                           onChange={(e) => setClientPhone(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -475,14 +473,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     {/* Address */}
                     <div className="space-y-2 pt-1 border-t border-[#e4e4e7]">
                       <label className="text-xs font-bold text-[#18181b] flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#ea580c]" /> Endereço Residencial Real
+                        <MapPin className="w-3.5 h-3.5 text-[#ea580c]" /> Endereço Residencial (Opcional)
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="col-span-2">
                           <input
                             type="text"
-                            required
-                            placeholder="Rua das Palmeiras"
+                            placeholder="Rua / Avenida"
                             value={street}
                             onChange={(e) => setStreet(e.target.value)}
                             className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -491,8 +488,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <div>
                           <input
                             type="text"
-                            required
-                            placeholder="450"
+                            placeholder="Número"
                             value={number}
                             onChange={(e) => setNumber(e.target.value)}
                             className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -502,23 +498,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       <div className="grid grid-cols-3 gap-2">
                         <input
                           type="text"
-                          placeholder="Apto 82, Bloco B"
+                          placeholder="Apto / Bloco"
                           value={complement}
                           onChange={(e) => setComplement(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                         <input
                           type="text"
-                          required
-                          placeholder="Pinheiros"
+                          placeholder="Bairro"
                           value={neighborhood}
                           onChange={(e) => setNeighborhood(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                         <input
                           type="text"
-                          required
-                          placeholder="05422-010"
+                          placeholder="CEP"
                           value={cep}
                           onChange={(e) => setCep(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -532,7 +526,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       className="w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <UserPlus className="w-4 h-4" />
-                      <span>Concluir Cadastro com Foto</span>
+                      <span>Concluir Cadastro</span>
                     </button>
                   </form>
                 ) : (
@@ -541,7 +535,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     {/* PHOTO UPLOADER FOR PROVIDER */}
                     <PhotoUploader
                       currentPhoto={providerPhoto}
-                      userName={providerName || 'Ricardo Silva'}
+                      userName={providerName || 'Prestador'}
                       role="prestador"
                       onPhotoSelected={setProviderPhoto}
                       title="Foto Profissional para o Perfil"
@@ -554,7 +548,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="text"
                           required
-                          placeholder="Ex: Ricardo Silva"
+                          placeholder="Seu nome profissional"
                           value={providerName}
                           onChange={(e) => setProviderName(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -565,7 +559,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="text"
                           required
-                          placeholder="29.384.102/0001-92"
+                          placeholder="00.000.000/0001-00 ou CPF"
                           value={providerDocument}
                           onChange={(e) => setProviderDocument(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -579,7 +573,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="email"
                           required
-                          placeholder="ricardo.silva.reparos@gmail.com"
+                          placeholder="seu.email@profissional.com"
                           value={providerEmail}
                           onChange={(e) => setProviderEmail(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -590,7 +584,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="tel"
                           required
-                          placeholder="(11) 98765-4321"
+                          placeholder="(11) 90000-0000"
                           value={providerPhone}
                           onChange={(e) => setProviderPhone(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -630,7 +624,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <label className="text-[11px] font-bold text-[#18181b] block mb-1">Mão de Obra (R$)</label>
                         <input
                           type="number"
-                          min="50"
+                          min="30"
                           value={laborBaseRate}
                           onChange={(e) => setLaborBaseRate(Number(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -652,8 +646,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       <label className="text-xs font-bold text-[#18181b] block mb-1">Chave Pix para Recebimento Direto</label>
                       <input
                         type="text"
-                        required
-                        placeholder="ricardo.silva.reparos@gmail.com"
+                        placeholder="Chave Pix (E-mail, CPF ou Celular)"
                         value={pixKey}
                         onChange={(e) => setPixKey(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -664,7 +657,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       <label className="text-xs font-bold text-[#18181b] block mb-1">Apresentação / Bio Profissional</label>
                       <textarea
                         rows={2}
-                        placeholder="Técnico hidráulico certificado com mais de 12 anos de experiência..."
+                        placeholder="Breve descrição dos seus serviços e experiência..."
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -677,7 +670,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       className="w-full py-3.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Concluir Credenciamento PRO com Foto</span>
+                      <span>Concluir Credenciamento PRO</span>
                     </button>
                   </form>
                 )}

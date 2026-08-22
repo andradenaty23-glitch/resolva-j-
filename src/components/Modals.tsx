@@ -381,6 +381,9 @@ interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   professional: Professional | null;
+  clientAddress?: string;
+  serviceTitle?: string;
+  roomName?: string;
   onConfirmBooking: (appointment: Appointment) => void;
 }
 
@@ -388,10 +391,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
   professional,
+  clientAddress = 'Endereço cadastrado no perfil',
+  serviceTitle = 'Reparo e manutenção técnica',
+  roomName = 'Residência',
   onConfirmBooking
 }) => {
-  const [selectedDate, setSelectedDate] = useState('Hoje, 18 de Agosto');
-  const [selectedSlot, setSelectedSlot] = useState('16:00 - 17:30');
+  const todayStr = 'Hoje';
+  const tomorrowStr = 'Amanhã';
+
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [selectedSlot, setSelectedSlot] = useState('14:00 - 15:30');
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (!isOpen || !professional) return null;
@@ -411,11 +420,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       role: professional.role,
       date: selectedDate,
       time: selectedSlot,
-      serviceTitle: 'Reparo hidráulico e substituição de conexões',
-      room: 'Cozinha',
+      serviceTitle,
+      room: roomName,
       totalCost: professional.totalCost,
       status: 'confirmado',
-      address: 'Rua das Palmeiras, 450 - Apto 82'
+      address: clientAddress
     };
 
     setTimeout(() => {
@@ -471,7 +480,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#18181b]">Escolha a data:</label>
               <div className="grid grid-cols-2 gap-2">
-                {['Hoje, 18 de Agosto', 'Amanhã, 19 de Agosto'].map((d) => (
+                {[todayStr, tomorrowStr].map((d) => (
                   <button
                     key={d}
                     type="button"
@@ -514,7 +523,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <MapPin className="w-4 h-4 text-[#ea580c] shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Endereço da visita:</span>
-                <p>Rua das Palmeiras, 450 - Apto 82, Pinheiros - SP</p>
+                <p>{clientAddress}</p>
               </div>
             </div>
 

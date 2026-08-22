@@ -13,10 +13,12 @@ import {
   UserPlus,
   Camera,
   Upload,
-  Check
+  Check,
+  Edit3
 } from 'lucide-react';
 import { ClientProfile } from '../types';
 import { SafeAvatar } from './SafeAvatar';
+import { EditProfileModal } from './EditProfileModal';
 
 interface ProfileScreenProps {
   client: ClientProfile;
@@ -33,7 +35,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenNewRegistration,
   onNavigateToPayments
 }) => {
-  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +51,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const hasAddress = client.address && client.address.street;
+
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-16">
       <div className="flex justify-between items-center">
@@ -60,10 +64,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         <button
-          onClick={onOpenNewRegistration}
-          className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer border border-[#fed7aa]"
+          onClick={() => setIsEditModalOpen(true)}
+          className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer border border-[#fed7aa]"
         >
-          <UserPlus className="w-3.5 h-3.5" /> Novo Cadastro / Login
+          <Edit3 className="w-3.5 h-3.5" /> Editar Dados
         </button>
       </div>
 
@@ -103,7 +107,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </span>
             </div>
             <p className="text-xs text-[#52525b]">{client.email}</p>
-            <p className="text-xs text-[#71717a] mt-0.5">CPF: {client.cpf} • {client.phone}</p>
+            <p className="text-xs text-[#71717a] mt-0.5">
+              {client.phone ? `Tel: ${client.phone}` : 'Telefone não cadastrado'}
+              {client.cpf ? ` • CPF: ${client.cpf}` : ''}
+            </p>
           </div>
         </div>
 
@@ -120,20 +127,31 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Home className="w-5 h-5 text-[#ea580c]" />
-            <h3 className="text-sm font-bold text-[#18181b]">Imóvel Cadastrado ({client.residenceType})</h3>
+            <h3 className="text-sm font-bold text-[#18181b]">Imóvel Cadastrado ({client.residenceType || 'apartamento'})</h3>
           </div>
-          <button className="text-xs font-bold text-[#ea580c] hover:underline cursor-pointer">
-            Alterar
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="text-xs font-bold text-[#ea580c] hover:underline cursor-pointer"
+          >
+            {hasAddress ? 'Alterar Endereço' : 'Cadastrar Endereço'}
           </button>
         </div>
-        <div className="bg-[#fafafa] p-3.5 rounded-xl border border-[#e4e4e7] text-xs text-[#52525b]">
-          <p className="font-bold text-[#18181b]">
-            {client.address.street}, {client.address.number} {client.address.complement && `• ${client.address.complement}`}
-          </p>
-          <p className="text-[#71717a] mt-0.5">
-            {client.address.neighborhood} - {client.address.city}/{client.address.state} • CEP {client.address.cep}
-          </p>
-        </div>
+
+        {hasAddress ? (
+          <div className="bg-[#fafafa] p-3.5 rounded-xl border border-[#e4e4e7] text-xs text-[#52525b]">
+            <p className="font-bold text-[#18181b]">
+              {client.address.street}, {client.address.number} {client.address.complement && `• ${client.address.complement}`}
+            </p>
+            <p className="text-[#71717a] mt-0.5">
+              {client.address.neighborhood ? `${client.address.neighborhood} - ` : ''}
+              {client.address.city}/{client.address.state} {client.address.cep ? `• CEP ${client.address.cep}` : ''}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-[#fafafa] p-3.5 rounded-xl border border-dashed border-[#e4e4e7] text-xs text-[#71717a] text-center">
+            Nenhum endereço cadastrado ainda. Clique em "Cadastrar Endereço" para configurar seu imóvel.
+          </div>
+        )}
       </div>
 
       {/* Menu Options */}
@@ -192,6 +210,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       >
         <UserPlus className="w-4 h-4" /> Cadastrar outro cliente ou prestador
       </button>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        client={client}
+        onSave={(updated) => {
+          if (onUpdateClient) onUpdateClient(updated);
+        }}
+      />
     </div>
   );
 };
