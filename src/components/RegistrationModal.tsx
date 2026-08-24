@@ -600,12 +600,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
                       >
-                        <option value="Encanamento / Hidráulica">Encanamento / Hidráulica</option>
-                        <option value="Elétrica Residencial">Elétrica Residencial</option>
-                        <option value="Climatização / Ar Condicionado">Climatização / Ar Condicionado</option>
-                        <option value="Reparos Gerais / Marido de Aluguel">Reparos Gerais / Marido de Aluguel</option>
-                        <option value="Pintura e Acabamento">Pintura e Acabamento</option>
-                        <option value="Chaveiro e Fechaduras">Chaveiro e Fechaduras</option>
+                        <option value="Hidráulica & Encanamento">Hidráulica & Encanamento</option>
+                        <option value="Elétrica Residencial & Comercial">Elétrica Residencial & Comercial</option>
+                        <option value="Ar Condicionado & Refrigeração">Ar Condicionado & Refrigeração</option>
+                        <option value="Montagem & Desmontagem de Móveis">Montagem & Desmontagem de Móveis</option>
+                        <option value="Desentupimento Especializado">Desentupimento Especializado</option>
+                        <option value="Pintura Residencial & Acabamento">Pintura Residencial & Acabamento</option>
+                        <option value="Chaveiro & Fechaduras Digitais">Chaveiro & Fechaduras Digitais</option>
+                        <option value="Alvenaria & Pequenas Reformas">Alvenaria & Pequenas Reformas</option>
+                        <option value="Serralheria, Portões & Janelas">Serralheria, Portões & Janelas</option>
+                        <option value="Marcenaria & Móveis Planejados">Marcenaria & Móveis Planejados</option>
+                        <option value="Instalação de Eletrodomésticos">Instalação de Eletrodomésticos</option>
+                        <option value="Segurança Eletrônica & CFTV">Segurança Eletrônica & CFTV</option>
+                        <option value="Limpeza Pós-Obra & Fachadas">Limpeza Pós-Obra & Fachadas</option>
+                        <option value="Aquecedores a Gás & Boiler">Aquecedores a Gás & Boiler</option>
+                        <option value="Gesso & Paredes em Drywall">Gesso & Paredes em Drywall</option>
+                        <option value="Reparos Gerais & Marido de Aluguel">Reparos Gerais & Marido de Aluguel</option>
                       </select>
                     </div>
 

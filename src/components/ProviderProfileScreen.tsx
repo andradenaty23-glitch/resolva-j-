@@ -17,15 +17,18 @@ import {
   Camera,
   Upload,
   Key,
-  Briefcase
+  Briefcase,
+  Trash2
 } from 'lucide-react';
 import { ProviderProfile } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import { EditProviderProfileModal } from './EditProviderProfileModal';
+import { DeleteProfileModal } from './DeleteProfileModal';
 
 interface ProviderProfileScreenProps {
   provider: ProviderProfile;
   onUpdateProvider: (updated: Partial<ProviderProfile>) => void;
+  onDeleteProfile?: () => void;
   onSwitchToClient: () => void;
   onOpenNewRegistration: () => void;
 }
@@ -33,11 +36,13 @@ interface ProviderProfileScreenProps {
 export const ProviderProfileScreen: React.FC<ProviderProfileScreenProps> = ({
   provider,
   onUpdateProvider,
+  onDeleteProfile,
   onSwitchToClient,
   onOpenNewRegistration
 }) => {
   const [isEditingFullProfile, setIsEditingFullProfile] = useState(false);
   const [isEditingRate, setIsEditingRate] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [rate, setRate] = useState(provider.laborBaseRate);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -255,12 +260,43 @@ export const ProviderProfileScreen: React.FC<ProviderProfileScreenProps> = ({
         )}
       </div>
 
+      {/* Danger Zone: Delete Provider Profile */}
+      <div className="bg-rose-50/60 rounded-2xl p-4 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            Excluir Perfil Profissional
+          </h4>
+          <p className="text-[11px] text-rose-700 mt-0.5">
+            Descredencia sua conta profissional, remove especialidades, chave Pix e histórico de propostas.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
+        >
+          Excluir Perfil
+        </button>
+      </div>
+
       {/* Edit Profile Modal */}
       <EditProviderProfileModal
         isOpen={isEditingFullProfile}
         onClose={() => setIsEditingFullProfile(false)}
         provider={provider}
         onSave={onUpdateProvider}
+      />
+
+      {/* Delete Profile Confirmation Modal */}
+      <DeleteProfileModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        role="prestador"
+        profileName={provider.name || 'Prestador de Serviços'}
+        onConfirmDelete={() => {
+          if (onDeleteProfile) onDeleteProfile();
+        }}
       />
     </div>
   );

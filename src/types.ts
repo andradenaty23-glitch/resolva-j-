@@ -2,7 +2,23 @@ export type UserRole = 'cliente' | 'prestador';
 
 export type TabType = 'inicio' | 'problemas' | 'agenda' | 'minhacasa' | 'pagamentos' | 'perfil';
 
-export type ProblemCategory = 'eletrica' | 'hidraulica' | 'ar_condicionado' | 'geral' | 'pintura' | 'fechadura';
+export type ProblemCategory =
+  | 'hidraulica'
+  | 'eletrica'
+  | 'ar_condicionado'
+  | 'geral'
+  | 'montagem_moveis'
+  | 'desentupimento'
+  | 'pintura'
+  | 'fechadura'
+  | 'alvenaria'
+  | 'serralheria'
+  | 'marcenaria'
+  | 'eletrodomesticos'
+  | 'seguranca_cftv'
+  | 'limpeza_pos_obra'
+  | 'aquecedor_gas'
+  | 'gesso_drywall';
 
 export interface PaymentMethod {
   id: string;

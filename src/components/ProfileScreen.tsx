@@ -14,15 +14,18 @@ import {
   Camera,
   Upload,
   Check,
-  Edit3
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { ClientProfile } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import { EditProfileModal } from './EditProfileModal';
+import { DeleteProfileModal } from './DeleteProfileModal';
 
 interface ProfileScreenProps {
   client: ClientProfile;
   onUpdateClient?: (updated: Partial<ClientProfile>) => void;
+  onDeleteProfile?: () => void;
   onSwitchToProvider: () => void;
   onOpenNewRegistration: () => void;
   onNavigateToPayments?: () => void;
@@ -31,11 +34,13 @@ interface ProfileScreenProps {
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   client,
   onUpdateClient,
+  onDeleteProfile,
   onSwitchToProvider,
   onOpenNewRegistration,
   onNavigateToPayments
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +209,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </button>
       </div>
 
+      {/* Danger Zone: Delete Profile */}
+      <div className="bg-rose-50/60 rounded-2xl p-4 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            Excluir Perfil de Cliente
+          </h4>
+          <p className="text-[11px] text-rose-700 mt-0.5">
+            Remove todos os dados cadastrados, imóveis e preferências permanentemente.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
+        >
+          Excluir Perfil
+        </button>
+      </div>
+
       <button
         onClick={() => onOpenNewRegistration()}
         className="text-xs text-[#ea580c] hover:underline font-bold self-center flex items-center gap-1.5 py-2 cursor-pointer"
@@ -218,6 +243,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         client={client}
         onSave={(updated) => {
           if (onUpdateClient) onUpdateClient(updated);
+        }}
+      />
+
+      {/* Delete Profile Confirmation Modal */}
+      <DeleteProfileModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        role="cliente"
+        profileName={client.name || 'Cliente'}
+        onConfirmDelete={() => {
+          if (onDeleteProfile) onDeleteProfile();
         }}
       />
     </div>

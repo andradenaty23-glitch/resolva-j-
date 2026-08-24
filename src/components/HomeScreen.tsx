@@ -14,9 +14,21 @@ import {
   ChevronRight,
   UtensilsCrossed,
   X,
-  Sparkles
+  Sparkles,
+  Hammer,
+  AlertTriangle,
+  Layers,
+  Shield,
+  Component as ComponentIcon,
+  Refrigerator,
+  Video,
+  Flame,
+  Square,
+  SlidersHorizontal,
+  Search
 } from 'lucide-react';
 import { ProblemCategory, Room } from '../types';
+import { SERVICE_DEMANDS_CATALOG, ServiceDemandCategory } from '../data/serviceDemands';
 
 interface HomeScreenProps {
   onFindSolution: (problemText: string, imageSrc?: string) => void;
@@ -45,12 +57,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [problemDescription, setProblemDescription] = useState('');
   const [activeInputMode, setActiveInputMode] = useState<'digitar' | 'falar' | 'foto'>('digitar');
+  const [selectedFilterTab, setSelectedFilterTab] = useState<'todos' | 'urgente' | 'instalacao' | 'reforma'>('todos');
+  const [showAllDemands, setShowAllDemands] = useState(false);
 
   const quickPrompts = [
     'Torneira da cozinha vazando na bancada',
     'Chuveiro elétrico parou de esquentar',
     'Disjuntor cai quando ligo o micro-ondas',
-    'Ar condicionado gotejando dentro do quarto'
+    'Ar condicionado gotejando dentro do quarto',
+    'Montagem de guarda-roupa casal',
+    'Vaso sanitário entupido com refluxo'
   ];
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -59,10 +75,78 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onFindSolution(problemDescription, selectedPhoto || undefined);
   };
 
-  const handleQuickCategoryClick = (category: ProblemCategory, label: string) => {
-    setProblemDescription(`Problema de ${label}: preciso de reparo urgente`);
-    onSelectCategory(category);
+  const handleDemandClick = (demand: ServiceDemandCategory) => {
+    const sample = demand.popularIssues[0] || `Reparo de ${demand.name}`;
+    setProblemDescription(sample);
+    onSelectCategory(demand.id);
   };
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Zap':
+        return Zap;
+      case 'Droplets':
+        return Droplets;
+      case 'Snowflake':
+        return Snowflake;
+      case 'Wrench':
+        return Wrench;
+      case 'Hammer':
+        return Hammer;
+      case 'AlertTriangle':
+        return AlertTriangle;
+      case 'Paintbrush':
+        return Paintbrush;
+      case 'Key':
+        return Key;
+      case 'Layers':
+        return Layers;
+      case 'Shield':
+        return Shield;
+      case 'Component':
+        return ComponentIcon;
+      case 'Refrigerator':
+        return Refrigerator;
+      case 'Video':
+        return Video;
+      case 'Sparkles':
+        return Sparkles;
+      case 'Flame':
+        return Flame;
+      case 'Square':
+        return Square;
+      default:
+        return Wrench;
+    }
+  };
+
+  const filteredDemands = SERVICE_DEMANDS_CATALOG.filter((item) => {
+    if (selectedFilterTab === 'urgente') {
+      return item.urgencyDefault === 'critica' || item.urgencyDefault === 'alta' || item.badge?.includes('24');
+    }
+    if (selectedFilterTab === 'instalacao') {
+      return (
+        item.id === 'montagem_moveis' ||
+        item.id === 'eletrodomesticos' ||
+        item.id === 'seguranca_cftv' ||
+        item.id === 'ar_condicionado' ||
+        item.id === 'geral'
+      );
+    }
+    if (selectedFilterTab === 'reforma') {
+      return (
+        item.id === 'pintura' ||
+        item.id === 'alvenaria' ||
+        item.id === 'gesso_drywall' ||
+        item.id === 'marcenaria' ||
+        item.id === 'serralheria' ||
+        item.id === 'limpeza_pos_obra'
+      );
+    }
+    return true;
+  });
+
+  const displayedDemands = showAllDemands ? filteredDemands : filteredDemands.slice(0, 8);
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8 max-w-2xl mx-auto pb-10">
@@ -84,7 +168,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             rows={4}
             value={problemDescription}
             onChange={(e) => setProblemDescription(e.target.value)}
-            placeholder="Descreva o problema com suas palavras (ex: vazamento embaixo da pia, tomada faiscando, cheiro de queimado)..."
+            placeholder="Descreva a demanda ou problema com suas palavras (ex: vazamento embaixo da pia, montagem de armário, tomada faiscando, troca de fechadura)..."
             className="w-full bg-transparent border-none resize-none focus:outline-hidden text-base sm:text-lg text-[#18181b] placeholder-[#a1a1aa] p-0 font-normal leading-relaxed"
           />
 
@@ -157,7 +241,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Quick Suggestion Chips */}
         <div className="flex flex-wrap gap-1.5 mt-1">
-          <span className="text-xs text-[#71717a] font-medium py-1">Exemplos:</span>
+          <span className="text-xs text-[#71717a] font-medium py-1">Exemplos rápidos:</span>
           {quickPrompts.map((prompt, idx) => (
             <button
               key={idx}
@@ -194,86 +278,110 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
-      {/* Problemas Frequentes Grid */}
+      {/* Demandas de Serviços & Categorias Grid */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-[#18181b]">Problemas frequentes</h3>
-          <span className="text-xs text-[#71717a]">Categorias</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-xl font-bold text-[#18181b]">Demandas de Serviços</h3>
+            <p className="text-xs text-[#71717a]">Selecione uma especialidade para diagnóstico imediato</p>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <button
+              onClick={() => setSelectedFilterTab('todos')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                selectedFilterTab === 'todos'
+                  ? 'bg-[#18181b] text-white'
+                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+              }`}
+            >
+              Todos ({SERVICE_DEMANDS_CATALOG.length})
+            </button>
+            <button
+              onClick={() => setSelectedFilterTab('urgente')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                selectedFilterTab === 'urgente'
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+              }`}
+            >
+              Urgentes / 24h
+            </button>
+            <button
+              onClick={() => setSelectedFilterTab('instalacao')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                selectedFilterTab === 'instalacao'
+                  ? 'bg-[#ea580c] text-white'
+                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+              }`}
+            >
+              Instalação & Móveis
+            </button>
+            <button
+              onClick={() => setSelectedFilterTab('reforma')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                selectedFilterTab === 'reforma'
+                  ? 'bg-[#ea580c] text-white'
+                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+              }`}
+            >
+              Reformas & Acabamento
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 sm:gap-3">
-          {/* Elétrica */}
-          <button
-            id="cat-eletrica"
-            onClick={() => handleQuickCategoryClick('eletrica', 'Elétrica')}
-            className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Zap className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Elétrica</span>
-          </button>
+        {/* Dynamic Categories Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          {displayedDemands.map((demand) => {
+            const Icon = getIconComponent(demand.iconName);
+            return (
+              <button
+                key={demand.id}
+                id={`cat-${demand.id}`}
+                onClick={() => handleDemandClick(demand)}
+                className="relative flex flex-col items-start p-3.5 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
+              >
+                {demand.badge && (
+                  <span className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">
+                    {demand.badge}
+                  </span>
+                )}
 
-          {/* Hidráulica */}
-          <button
-            id="cat-hidraulica"
-            onClick={() => handleQuickCategoryClick('hidraulica', 'Hidráulica')}
-            className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Droplets className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Hidráulica</span>
-          </button>
+                <div className="w-11 h-11 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors mb-2.5">
+                  <Icon className="w-5 h-5" />
+                </div>
 
-          {/* Ar Cond. */}
-          <button
-            id="cat-ar-cond"
-            onClick={() => handleQuickCategoryClick('ar_condicionado', 'Ar Condicionado')}
-            className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Snowflake className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Ar Cond.</span>
-          </button>
+                <span className="text-xs font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors leading-tight line-clamp-1">
+                  {demand.shortName}
+                </span>
 
-          {/* Geral */}
-          <button
-            id="cat-geral"
-            onClick={() => handleQuickCategoryClick('geral', 'Reparos Gerais')}
-            className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Wrench className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Geral</span>
-          </button>
+                <span className="text-[10px] text-[#71717a] mt-1 line-clamp-2 leading-tight">
+                  {demand.description}
+                </span>
 
-          {/* Pintura */}
-          <button
-            id="cat-pintura"
-            onClick={() => handleQuickCategoryClick('pintura', 'Pintura e Acabamento')}
-            className="hidden sm:flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Paintbrush className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Pintura</span>
-          </button>
-
-          {/* Fechaduras */}
-          <button
-            id="cat-fechaduras"
-            onClick={() => handleQuickCategoryClick('fechadura', 'Fechaduras e Portas')}
-            className="hidden sm:flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-sm transition-all active:scale-95 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors">
-              <Key className="w-6 h-6" />
-            </div>
-            <span className="text-xs font-semibold text-[#52525b] text-center">Chaveiro</span>
-          </button>
+                <div className="mt-2.5 pt-2 border-t border-[#f4f4f5] w-full flex justify-between items-center text-[10px]">
+                  <span className="font-bold text-emerald-700">R$ {demand.estimatedCostRange.min}+</span>
+                  <span className="text-[#ea580c] font-bold group-hover:translate-x-0.5 transition-transform flex items-center">
+                    Pedir <ChevronRight className="w-3 h-3 ml-0.5" />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Show More / Less Demands Toggle */}
+        {filteredDemands.length > 8 && (
+          <button
+            type="button"
+            onClick={() => setShowAllDemands((prev) => !prev)}
+            className="w-full py-2.5 rounded-xl border border-[#e4e4e7] bg-white hover:bg-[#fff7ed] text-[#ea580c] font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs mt-1"
+          >
+            <span>{showAllDemands ? 'Mostrar Menos Categorias' : `Ver Todas as ${filteredDemands.length} Categorias de Serviços`}</span>
+            <ChevronRight className={`w-4 h-4 transition-transform ${showAllDemands ? '-rotate-90' : 'rotate-90'}`} />
+          </button>
+        )}
       </section>
 
       {/* Minha Casa Alert Summary Card */}

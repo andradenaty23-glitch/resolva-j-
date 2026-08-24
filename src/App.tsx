@@ -26,6 +26,7 @@ import {
   INITIAL_PAYMENT_METHODS,
   INITIAL_TRANSACTIONS
 } from './data/mockData';
+import { SERVICE_DEMANDS_CATALOG } from './data/serviceDemands';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { HomeScreen } from './components/HomeScreen';
@@ -83,20 +84,115 @@ export default function App() {
   const unreadCount = notifications.filter((n) => !n.read).length;
   const pendingProblemsCount = rooms.reduce((acc, r) => acc + r.problemCount, 0);
 
+  // Handlers for Profile Deletion
+  const handleDeleteClientProfile = () => {
+    const emptyClient: ClientProfile = {
+      id: `client-${Date.now()}`,
+      name: 'Cliente Resolva Já',
+      email: '',
+      phone: '',
+      avatar: '',
+      cpf: '',
+      residenceType: 'apartamento',
+      plan: 'Resolva Já Free',
+      walletBalance: 0.0,
+      cashbackBalance: 0.0,
+      registeredAt: 'Conta redefinida',
+      address: {
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: 'São Paulo',
+        state: 'SP',
+        cep: ''
+      }
+    };
+    setClientProfile(emptyClient);
+    setAppointments([]);
+    setTransactions([]);
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Perfil de Cliente Excluído',
+        message: 'Seus dados de cliente foram removidos com sucesso.',
+        time: 'Agora mesmo',
+        read: false,
+        type: 'info'
+      },
+      ...prev
+    ]);
+    setActiveTab('inicio');
+  };
+
+  const handleDeleteProviderProfile = () => {
+    const emptyProvider: ProviderProfile = {
+      id: `prov-${Date.now()}`,
+      name: 'Prestador de Serviços',
+      email: '',
+      phone: '',
+      document: '',
+      avatar: '',
+      category: 'Reparos e Manutenção',
+      rating: 5.0,
+      reviewsCount: 0,
+      completedJobsCount: 0,
+      experienceYears: 0,
+      verified: true,
+      laborBaseRate: 100,
+      operatingRadiusKm: 15,
+      availability: 'Disponível Agora',
+      trustIndex: 100,
+      specialties: ['Reparos Gerais'],
+      bio: '',
+      totalEarningsMonth: 0,
+      registeredAt: 'Conta redefinida',
+      bankAccount: {
+        bank: 'Conta Bancária',
+        pixKey: ''
+      }
+    };
+    setProviderProfile(emptyProvider);
+    setProviderLeads([]);
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Perfil Profissional Excluído',
+        message: 'Seu cadastro de prestador foi removido com sucesso.',
+        time: 'Agora mesmo',
+        read: false,
+        type: 'info'
+      },
+      ...prev
+    ]);
+    setActiveTab('inicio');
+  };
+
   // Handler for Client: Dynamic AI diagnosis generator
   const handleFindSolution = (problemText: string, imageSrc?: string) => {
     const textLower = problemText.toLowerCase();
 
-    let category = 'Encanamento / Hidráulica';
-    let profType = 'Encanador';
-    let summary = 'Possível vazamento hidráulico';
+    // Find matched demand category in catalog
+    const matchedDemand = SERVICE_DEMANDS_CATALOG.find((demand) => {
+      if (textLower.includes(demand.id.toLowerCase())) return true;
+      if (textLower.includes(demand.shortName.toLowerCase())) return true;
+      const keyWords = demand.name.toLowerCase().split(' ');
+      return keyWords.some((kw) => kw.length > 3 && textLower.includes(kw));
+    });
+
+    let category = matchedDemand ? matchedDemand.name : 'Encanamento / Hidráulica';
+    let profType = matchedDemand ? matchedDemand.profType : 'Encanador Especializado';
+    let summary = matchedDemand ? matchedDemand.popularIssues[0] : 'Vazamento ou reparo hidráulico residencial';
     let room = 'cozinha';
-    let urgencyPercentage = 50;
-    let urgency: 'baixa' | 'media' | 'alta' | 'critica' = 'media';
-    let diyTips = [
-      'Feche o registro geral de água se o vazamento for contínuo.',
-      'Coloque um balde ou pano absorvente sob o ponto de gotejamento.'
-    ];
+    let urgencyPercentage = matchedDemand ? matchedDemand.urgencyPercentageDefault : 55;
+    let urgency: 'baixa' | 'media' | 'alta' | 'critica' = matchedDemand ? matchedDemand.urgencyDefault : 'media';
+    let diyTips = matchedDemand
+      ? matchedDemand.diyTips
+      : [
+          'Feche o registro geral de água se o vazamento for contínuo.',
+          'Coloque um balde ou pano absorvente sob o ponto de gotejamento.'
+        ];
+    let costRange = matchedDemand ? matchedDemand.estimatedCostRange : { min: 90, max: 180 };
 
     if (
       textLower.includes('eletric') ||
@@ -106,12 +202,13 @@ export default function App() {
       textLower.includes('tomada') ||
       textLower.includes('chuveiro')
     ) {
-      category = 'Elétrica Residencial';
+      category = 'Elétrica Residencial & Comercial';
       profType = 'Eletricista Certificado';
-      summary = 'Sobrecarga ou fuga de corrente detectada';
+      summary = 'Sobrecarga, disjuntor desarmando ou reparo de fiação';
       room = 'sala';
-      urgencyPercentage = 80;
+      urgencyPercentage = 85;
       urgency = 'alta';
+      costRange = { min: 100, max: 220 };
       diyTips = [
         'Desarme o disjuntor geral imediatamente por segurança.',
         'Não toque em cabos desencapados ou tomadas com cheiro de queimado.',
@@ -123,15 +220,16 @@ export default function App() {
       textLower.includes('gela') ||
       textLower.includes('ar condicionado')
     ) {
-      category = 'Climatização e Refrigeração';
-      profType = 'Técnico de Ar Condicionado';
-      summary = 'Obstrução de dreno ou falta de fluido refrigerante';
+      category = 'Ar Condicionado & Refrigeração';
+      profType = 'Técnico em Climatização';
+      summary = 'Obstrução de dreno, higienização ou carga de gás';
       room = 'quarto1';
-      urgencyPercentage = 40;
-      urgency = 'baixa';
+      urgencyPercentage = 50;
+      urgency = 'media';
+      costRange = { min: 140, max: 280 };
       diyTips = [
-        'Desligue o aparelho para evitar vazamento na parede.',
-        'Limpe os filtros de tela sob água corrente morna.'
+        'Desligue o aparelho para evitar vazamento na parede ou piso.',
+        'Lave periodicamente os filtros de ar removíveis sob água morna.'
       ];
     } else if (
       textLower.includes('chave') ||
@@ -139,15 +237,51 @@ export default function App() {
       textLower.includes('porta') ||
       textLower.includes('fechadura')
     ) {
-      category = 'Chaveiro e Segurança';
-      profType = 'Chaveiro 24h';
-      summary = 'Desgaste do miolo da fechadura ou travamento de lingueta';
+      category = 'Chaveiro & Fechaduras Digitais';
+      profType = 'Chaveiro Profissional 24h';
+      summary = 'Desgaste do tambor da fechadura ou instalação digital';
       room = 'sala';
-      urgencyPercentage = 60;
-      urgency = 'media';
+      urgencyPercentage = 80;
+      urgency = 'alta';
+      costRange = { min: 80, max: 190 };
       diyTips = [
         'Aplique grafite em pó na entrada da chave (nunca óleo de cozinha).',
         'Não force a chave para não quebrá-la dentro do cilindro.'
+      ];
+    } else if (
+      textLower.includes('móvel') ||
+      textLower.includes('moveis') ||
+      textLower.includes('armário') ||
+      textLower.includes('guarda-roupa') ||
+      textLower.includes('montagem')
+    ) {
+      category = 'Montagem & Desmontagem de Móveis';
+      profType = 'Montador de Móveis Profissional';
+      summary = 'Montagem técnica e alinhamento de mobília residencial';
+      room = 'quarto1';
+      urgencyPercentage = 30;
+      urgency = 'baixa';
+      costRange = { min: 90, max: 200 };
+      diyTips = [
+        'Mantenha as ferragens e manuais originais guardados com cuidado.',
+        'Evite arrastar móveis montados para preservar a estrutura de fixação.'
+      ];
+    } else if (
+      textLower.includes('entup') ||
+      textLower.includes('ralo') ||
+      textLower.includes('esgoto') ||
+      textLower.includes('vaso')
+    ) {
+      category = 'Desentupimento Especializado';
+      profType = 'Técnico em Desentupimento';
+      summary = 'Obstrução com refluxo em ralo, pia ou vaso sanitário';
+      room = 'banheiro';
+      urgencyPercentage = 90;
+      urgency = 'critica';
+      costRange = { min: 120, max: 260 };
+      diyTips = [
+        'Interrompa o uso da água no cômodo para evitar transbordamento.',
+        'Não despeje substâncias químicas corrosivas na tubulação de PVC.'
       ];
     }
 
@@ -161,7 +295,7 @@ export default function App() {
       urgencyPercentage,
       room,
       diyTips,
-      estimatedCostRange: { min: 100, max: 180 },
+      estimatedCostRange: costRange,
       createdAt: 'Agora mesmo'
     };
 
@@ -172,14 +306,14 @@ export default function App() {
     // Also automatically create an incoming lead for providers!
     const newLead: ProviderJobLead = {
       id: `lead-${Date.now()}`,
-      clientName: clientProfile.name,
+      clientName: clientProfile.name || 'Cliente Resolva Já',
       serviceTitle: problemText || summary,
       category,
-      room: room === 'cozinha' ? 'Cozinha' : room === 'sala' ? 'Sala' : 'Residência',
-      neighborhood: `${clientProfile.address.neighborhood} (a 2.1 km)`,
+      room: room === 'cozinha' ? 'Cozinha' : room === 'banheiro' ? 'Banheiro' : 'Residência',
+      neighborhood: `${clientProfile.address?.neighborhood || 'Bairro Residencial'} (a 2.1 km)`,
       distanceKm: 2.1,
       urgency,
-      suggestedBudget: 120,
+      suggestedBudget: costRange.min + 20,
       description: problemText || 'Problema diagnosticado pela IA Resolva Já no imóvel do cliente.',
       imageUrl: imageSrc,
       status: 'aberto',
@@ -189,15 +323,12 @@ export default function App() {
   };
 
   const handleSelectCategory = (cat: ProblemCategory) => {
-    const labels: Record<ProblemCategory, string> = {
-      eletrica: 'Problema elétrico geral',
-      hidraulica: 'Vazamento ou entupimento hidráulico',
-      ar_condicionado: 'Ar condicionado não gela ou vaza',
-      geral: 'Reparo e fixação geral',
-      pintura: 'Pintura e acabamento',
-      fechadura: 'Fechadura travada ou substituição'
-    };
-    handleFindSolution(labels[cat]);
+    const matched = SERVICE_DEMANDS_CATALOG.find((item) => item.id === cat);
+    if (matched) {
+      handleFindSolution(matched.popularIssues[0] || matched.name);
+    } else {
+      handleFindSolution(`Problema na categoria ${cat}`);
+    }
   };
 
   const handleBooking = (prof: Professional) => {
@@ -445,6 +576,7 @@ export default function App() {
               <ProfileScreen
                 client={clientProfile}
                 onUpdateClient={(updated) => setClientProfile((prev) => ({ ...prev, ...updated }))}
+                onDeleteProfile={handleDeleteClientProfile}
                 onSwitchToProvider={() => {
                   setCurrentRole('prestador');
                   setActiveTab('inicio');
@@ -575,6 +707,7 @@ export default function App() {
               <ProviderProfileScreen
                 provider={providerProfile}
                 onUpdateProvider={(updated) => setProviderProfile((prev) => ({ ...prev, ...updated }))}
+                onDeleteProfile={handleDeleteProviderProfile}
                 onSwitchToClient={() => {
                   setCurrentRole('cliente');
                   setActiveTab('inicio');

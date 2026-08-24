@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, User, Phone, FileText, DollarSign, MapPin, Check, Briefcase, Key } from 'lucide-react';
+import { X, User, Phone, FileText, DollarSign, MapPin, Check, Briefcase, Key, Plus, Sparkles } from 'lucide-react';
 import { ProviderProfile } from '../types';
+import { SERVICE_DEMANDS_CATALOG } from '../data/serviceDemands';
 
 interface EditProviderProfileModalProps {
   isOpen: boolean;
@@ -18,17 +19,32 @@ export const EditProviderProfileModal: React.FC<EditProviderProfileModalProps> =
   const [name, setName] = useState(provider.name || '');
   const [phone, setPhone] = useState(provider.phone || '');
   const [document, setDocument] = useState(provider.document || '');
-  const [category, setCategory] = useState(provider.category || 'Reparos e Manutenção');
+  const [category, setCategory] = useState(provider.category || 'Hidráulica & Encanamento');
   const [laborBaseRate, setLaborBaseRate] = useState(provider.laborBaseRate || 100);
   const [operatingRadiusKm, setOperatingRadiusKm] = useState(provider.operatingRadiusKm || 15);
   const [pixKey, setPixKey] = useState(provider.bankAccount?.pixKey || '');
   const [bankName, setBankName] = useState(provider.bankAccount?.bank || 'Conta Bancária');
   const [bio, setBio] = useState(provider.bio || '');
   const [specialtiesText, setSpecialtiesText] = useState(
-    provider.specialties?.join(', ') || 'Reparos Gerais, Hidráulica, Elétrica'
+    provider.specialties?.join(', ') || 'Hidráulica, Elétrica, Reparos Gerais'
   );
 
   if (!isOpen) return null;
+
+  const currentSpecialtiesArray = specialtiesText
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const toggleSpecialty = (title: string) => {
+    let updated: string[];
+    if (currentSpecialtiesArray.includes(title)) {
+      updated = currentSpecialtiesArray.filter((item) => item !== title);
+    } else {
+      updated = [...currentSpecialtiesArray, title];
+    }
+    setSpecialtiesText(updated.join(', '));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,13 +138,17 @@ export const EditProviderProfileModal: React.FC<EditProviderProfileModalProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#18181b]">Categoria Principal</label>
-              <input
-                type="text"
+              <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ex: Encanamento / Hidráulica"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#e4e4e7] text-sm font-medium focus:outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/20"
-              />
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#e4e4e7] text-sm font-medium focus:outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/20 bg-white"
+              >
+                {SERVICE_DEMANDS_CATALOG.map((dem) => (
+                  <option key={dem.id} value={dem.name}>
+                    {dem.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1">
@@ -175,14 +195,42 @@ export const EditProviderProfileModal: React.FC<EditProviderProfileModalProps> =
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#18181b]">Especialidades (separadas por vírgula)</label>
+          {/* Specialties Interactive Selector */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-[#18181b]">Especialidades Atendidas</label>
+              <span className="text-[11px] text-[#71717a]">Clique para adicionar ou remover</span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 p-2.5 bg-[#fafafa] rounded-xl border border-[#e4e4e7] max-h-36 overflow-y-auto">
+              {SERVICE_DEMANDS_CATALOG.map((item) => {
+                const isSelected = currentSpecialtiesArray.some(
+                  (s) => s.toLowerCase() === item.shortName.toLowerCase() || s.toLowerCase() === item.name.toLowerCase()
+                );
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleSpecialty(item.shortName)}
+                    className={`text-[11px] px-2.5 py-1 rounded-full font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#ea580c] text-white shadow-2xs'
+                        : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:border-[#ea580c] hover:text-[#ea580c]'
+                    }`}
+                  >
+                    {isSelected ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                    <span>{item.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <input
               type="text"
               value={specialtiesText}
               onChange={(e) => setSpecialtiesText(e.target.value)}
               placeholder="Ex: Vazamentos, Troca de registros, Aquecedores"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#e4e4e7] text-sm font-medium focus:outline-none focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/20"
+              className="w-full px-3.5 py-2 rounded-xl border border-[#e4e4e7] text-xs font-medium focus:outline-none focus:border-[#ea580c]"
             />
           </div>
 
