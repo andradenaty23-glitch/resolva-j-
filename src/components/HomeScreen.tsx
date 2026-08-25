@@ -149,32 +149,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const displayedDemands = showAllDemands ? filteredDemands : filteredDemands.slice(0, 8);
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8 max-w-2xl mx-auto pb-10">
+    <div className="flex flex-col gap-4 sm:gap-5 max-w-xl mx-auto pb-6">
       {/* Hero Section: O que aconteceu? */}
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+          <h2 className="text-lg sm:text-xl font-bold text-[#18181b] tracking-tight">
             O que aconteceu?
           </h2>
-          <span className="inline-flex items-center gap-1 text-xs text-[#ea580c] font-bold bg-[#fff7ed] border border-[#fed7aa] px-2.5 py-1 rounded-full shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5" /> IA Diagnóstico
+          <span className="inline-flex items-center gap-1 text-[11px] text-[#ea580c] font-bold bg-[#fff7ed] border border-[#fed7aa] px-2 py-0.5 rounded-full shadow-2xs">
+            <Sparkles className="w-3 h-3" /> IA Diagnóstico
           </span>
         </div>
 
         {/* Big Input Container */}
-        <div className="bg-white rounded-2xl shadow-xs p-4 sm:p-5 flex flex-col gap-4 border border-[#e4e4e7] focus-within:border-[#ea580c] focus-within:ring-2 focus-within:ring-[#ea580c]/20 transition-all">
+        <div className="bg-white rounded-2xl shadow-xs p-3 sm:p-4 flex flex-col gap-3 border border-[#e4e4e7] focus-within:border-[#ea580c] focus-within:ring-2 focus-within:ring-[#ea580c]/20 transition-all">
           <textarea
             id="input-problem-description"
-            rows={4}
+            rows={2.5}
             value={problemDescription}
             onChange={(e) => setProblemDescription(e.target.value)}
             placeholder="Descreva a demanda ou problema com suas palavras (ex: vazamento embaixo da pia, montagem de armário, tomada faiscando, troca de fechadura)..."
-            className="w-full bg-transparent border-none resize-none focus:outline-hidden text-base sm:text-lg text-[#18181b] placeholder-[#a1a1aa] p-0 font-normal leading-relaxed"
+            className="w-full bg-transparent border-none resize-none focus:outline-hidden text-sm sm:text-base text-[#18181b] placeholder-[#a1a1aa] p-0 font-normal leading-relaxed"
           />
 
           {/* Photo attachment preview if uploaded */}
           {selectedPhoto && (
-            <div className="relative inline-block w-28 h-28 rounded-xl overflow-hidden border border-[#d4d4d8] shadow-xs group">
+            <div className="relative inline-block w-20 h-20 rounded-xl overflow-hidden border border-[#d4d4d8] shadow-xs group">
               <img src={selectedPhoto} alt="Problema anexado" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               <button
                 type="button"
@@ -182,24 +182,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full transition-colors cursor-pointer"
                 title="Remover foto"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             </div>
           )}
 
           {/* Input Method Badges / Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2 border-t border-[#f4f4f5]">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pt-2 border-t border-[#f4f4f5]">
             <button
               type="button"
               id="btn-mode-digitar"
               onClick={() => setActiveInputMode('digitar')}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
                 activeInputMode === 'digitar'
                   ? 'bg-[#18181b] text-white shadow-xs'
                   : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Keyboard className="w-4 h-4" />
+              <Keyboard className="w-3.5 h-3.5" />
               Digitar
             </button>
 
@@ -210,13 +210,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 setActiveInputMode('falar');
                 onOpenVoiceInput();
               }}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
                 activeInputMode === 'falar'
                   ? 'bg-[#18181b] text-white shadow-xs'
                   : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Mic className="w-4 h-4" />
+              <Mic className="w-3.5 h-3.5" />
               Falar
             </button>
 
@@ -227,27 +227,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 setActiveInputMode('foto');
                 onOpenPhotoInput();
               }}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
                 activeInputMode === 'foto' || selectedPhoto
                   ? 'bg-[#18181b] text-white shadow-xs'
                   : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-3.5 h-3.5" />
               {selectedPhoto ? 'Foto anexada' : 'Mostrar por foto'}
             </button>
           </div>
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          <span className="text-xs text-[#71717a] font-medium py-1">Exemplos rápidos:</span>
+        <div className="flex flex-wrap gap-1 mt-0.5">
+          <span className="text-[11px] text-[#71717a] font-medium py-0.5">Exemplos:</span>
           {quickPrompts.map((prompt, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setProblemDescription(prompt)}
-              className="text-[11px] bg-white border border-[#e4e4e7] text-[#52525b] hover:border-[#ea580c] hover:text-[#ea580c] px-2.5 py-1 rounded-full transition-colors truncate max-w-[220px] cursor-pointer"
+              className="text-[10px] bg-white border border-[#e4e4e7] text-[#52525b] hover:border-[#ea580c] hover:text-[#ea580c] px-2 py-0.5 rounded-full transition-colors truncate max-w-[190px] cursor-pointer"
             >
               {prompt}
             </button>
@@ -255,42 +255,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         {/* Action CTAs */}
-        <div className="flex flex-col gap-2.5 mt-2">
+        <div className="flex flex-col gap-1.5 mt-1">
           <button
             type="button"
             id="btn-find-solution"
             onClick={() => handleSubmit()}
-            className="w-full bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.99] text-white font-bold text-lg py-4 px-6 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
+            className="w-full bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.99] text-white font-bold text-sm sm:text-base py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
           >
             <span>Encontrar solução</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
 
           <button
             type="button"
             id="btn-guided-wizard"
             onClick={onOpenGuidedWizard}
-            className="w-full bg-transparent hover:bg-[#fff7ed] text-[#ea580c] font-bold text-xs py-2.5 rounded-xl transition-colors tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full bg-transparent hover:bg-[#fff7ed] text-[#ea580c] font-bold text-[11px] py-2 rounded-lg transition-colors tracking-wider uppercase flex items-center justify-center gap-1 cursor-pointer"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-3.5 h-3.5" />
             NÃO SEI O QUE É (Assistente Guiado)
           </button>
         </div>
       </section>
 
       {/* Demandas de Serviços & Categorias Grid */}
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <section className="flex flex-col gap-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
           <div>
-            <h3 className="text-xl font-bold text-[#18181b]">Demandas de Serviços</h3>
-            <p className="text-xs text-[#71717a]">Selecione uma especialidade para diagnóstico imediato</p>
+            <h3 className="text-base sm:text-lg font-bold text-[#18181b]">Demandas de Serviços</h3>
+            <p className="text-[11px] text-[#71717a]">Selecione uma especialidade para diagnóstico imediato</p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
             <button
               onClick={() => setSelectedFilterTab('todos')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'todos'
                   ? 'bg-[#18181b] text-white'
                   : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
@@ -300,7 +300,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </button>
             <button
               onClick={() => setSelectedFilterTab('urgente')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'urgente'
                   ? 'bg-rose-600 text-white'
                   : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
@@ -310,29 +310,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </button>
             <button
               onClick={() => setSelectedFilterTab('instalacao')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'instalacao'
                   ? 'bg-[#ea580c] text-white'
                   : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
               }`}
             >
-              Instalação & Móveis
+              Instalação
             </button>
             <button
               onClick={() => setSelectedFilterTab('reforma')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'reforma'
                   ? 'bg-[#ea580c] text-white'
                   : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
               }`}
             >
-              Reformas & Acabamento
+              Reformas
             </button>
           </div>
         </div>
 
         {/* Dynamic Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
           {displayedDemands.map((demand) => {
             const Icon = getIconComponent(demand.iconName);
             return (
@@ -340,30 +340,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 key={demand.id}
                 id={`cat-${demand.id}`}
                 onClick={() => handleDemandClick(demand)}
-                className="relative flex flex-col items-start p-3.5 bg-white rounded-2xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
+                className="relative flex flex-col items-start p-2.5 bg-white rounded-xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
               >
                 {demand.badge && (
-                  <span className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">
+                  <span className="absolute top-2 right-2 text-[8px] font-black uppercase px-1 py-0.2 rounded-full bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">
                     {demand.badge}
                   </span>
                 )}
 
-                <div className="w-11 h-11 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors mb-2.5">
-                  <Icon className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors mb-1.5">
+                  <Icon className="w-4 h-4" />
                 </div>
 
                 <span className="text-xs font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors leading-tight line-clamp-1">
                   {demand.shortName}
                 </span>
 
-                <span className="text-[10px] text-[#71717a] mt-1 line-clamp-2 leading-tight">
+                <span className="text-[10px] text-[#71717a] mt-0.5 line-clamp-1 leading-tight">
                   {demand.description}
                 </span>
 
-                <div className="mt-2.5 pt-2 border-t border-[#f4f4f5] w-full flex justify-between items-center text-[10px]">
+                <div className="mt-2 pt-1.5 border-t border-[#f4f4f5] w-full flex justify-between items-center text-[10px]">
                   <span className="font-bold text-emerald-700">R$ {demand.estimatedCostRange.min}+</span>
-                  <span className="text-[#ea580c] font-bold group-hover:translate-x-0.5 transition-transform flex items-center">
-                    Pedir <ChevronRight className="w-3 h-3 ml-0.5" />
+                  <span className="text-[#ea580c] font-bold group-hover:translate-x-0.5 transition-transform flex items-center text-[9px]">
+                    Pedir <ChevronRight className="w-3 h-3 ml-0.2" />
                   </span>
                 </div>
               </button>
@@ -376,22 +376,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             type="button"
             onClick={() => setShowAllDemands((prev) => !prev)}
-            className="w-full py-2.5 rounded-xl border border-[#e4e4e7] bg-white hover:bg-[#fff7ed] text-[#ea580c] font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs mt-1"
+            className="w-full py-2 rounded-lg border border-[#e4e4e7] bg-white hover:bg-[#fff7ed] text-[#ea580c] font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs mt-0.5"
           >
-            <span>{showAllDemands ? 'Mostrar Menos Categorias' : `Ver Todas as ${filteredDemands.length} Categorias de Serviços`}</span>
-            <ChevronRight className={`w-4 h-4 transition-transform ${showAllDemands ? '-rotate-90' : 'rotate-90'}`} />
+            <span>{showAllDemands ? 'Mostrar Menos Categorias' : `Ver Todas as ${filteredDemands.length} Categorias`}</span>
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAllDemands ? '-rotate-90' : 'rotate-90'}`} />
           </button>
         )}
       </section>
 
       {/* Minha Casa Alert Summary Card */}
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-2">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-[#18181b]">Minha Casa</h3>
+          <h3 className="text-base sm:text-lg font-bold text-[#18181b]">Minha Casa</h3>
           <button
             id="btn-ver-tudo-casa"
             onClick={onNavigateToMinhaCasa}
-            className="text-[#ea580c] font-bold text-xs hover:underline uppercase tracking-wide cursor-pointer"
+            className="text-[#ea580c] font-bold text-[11px] hover:underline uppercase tracking-wide cursor-pointer"
           >
             Ver tudo
           </button>
@@ -400,42 +400,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {problemRooms.length > 0 ? (
           <div
             onClick={() => onNavigateToRoom(problemRooms[0].id)}
-            className="bg-white rounded-2xl shadow-xs p-4 flex items-center justify-between border-l-4 border-[#ea580c] border-y border-r border-[#e4e4e7] hover:shadow-md hover:border-[#ea580c] transition-all cursor-pointer group"
+            className="bg-white rounded-xl shadow-xs p-3 flex items-center justify-between border-l-4 border-[#ea580c] border-y border-r border-[#e4e4e7] hover:shadow-md hover:border-[#ea580c] transition-all cursor-pointer group"
           >
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c]">
-                <UtensilsCrossed className="w-6 h-6" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c]">
+                <UtensilsCrossed className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors">
+                <h4 className="text-sm font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors">
                   {problemRooms[0].name}
                 </h4>
-                <p className="text-xs font-medium text-rose-600 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
                   {problemRooms[0].statusText}
                 </p>
               </div>
             </div>
 
-            <div className="w-8 h-8 rounded-full bg-[#f4f4f5] group-hover:bg-[#fff7ed] flex items-center justify-center text-[#52525b] group-hover:text-[#ea580c] transition-colors">
-              <ChevronRight className="w-5 h-5" />
+            <div className="w-7 h-7 rounded-full bg-[#f4f4f5] group-hover:bg-[#fff7ed] flex items-center justify-center text-[#52525b] group-hover:text-[#ea580c] transition-colors">
+              <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         ) : (
           <div
             onClick={onNavigateToMinhaCasa}
-            className="bg-white rounded-2xl shadow-xs p-4 flex items-center justify-between border border-[#e4e4e7] hover:shadow-md transition-all cursor-pointer"
+            className="bg-white rounded-xl shadow-xs p-3 flex items-center justify-between border border-[#e4e4e7] hover:shadow-md transition-all cursor-pointer"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
-                <UtensilsCrossed className="w-5 h-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
+                <UtensilsCrossed className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[#18181b]">Todos os cômodos em ordem</h4>
-                <p className="text-xs text-[#71717a]">Nenhum vazamento ou falha ativa</p>
+                <h4 className="text-xs font-bold text-[#18181b]">Todos os cômodos em ordem</h4>
+                <p className="text-[10px] text-[#71717a]">Nenhum vazamento ou falha ativa</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-[#71717a]" />
+            <ChevronRight className="w-4 h-4 text-[#71717a]" />
           </div>
         )}
       </section>

@@ -707,7 +707,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 px-4 sm:px-6 pt-4 pb-24 md:pl-28 max-w-4xl mx-auto w-full flex flex-col gap-4">
+      <main className="flex-1 px-3 sm:px-5 pt-2 sm:pt-3 pb-24 md:pb-10 md:pl-28 max-w-3xl mx-auto w-full flex flex-col gap-3.5">
         {/* Non-intrusive App Installation Banner */}
         {showInstallBanner && (
           <InstallAppBanner

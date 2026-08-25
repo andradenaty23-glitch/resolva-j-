@@ -146,18 +146,18 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-3xl mx-auto pb-16">
+    <div className="flex flex-col gap-4 sm:gap-5 max-w-2xl mx-auto pb-10">
       {/* 1. Screen 1: Análise do RESOLVA JÁ */}
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-[#18181b] tracking-tight">
             Análise do RESOLVA JÁ
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {onClearDiagnosis && (
               <button
                 onClick={onClearDiagnosis}
-                className="text-xs font-semibold text-[#71717a] hover:text-rose-600 bg-white hover:bg-rose-50 px-3 py-1.5 rounded-full transition-all border border-[#e4e4e7] cursor-pointer"
+                className="text-xs font-semibold text-[#71717a] hover:text-rose-600 bg-white hover:bg-rose-50 px-2.5 py-1 rounded-full transition-all border border-[#e4e4e7] cursor-pointer"
                 title="Limpar análise ativa"
               >
                 Limpar Análise
@@ -165,7 +165,7 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
             )}
             <button
               onClick={onRunNewDiagnosis}
-              className="text-xs font-semibold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer border border-[#fed7aa]"
+              className="text-xs font-semibold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-2.5 py-1 rounded-full transition-all flex items-center gap-1 cursor-pointer border border-[#fed7aa]"
             >
               <Sparkles className="w-3.5 h-3.5" /> Nova análise
             </button>
@@ -173,26 +173,26 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
         </div>
 
         {/* AI Diagnosis Glass Card */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-md border border-[#e4e4e7] relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-[#e4e4e7] relative overflow-hidden">
           {/* Subtle Ambient Background Light */}
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#ea580c]/10 rounded-full blur-3xl pointer-events-none"></div>
 
           {/* AI Header */}
-          <div className="flex items-start gap-3.5 mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-[#18181b] text-[#ea580c] flex items-center justify-center shrink-0 shadow-sm border border-[#27272a]">
-              <Bot className="w-7 h-7" />
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-[#18181b] text-[#ea580c] flex items-center justify-center shrink-0 shadow-sm border border-[#27272a]">
+              <Bot className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-[#18181b]">
+                <h2 className="text-base sm:text-lg font-bold text-[#18181b]">
                   {diagnosis.title || 'Diagnóstico Concluído'}
                 </h2>
-                <span className="text-[10px] bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] font-bold px-2 py-0.5 rounded-full uppercase">
-                  IA Resolva Já v2.4
+                <span className="text-[9px] bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] font-bold px-1.5 py-0.2 rounded-full uppercase">
+                  IA Resolva Já
                 </span>
               </div>
-              <p className="text-sm font-semibold text-rose-600 flex items-center gap-1.5 mt-0.5">
-                <Droplets className="w-4 h-4 shrink-0" />
+              <p className="text-xs font-semibold text-rose-600 flex items-center gap-1 mt-0.5">
+                <Droplets className="w-3.5 h-3.5 shrink-0" />
                 {diagnosis.problemSummary}
               </p>
             </div>
