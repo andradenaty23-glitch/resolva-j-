@@ -18,7 +18,8 @@ import {
   Trash2,
   Smartphone,
   ShieldCheck,
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { ClientProfile, GoogleAuthUser, NotificationItem } from '../types';
 import { SafeAvatar } from './SafeAvatar';
@@ -40,6 +41,7 @@ interface ProfileScreenProps {
   onOpenGoogleAuth?: () => void;
   onDisconnectGoogle?: () => void;
   onOpenInstallModal?: () => void;
+  onOpenUpdateModal?: () => void;
   onMarkAllNotificationsAsRead?: () => void;
   onClearAllNotifications?: () => void;
   onAddNotification?: (notification: NotificationItem) => void;
@@ -57,6 +59,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenGoogleAuth,
   onDisconnectGoogle,
   onOpenInstallModal,
+  onOpenUpdateModal,
   onMarkAllNotificationsAsRead,
   onClearAllNotifications,
   onAddNotification
@@ -249,6 +252,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       {/* Menu Options */}
       <div className="bg-white rounded-2xl border border-[#e4e4e7] shadow-xs overflow-hidden divide-y divide-[#e4e4e7]">
+        {/* App Updates */}
+        {onOpenUpdateModal && (
+          <button
+            onClick={onOpenUpdateModal}
+            className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer bg-gradient-to-r from-emerald-50/30 to-transparent group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center border border-emerald-300 group-hover:scale-105 transition-transform">
+                <RefreshCw className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-[#18181b]">Atualização do Aplicativo</p>
+                  <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                    v2.4.2
+                  </span>
+                </div>
+                <p className="text-xs text-[#71717a]">Buscar novidades, atualizações de IA e sincronizar dados</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#71717a] group-hover:text-[#ea580c] transition-colors" />
+          </button>
+        )}
+
         {/* App Installation */}
         <button
           onClick={onOpenInstallModal}

@@ -37,7 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <>
       {/* Mobile Bottom Bar */}
-      <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center pt-2 pb-5 px-2 bg-white/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-[#e4e4e7] z-50 md:hidden">
+      <nav className="fixed bottom-0 left-0 w-full flex justify-between items-center pt-1.5 pb-3 px-1 bg-white/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-[#e4e4e7] z-50 md:hidden overflow-x-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -47,24 +47,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               key={tab.id}
               id={`mobile-tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center justify-center transition-all active:scale-90 duration-150 w-16 group relative cursor-pointer"
+              className="flex flex-col items-center justify-center transition-all active:scale-95 duration-150 flex-1 min-w-[50px] max-w-[70px] group relative cursor-pointer py-0.5"
             >
               <div
-                className={`flex items-center justify-center rounded-full transition-all duration-200 ${
+                className={`flex items-center justify-center rounded-full transition-all duration-200 relative ${
                   isActive
-                    ? 'bg-[#18181b] text-[#ea580c] px-5 py-1.5 shadow-sm'
-                    : 'text-[#71717a] hover:bg-[#f4f4f5] p-1.5'
+                    ? 'bg-[#18181b] text-[#ea580c] px-3.5 py-1 shadow-xs'
+                    : 'text-[#71717a] p-1 hover:bg-[#f4f4f5]'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute top-0 right-3 w-4 h-4 bg-rose-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}
               </div>
               <span
-                className={`text-[11px] font-medium tracking-tight mt-1 truncate ${
+                className={`text-[9.5px] sm:text-[10.5px] font-medium tracking-tighter mt-0.5 truncate max-w-full ${
                   isActive ? 'text-[#18181b] font-bold' : 'text-[#71717a]'
                 }`}
               >

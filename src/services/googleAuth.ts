@@ -10,6 +10,7 @@ declare global {
             callback: (response: GoogleCredentialResponse) => void;
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
+            error_callback?: (error: unknown) => void;
           }) => void;
           renderButton: (
             parent: HTMLElement,

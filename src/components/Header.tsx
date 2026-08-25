@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Bell, ShieldCheck, User, Wrench, UserPlus, Smartphone, LogIn } from 'lucide-react';
+import { Cpu, Bell, ShieldCheck, User, Wrench, UserPlus, Smartphone, LogIn, RefreshCw } from 'lucide-react';
 import { GoogleAuthUser, NotificationItem, UserRole } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 
@@ -14,6 +14,7 @@ interface HeaderProps {
   googleUser: GoogleAuthUser | null;
   onOpenGoogleAuth: () => void;
   onOpenInstallModal: () => void;
+  onOpenUpdateModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,7 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenRegistration,
   googleUser,
   onOpenGoogleAuth,
-  onOpenInstallModal
+  onOpenInstallModal,
+  onOpenUpdateModal
 }) => {
   return (
     <header className="w-full top-0 sticky bg-white/95 backdrop-blur-md shadow-xs z-40 border-b border-[#e4e4e7]">
@@ -84,8 +86,21 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        {/* Right Actions: Google Auth, Install App, Notification Bell */}
-        <div className="flex items-center gap-1.5">
+        {/* Right Actions: Google Auth, Install App, Update App, Notification Bell */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          {/* App Update Button */}
+          {onOpenUpdateModal && (
+            <button
+              id="btn-update-app"
+              onClick={onOpenUpdateModal}
+              className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white border border-[#fed7aa] p-1.5 sm:px-2.5 sm:py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+              title="Buscar Atualizações do Aplicativo (v2.4.2)"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">v2.4.2</span>
+            </button>
+          )}
+
           {/* App Install Button */}
           <button
             id="btn-install-app"
