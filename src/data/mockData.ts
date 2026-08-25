@@ -14,8 +14,8 @@ import {
 
 export const INITIAL_CLIENT_PROFILE: ClientProfile = {
   id: 'client-1',
-  name: 'Natália Andrade',
-  email: 'andradenaty23@gmail.com',
+  name: '',
+  email: '',
   phone: '',
   cpf: '',
   residenceType: 'apartamento',

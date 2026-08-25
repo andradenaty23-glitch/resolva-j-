@@ -403,83 +403,23 @@ export default function App() {
     setDiagnosis(newDiagnosis);
     setSelectedRoomId(room);
 
-    // Generate matched verified specialists for this problem
-    const generatedProfessionals: Professional[] = [
-      {
-        id: `prof-1-${Date.now()}`,
-        name: 'Carlos Silva',
-        role: `${profType} Certificado`,
-        avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80',
-        rating: 4.9,
-        matchPercentage: 98,
-        priceLevel: '$$',
-        trustIndex: 98,
-        recommendationReason: `Especialista com mais de 200 atendimentos em ${category} na sua região.`,
-        availability: 'Hoje',
-        verified: true,
-        laborCost: costRange.min,
-        materialsCost: Math.round(costRange.min * 0.25),
-        totalCost: costRange.min + Math.round(costRange.min * 0.25),
-        phone: '(11) 98765-4321',
-        reviewsCount: 142,
-        completedJobs: 215,
-        specialties: [category, 'Reparos Rápidos', 'Garantia 90d']
-      },
-      {
-        id: `prof-2-${Date.now()}`,
-        name: 'Roberto Mendes',
-        role: `Técnico Sênior em ${category}`,
-        avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-        rating: 4.8,
-        matchPercentage: 94,
-        priceLevel: '$',
-        trustIndex: 95,
-        recommendationReason: 'Melhor custo-benefício e avaliação 5 estrelas em agilidade.',
-        availability: 'Hoje',
-        verified: true,
-        laborCost: Math.max(70, costRange.min - 20),
-        materialsCost: Math.round(costRange.min * 0.2),
-        totalCost: Math.max(70, costRange.min - 20) + Math.round(costRange.min * 0.2),
-        phone: '(11) 97654-3210',
-        reviewsCount: 98,
-        completedJobs: 130,
-        specialties: [category, 'Manutenção Preventiva', 'Atendimento Rápido']
-      },
-      {
-        id: `prof-3-${Date.now()}`,
-        name: 'Marcos Oliveira',
-        role: `Mestre Especialista em ${category}`,
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        rating: 5.0,
-        matchPercentage: 91,
-        priceLevel: '$$$',
-        trustIndex: 99,
-        recommendationReason: 'Índice de confiança máximo e selo de excelência da plataforma.',
-        availability: 'Amanhã',
-        verified: true,
-        laborCost: costRange.max,
-        materialsCost: Math.round(costRange.max * 0.3),
-        totalCost: costRange.max + Math.round(costRange.max * 0.3),
-        phone: '(11) 99887-7665',
-        reviewsCount: 230,
-        completedJobs: 340,
-        specialties: [category, 'Laudo Técnico', 'Instalações Complexas']
-      }
-    ];
-    setProfessionals(generatedProfessionals);
+    // Keep professionals clean (no dummy fake cards) - real proposals appear when submitted by certified technicians
+    setProfessionals([]);
     setActiveTab('problemas');
 
-    // Also automatically create an incoming lead for providers!
+    // Also automatically create an incoming real lead for providers
     const newLead: ProviderJobLead = {
       id: `lead-${Date.now()}`,
       clientName: clientProfile.name || 'Cliente Resolva Já',
       serviceTitle: problemText || summary,
       category,
       room: room === 'cozinha' ? 'Cozinha' : room === 'banheiro' ? 'Banheiro' : 'Residência',
-      neighborhood: `${clientProfile.address?.neighborhood || 'Bairro Residencial'} (a 2.1 km)`,
+      neighborhood: clientProfile.address?.neighborhood
+        ? `${clientProfile.address.neighborhood} - ${clientProfile.address.city || 'SP'}`
+        : 'Sua Região de Atendimento',
       distanceKm: 2.1,
       urgency,
-      suggestedBudget: costRange.min + 20,
+      suggestedBudget: costRange.min,
       description: problemText || 'Problema diagnosticado pela IA Resolva Já no imóvel do cliente.',
       imageUrl: imageSrc,
       status: 'aberto',
@@ -709,6 +649,11 @@ export default function App() {
                 }}
                 onRunNewDiagnosis={() => setActiveTab('inicio')}
                 onSelectQuickDemand={handleFindSolution}
+                onClearProfessionals={() => setProfessionals([])}
+                onClearDiagnosis={() => {
+                  setDiagnosis(null);
+                  setProfessionals([]);
+                }}
               />
             )}
 
@@ -754,6 +699,7 @@ export default function App() {
             {activeTab === 'perfil' && (
               <ProfileScreen
                 client={clientProfile}
+                notifications={notifications}
                 onUpdateClient={(updated) => setClientProfile((prev) => ({ ...prev, ...updated }))}
                 onDeleteProfile={handleDeleteClientProfile}
                 onSwitchToProvider={() => {
@@ -766,6 +712,15 @@ export default function App() {
                 onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
                 onDisconnectGoogle={handleGoogleLogout}
                 onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
+                onMarkAllNotificationsAsRead={() => {
+                  setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                }}
+                onClearAllNotifications={() => {
+                  setNotifications([]);
+                }}
+                onAddNotification={(newNotif) => {
+                  setNotifications((prev) => [newNotif, ...prev]);
+                }}
               />
             )}
           </>

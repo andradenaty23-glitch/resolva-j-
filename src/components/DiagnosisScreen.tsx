@@ -33,6 +33,8 @@ interface DiagnosisScreenProps {
   onViewProfessionalProfile: (prof: Professional) => void;
   onRunNewDiagnosis: () => void;
   onSelectQuickDemand?: (problemText: string) => void;
+  onClearProfessionals?: () => void;
+  onClearDiagnosis?: () => void;
 }
 
 export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
@@ -44,7 +46,9 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
   onSelectProfessional,
   onViewProfessionalProfile,
   onRunNewDiagnosis,
-  onSelectQuickDemand
+  onSelectQuickDemand,
+  onClearProfessionals,
+  onClearDiagnosis
 }) => {
   const [activeFilter, setActiveFilter] = useState<'compatibilidade' | 'confianca' | 'preco'>('compatibilidade');
   const [showTips, setShowTips] = useState(false);
@@ -149,12 +153,23 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
           <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
             Análise do RESOLVA JÁ
           </h1>
-          <button
-            onClick={onRunNewDiagnosis}
-            className="text-xs font-semibold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer border border-[#fed7aa]"
-          >
-            <Sparkles className="w-3.5 h-3.5" /> Nova análise
-          </button>
+          <div className="flex items-center gap-2">
+            {onClearDiagnosis && (
+              <button
+                onClick={onClearDiagnosis}
+                className="text-xs font-semibold text-[#71717a] hover:text-rose-600 bg-white hover:bg-rose-50 px-3 py-1.5 rounded-full transition-all border border-[#e4e4e7] cursor-pointer"
+                title="Limpar análise ativa"
+              >
+                Limpar Análise
+              </button>
+            )}
+            <button
+              onClick={onRunNewDiagnosis}
+              className="text-xs font-semibold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer border border-[#fed7aa]"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Nova análise
+            </button>
+          </div>
         </div>
 
         {/* AI Diagnosis Glass Card */}
@@ -294,24 +309,52 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
       {/* 2. Screen 2: Profissionais Recomendados */}
       <section id="section-profissionais" className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold text-[#18181b] tracking-tight">
-            Profissionais Recomendados
-          </h2>
-          <span className="text-xs text-[#71717a]">
-            {sortedProfessionals.length} especialistas disponíveis
-          </span>
+          <div>
+            <h2 className="text-2xl font-bold text-[#18181b] tracking-tight">
+              Profissionais Recomendados
+            </h2>
+            <p className="text-xs text-[#71717a]">
+              Especialistas credenciados com garantia de 90 dias
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#71717a]">
+              {sortedProfessionals.length} {sortedProfessionals.length === 1 ? 'disponível' : 'disponíveis'}
+            </span>
+            {sortedProfessionals.length > 0 && onClearProfessionals && (
+              <button
+                onClick={onClearProfessionals}
+                className="text-xs font-semibold text-[#71717a] hover:text-rose-600 bg-white hover:bg-rose-50 px-3 py-1 rounded-full transition-all border border-[#e4e4e7] cursor-pointer"
+                title="Limpar lista de propostas"
+              >
+                Limpar Propostas
+              </button>
+            )}
+          </div>
         </div>
 
         {sortedProfessionals.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 border border-[#e4e4e7] text-center space-y-3">
-            <p className="text-sm font-semibold text-[#18181b]">Nenhum especialista na fila no momento.</p>
-            <p className="text-xs text-[#71717a]">Ao criar uma nova análise, o sistema busca automaticamente prestadores certificados na sua área.</p>
-            <button
-              onClick={onRunNewDiagnosis}
-              className="px-4 py-2 rounded-full bg-[#ea580c] text-white text-xs font-bold hover:bg-[#c2410c] transition-colors"
-            >
-              Nova Análise com IA
-            </button>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#e4e4e7] text-center space-y-4 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] text-[#ea580c] flex items-center justify-center mx-auto border border-[#fed7aa]">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div className="max-w-md mx-auto space-y-1">
+              <p className="text-base font-bold text-[#18181b]">
+                Chamado Publicado na Rede Resolva Já
+              </p>
+              <p className="text-xs text-[#71717a] leading-relaxed">
+                Sua solicitação de serviço foi transmitida para os técnicos credenciados da sua região. Assim que uma proposta for enviada, ela aparecerá aqui com caução e garantia protegida.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              <button
+                onClick={onRunNewDiagnosis}
+                className="px-5 py-2.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Nova Análise com IA
+              </button>
+            </div>
           </div>
         ) : (
           <>

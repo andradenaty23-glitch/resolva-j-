@@ -155,19 +155,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (selectedRole === 'cliente') {
       const existingClient: ClientProfile = {
         id: 'client-1',
-        name: clientName || 'Natália Andrade',
-        email: loginEmail || clientEmail || 'andradenaty23@gmail.com',
+        name: clientName || (loginEmail ? loginEmail.split('@')[0] : 'Cliente'),
+        email: loginEmail || clientEmail || '',
         phone: clientPhone || '',
         cpf: clientCpf || '',
         residenceType,
         address: {
-          street: street || 'Av. Paulista',
-          number: number || '1000',
+          street: street || '',
+          number: number || '',
           complement,
-          neighborhood: neighborhood || 'Bela Vista',
-          city: city || 'São Paulo',
+          neighborhood: neighborhood || '',
+          city: city || '',
           state: 'SP',
-          cep: cep || '01310-100'
+          cep: cep || ''
         },
         plan: 'Resolva Já Free',
         walletBalance: 0.00,

@@ -20,13 +20,17 @@ import {
   ShieldCheck,
   Zap
 } from 'lucide-react';
-import { ClientProfile, GoogleAuthUser } from '../types';
+import { ClientProfile, GoogleAuthUser, NotificationItem } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import { EditProfileModal } from './EditProfileModal';
 import { DeleteProfileModal } from './DeleteProfileModal';
+import { GuaranteeModal } from './GuaranteeModal';
+import { NotificationsPreferencesModal } from './NotificationsPreferencesModal';
+import { SupportCenterModal } from './SupportCenterModal';
 
 interface ProfileScreenProps {
   client: ClientProfile;
+  notifications?: NotificationItem[];
   onUpdateClient?: (updated: Partial<ClientProfile>) => void;
   onDeleteProfile?: () => void;
   onSwitchToProvider: () => void;
@@ -36,10 +40,14 @@ interface ProfileScreenProps {
   onOpenGoogleAuth?: () => void;
   onDisconnectGoogle?: () => void;
   onOpenInstallModal?: () => void;
+  onMarkAllNotificationsAsRead?: () => void;
+  onClearAllNotifications?: () => void;
+  onAddNotification?: (notification: NotificationItem) => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   client,
+  notifications = [],
   onUpdateClient,
   onDeleteProfile,
   onSwitchToProvider,
@@ -48,10 +56,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   googleUser,
   onOpenGoogleAuth,
   onDisconnectGoogle,
-  onOpenInstallModal
+  onOpenInstallModal,
+  onMarkAllNotificationsAsRead,
+  onClearAllNotifications,
+  onAddNotification
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,12 +131,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-[#18181b]">{client.name}</h2>
+              <h2 className="text-lg font-bold text-[#18181b]">{client.name || 'Cliente (Não informado)'}</h2>
               <span className="bg-[#fff7ed] text-[#ea580c] text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border border-[#fed7aa]">
-                {client.plan}
+                {client.plan || 'Resolva Já Free'}
               </span>
             </div>
-            <p className="text-xs text-[#52525b]">{client.email}</p>
+            <p className="text-xs text-[#52525b]">{client.email || 'Email não cadastrado'}</p>
             <p className="text-xs text-[#71717a] mt-0.5">
               {client.phone ? `Tel: ${client.phone}` : 'Telefone não cadastrado'}
               {client.cpf ? ` • CPF: ${client.cpf}` : ''}
@@ -271,37 +285,52 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <ChevronRight className="w-4 h-4 text-[#71717a]" />
         </button>
 
-        <button className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer">
+        <button
+          onClick={() => setIsGuaranteeModalOpen(true)}
+          className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer group"
+        >
           <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-[#52525b]" />
+            <div className="w-8 h-8 rounded-xl bg-[#fff7ed] text-[#ea580c] flex items-center justify-center border border-[#fed7aa] group-hover:scale-105 transition-transform">
+              <Shield className="w-4 h-4" />
+            </div>
             <div>
               <p className="text-sm font-semibold text-[#18181b]">Garantia Resolva Já Protege</p>
               <p className="text-xs text-[#71717a]">Garantia de 90 dias com cobertura de até R$ 5.000</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#71717a]" />
+          <ChevronRight className="w-4 h-4 text-[#71717a] group-hover:text-[#ea580c] transition-colors" />
         </button>
 
-        <button className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer">
+        <button
+          onClick={() => setIsNotificationsModalOpen(true)}
+          className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer group"
+        >
           <div className="flex items-center gap-3">
-            <Bell className="w-5 h-5 text-[#52525b]" />
+            <div className="w-8 h-8 rounded-xl bg-[#fff7ed] text-[#ea580c] flex items-center justify-center border border-[#fed7aa] group-hover:scale-105 transition-transform">
+              <Bell className="w-4 h-4" />
+            </div>
             <div>
               <p className="text-sm font-semibold text-[#18181b]">Alertas & Notificações</p>
               <p className="text-xs text-[#71717a]">Avisos preventivos da casa e status de agendamentos</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#71717a]" />
+          <ChevronRight className="w-4 h-4 text-[#71717a] group-hover:text-[#ea580c] transition-colors" />
         </button>
 
-        <button className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer">
+        <button
+          onClick={() => setIsSupportModalOpen(true)}
+          className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer group"
+        >
           <div className="flex items-center gap-3">
-            <HelpCircle className="w-5 h-5 text-[#52525b]" />
+            <div className="w-8 h-8 rounded-xl bg-[#fff7ed] text-[#ea580c] flex items-center justify-center border border-[#fed7aa] group-hover:scale-105 transition-transform">
+              <HelpCircle className="w-4 h-4" />
+            </div>
             <div>
               <p className="text-sm font-semibold text-[#18181b]">Central de Ajuda & Suporte</p>
               <p className="text-xs text-[#71717a]">Fale com o time de engenharia residencial Resolva Já</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#71717a]" />
+          <ChevronRight className="w-4 h-4 text-[#71717a] group-hover:text-[#ea580c] transition-colors" />
         </button>
       </div>
 
@@ -351,6 +380,31 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         onConfirmDelete={() => {
           if (onDeleteProfile) onDeleteProfile();
         }}
+      />
+
+      {/* Guarantee Resolva Já Protege Modal */}
+      <GuaranteeModal
+        isOpen={isGuaranteeModalOpen}
+        onClose={() => setIsGuaranteeModalOpen(false)}
+        clientName={client.name}
+      />
+
+      {/* Notifications Preferences & Feed Modal */}
+      <NotificationsPreferencesModal
+        isOpen={isNotificationsModalOpen}
+        onClose={() => setIsNotificationsModalOpen(false)}
+        notifications={notifications}
+        onMarkAllAsRead={onMarkAllNotificationsAsRead}
+        onClearAll={onClearAllNotifications}
+        onAddTestNotification={onAddNotification}
+      />
+
+      {/* Help & Residential Engineering Support Modal */}
+      <SupportCenterModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        clientName={client.name}
+        clientEmail={client.email}
       />
     </div>
   );

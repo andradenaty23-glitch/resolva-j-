@@ -139,31 +139,24 @@ export const DEMO_GOOGLE_ACCOUNTS: Array<{
   description: string;
 }> = [
   {
-    name: 'Natália Andrade',
-    email: 'andradenaty23@gmail.com',
-    picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    name: 'Cliente Residencial',
+    email: 'cliente.residencial@gmail.com',
+    picture: 'https://ui-avatars.com/api/?name=Cliente+Residencial&background=ea580c&color=ffffff&bold=true',
     role: 'cliente',
-    description: 'Cliente Residencial • São Paulo - SP'
+    description: 'Conta de Cliente • São Paulo - SP'
   },
   {
     name: 'Carlos Mendes',
     email: 'carlos.mendes.engenharia@gmail.com',
-    picture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
+    picture: 'https://ui-avatars.com/api/?name=Carlos+Mendes&background=2563eb&color=ffffff&bold=true',
     role: 'cliente',
-    description: 'Cliente Residencial • Apartamento Jardins'
+    description: 'Cliente Residencial • Apartamento'
   },
   {
-    name: 'Ricardo Silva',
-    email: 'ricardo.silva.pro@gmail.com',
-    picture: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&auto=format&fit=crop&q=80',
+    name: 'Técnico Especialista',
+    email: 'tecnico.especialista@gmail.com',
+    picture: 'https://ui-avatars.com/api/?name=Tecnico+Especialista&background=16a34a&color=ffffff&bold=true',
     role: 'prestador',
-    description: 'Prestador PRO • Hidráulica & Desentupimento (Nota 4.9)'
-  },
-  {
-    name: 'Marcos Oliveira',
-    email: 'marcos.oliveira.eletrica@gmail.com',
-    picture: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=200&auto=format&fit=crop&q=80',
-    role: 'prestador',
-    description: 'Prestador PRO • Eletricista Certificado NR-10'
+    description: 'Prestador PRO • Hidráulica & Elétrica'
   }
 ];
