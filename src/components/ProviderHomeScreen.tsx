@@ -250,38 +250,40 @@ export const ProviderHomeScreen: React.FC<ProviderHomeScreenProps> = ({
           </div>
 
           {/* Timeframe Selector */}
-          <div className="flex items-center bg-[#f4f4f5] p-1 rounded-full border border-[#e4e4e7]">
-            <button
-              onClick={() => setChartTimeframe('7d')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                chartTimeframe === '7d'
-                  ? 'bg-[#18181b] text-white shadow-2xs'
-                  : 'text-[#52525b] hover:bg-white'
-              }`}
-            >
-              7 Dias
-            </button>
-            <button
-              onClick={() => setChartTimeframe('30d')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                chartTimeframe === '30d'
-                  ? 'bg-[#18181b] text-white shadow-2xs'
-                  : 'text-[#52525b] hover:bg-white'
-              }`}
-            >
-              Este Mês
-            </button>
-            <button
-              onClick={() => setChartTimeframe('3m')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                chartTimeframe === '3m'
-                  ? 'bg-[#18181b] text-white shadow-2xs'
-                  : 'text-[#52525b] hover:bg-white'
-              }`}
-            >
-              Trimestre
-            </button>
-          </div>
+          {PROVIDER_EARNINGS_HISTORY.length > 0 && (
+            <div className="flex items-center bg-[#f4f4f5] p-1 rounded-full border border-[#e4e4e7]">
+              <button
+                onClick={() => setChartTimeframe('7d')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  chartTimeframe === '7d'
+                    ? 'bg-[#18181b] text-white shadow-2xs'
+                    : 'text-[#52525b] hover:bg-white'
+                }`}
+              >
+                7 Dias
+              </button>
+              <button
+                onClick={() => setChartTimeframe('30d')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  chartTimeframe === '30d'
+                    ? 'bg-[#18181b] text-white shadow-2xs'
+                    : 'text-[#52525b] hover:bg-white'
+                }`}
+              >
+                Este Mês
+              </button>
+              <button
+                onClick={() => setChartTimeframe('3m')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  chartTimeframe === '3m'
+                    ? 'bg-[#18181b] text-white shadow-2xs'
+                    : 'text-[#52525b] hover:bg-white'
+                }`}
+              >
+                Trimestre
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Empty State for Charts if no prior transactions */}

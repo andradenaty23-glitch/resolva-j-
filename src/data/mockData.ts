@@ -20,17 +20,17 @@ export const INITIAL_CLIENT_PROFILE: ClientProfile = {
   cpf: '',
   residenceType: 'apartamento',
   address: {
-    street: 'Av. Paulista',
-    number: '1000',
+    street: '',
+    number: '',
     complement: '',
-    neighborhood: 'Bela Vista',
-    city: 'São Paulo',
-    state: 'SP',
-    cep: '01310-100'
+    neighborhood: '',
+    city: '',
+    state: '',
+    cep: ''
   },
   plan: 'Resolva Já Free',
-  walletBalance: 0.00,
-  cashbackBalance: 0.00,
+  walletBalance: 0.0,
+  cashbackBalance: 0.0,
   avatar: '',
   registeredAt: 'Conta ativa'
 };
@@ -42,7 +42,7 @@ export const INITIAL_PROVIDER_PROFILE: ProviderProfile = {
   phone: '',
   document: '',
   category: 'Reparos e Manutenção',
-  specialties: ['Reparos Gerais', 'Elétrica', 'Hidráulica'],
+  specialties: ['Elétrica Residencial', 'Hidráulica & Encanamento', 'Pequenos Reparos'],
   experienceYears: 0,
   laborBaseRate: 100,
   operatingRadiusKm: 15,
@@ -55,13 +55,14 @@ export const INITIAL_PROVIDER_PROFILE: ProviderProfile = {
   bio: '',
   avatar: '',
   bankAccount: {
-    bank: 'Conta Bancária',
+    bank: '',
     pixKey: ''
   },
-  totalEarningsMonth: 0,
-  registeredAt: 'Conta ativa'
+  totalEarningsMonth: 0.0,
+  registeredAt: 'Prestador Credenciado'
 };
 
+// Clean initial state for provider job leads - incoming customer requests appear dynamically
 export const INITIAL_PROVIDER_LEADS: ProviderJobLead[] = [];
 
 export const INITIAL_DIAGNOSIS: DiagnosisResult | null = null;
@@ -71,15 +72,15 @@ export const INITIAL_PROFESSIONALS: Professional[] = [];
 export const INITIAL_ROOMS: Room[] = [
   {
     id: 'sala',
-    name: 'Sala',
+    name: 'Sala de Estar',
     icon: 'Armchair',
     status: 'normal',
-    statusText: 'Tudo normal',
+    statusText: 'Tudo funcionando perfeitamente',
     problemCount: 0,
     items: [
-      { id: 'sala-1', name: 'Smart TV', brand: 'Smart TV', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Tv' },
-      { id: 'sala-2', name: 'Ar Condicionado', brand: 'Split Inverter', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Wind' },
-      { id: 'sala-3', name: 'Iluminação Geral', brand: 'LED', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Lightbulb' }
+      { id: 'sala-1', name: 'Smart TV', brand: 'Televisor Principal', lastReview: 'Recente', status: 'ok', statusText: 'Funcionando 100%', iconName: 'Tv' },
+      { id: 'sala-2', name: 'Ar Condicionado', brand: 'Split', lastReview: 'Recente', status: 'ok', statusText: 'Filtros limpos', iconName: 'Wind' },
+      { id: 'sala-3', name: 'Iluminação', brand: 'Pontos de Luz', lastReview: 'Recente', status: 'ok', statusText: 'Circuito estável', iconName: 'Lightbulb' }
     ]
   },
   {
@@ -87,25 +88,24 @@ export const INITIAL_ROOMS: Room[] = [
     name: 'Cozinha',
     icon: 'UtensilsCrossed',
     status: 'normal',
-    statusText: 'Tudo normal',
+    statusText: 'Instalações em dia',
     problemCount: 0,
     items: [
-      { id: 'cozinha-1', name: 'Geladeira', brand: 'Frost Free', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Refrigerator' },
-      { id: 'cozinha-2', name: 'Fogão / Cooktop', brand: 'Gás', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Flame' },
-      { id: 'cozinha-3', name: 'Torneira / Misturador', brand: 'Monocomando', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Droplet' },
-      { id: 'cozinha-4', name: 'Coifa / Depurador', brand: 'Inox', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Fan' }
+      { id: 'cozinha-1', name: 'Geladeira', brand: 'Refrigerador', lastReview: 'Recente', status: 'ok', statusText: 'Temperatura ideal', iconName: 'Refrigerator' },
+      { id: 'cozinha-2', name: 'Fogão / Cooktop', brand: 'Fogão', lastReview: 'Recente', status: 'ok', statusText: 'Chamas reguladas', iconName: 'Flame' },
+      { id: 'cozinha-3', name: 'Torneira da Pia', brand: 'Monocomando', lastReview: 'Recente', status: 'ok', statusText: 'Vedação e pressão OK', iconName: 'Droplet' }
     ]
   },
   {
     id: 'quarto1',
-    name: 'Quarto 1',
+    name: 'Quarto',
     icon: 'Bed',
     status: 'normal',
-    statusText: 'Tudo normal',
+    statusText: 'Em perfeito estado',
     problemCount: 0,
     items: [
-      { id: 'q1-1', name: 'Ar Condicionado', brand: 'Split', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Wind' },
-      { id: 'q1-2', name: 'Persiana / Janela', brand: 'Alumínio', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Blinds' }
+      { id: 'q1-1', name: 'Ar Condicionado', brand: 'Quarto', lastReview: 'Recente', status: 'ok', statusText: 'Silencioso e calibrado', iconName: 'Wind' },
+      { id: 'q1-2', name: 'Tomadas e Interruptores', brand: 'Tomadas', lastReview: 'Recente', status: 'ok', statusText: 'Tensão correta', iconName: 'Plug' }
     ]
   },
   {
@@ -113,51 +113,47 @@ export const INITIAL_ROOMS: Room[] = [
     name: 'Lavanderia',
     icon: 'WashingMachine',
     status: 'normal',
-    statusText: 'Tudo normal',
+    statusText: 'Revisão hidráulica em dia',
     problemCount: 0,
     items: [
-      { id: 'lav-1', name: 'Máquina de Lavar', brand: 'Lava e Seca', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'WashingMachine' },
-      { id: 'lav-2', name: 'Aquecedor a Gás', brand: 'Digital', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Flame' }
+      { id: 'lav-1', name: 'Máquina de Lavar', brand: 'Lava e Seca', lastReview: 'Recente', status: 'ok', statusText: 'Drenagem OK', iconName: 'WashingMachine' }
     ]
   },
   {
     id: 'banheiro',
-    name: 'Banheiro Social',
+    name: 'Banheiro',
     icon: 'Bath',
     status: 'normal',
-    statusText: 'Tudo normal',
+    statusText: 'Instalações em dia',
     problemCount: 0,
     items: [
-      { id: 'banh-1', name: 'Chuveiro Elétrico', brand: 'Ducha', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'ShowerHead' },
-      { id: 'banh-2', name: 'Vaso Sanitário / Caixa', brand: 'Descarga Dupla', lastReview: 'Recente', status: 'ok', statusText: 'OK', iconName: 'Droplet' }
+      { id: 'banh-1', name: 'Chuveiro', brand: 'Ducha Elétrica', lastReview: 'Recente', status: 'ok', statusText: 'Aquecimento e pressão normais', iconName: 'ShowerHead' },
+      { id: 'banh-2', name: 'Vaso Sanitário', brand: 'Descarga', lastReview: 'Recente', status: 'ok', statusText: 'Sem vazamentos', iconName: 'Droplet' }
     ]
   }
 ];
 
+// Clean initial state for ready-to-use experience
 export const INITIAL_APPOINTMENTS: Appointment[] = [];
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-1',
-    title: 'Bem-vindo ao Resolva Já!',
-    message: 'Seu assistente residencial inteligente está pronto para uso. Registre seus cômodos ou faça um diagnóstico quando precisar de reparos.',
+    title: 'Bem-vindo(a) ao RESOLVA JÁ!',
+    message: 'Solicite diagnósticos inteligentes por áudio, foto ou texto e conecte-se com técnicos credenciados com garantia de 90 dias.',
     time: 'Agora',
     read: false,
     type: 'info'
   }
 ];
 
-export const INITIAL_PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: 'pm-pix',
-    type: 'pix',
-    isDefault: true,
-    nickname: 'Pix Instantâneo (5% Cashback)'
-  }
-];
+// Clean initial payment methods
+export const INITIAL_PAYMENT_METHODS: PaymentMethod[] = [];
 
+// Clean initial transaction history
 export const INITIAL_TRANSACTIONS: TransactionRecord[] = [];
 
+// Clean initial provider earnings and performance history
 export const PROVIDER_EARNINGS_HISTORY: ProviderEarningData[] = [];
 
 export const PROVIDER_CATEGORY_DISTRIBUTION: { name: string; value: number; count: number; color: string }[] = [];
@@ -165,4 +161,3 @@ export const PROVIDER_CATEGORY_DISTRIBUTION: { name: string; value: number; coun
 export const PROVIDER_WEEKLY_DEMAND: { day: string; chamados: number; propostas: number; faturamento: number }[] = [];
 
 export const PROVIDER_HOURLY_PEAK: { hour: string; demanda: number; label: string }[] = [];
-

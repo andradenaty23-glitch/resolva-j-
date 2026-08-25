@@ -14,13 +14,17 @@ import {
   Award,
   Clock,
   Phone,
-  ArrowRight
+  ArrowRight,
+  Wrench,
+  Search,
+  Check
 } from 'lucide-react';
 import { DiagnosisResult, Professional, Room } from '../types';
 import { SafeAvatar } from './SafeAvatar';
+import { SERVICE_DEMANDS_CATALOG } from '../data/serviceDemands';
 
 interface DiagnosisScreenProps {
-  diagnosis: DiagnosisResult;
+  diagnosis: DiagnosisResult | null;
   professionals: Professional[];
   rooms: Room[];
   selectedRoom: string;
@@ -28,6 +32,7 @@ interface DiagnosisScreenProps {
   onSelectProfessional: (prof: Professional) => void;
   onViewProfessionalProfile: (prof: Professional) => void;
   onRunNewDiagnosis: () => void;
+  onSelectQuickDemand?: (problemText: string) => void;
 }
 
 export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
@@ -38,7 +43,8 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
   onSelectRoom,
   onSelectProfessional,
   onViewProfessionalProfile,
-  onRunNewDiagnosis
+  onRunNewDiagnosis,
+  onSelectQuickDemand
 }) => {
   const [activeFilter, setActiveFilter] = useState<'compatibilidade' | 'confianca' | 'preco'>('compatibilidade');
   const [showTips, setShowTips] = useState(false);
@@ -57,6 +63,83 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  // If no diagnosis exists yet, render a helpful empty state
+  if (!diagnosis) {
+    return (
+      <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-16">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+              Análise do RESOLVA JÁ
+            </h1>
+            <p className="text-xs sm:text-sm text-[#71717a] mt-0.5">
+              Diagnóstico inteligente de problemas residenciais
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-[#e4e4e7] relative overflow-hidden text-center flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#18181b] text-[#ea580c] flex items-center justify-center shadow-md border border-[#27272a]">
+            <Bot className="w-9 h-9" />
+          </div>
+
+          <div className="max-w-md">
+            <h2 className="text-lg sm:text-xl font-bold text-[#18181b] mb-1">
+              Nenhum diagnóstico ativo no momento
+            </h2>
+            <p className="text-xs sm:text-sm text-[#52525b] leading-relaxed">
+              Conte-nos o que está com defeito ou vazando na sua residência. Nossa Inteligência Artificial analisa o problema, estima valores e localiza os melhores especialistas verificados.
+            </p>
+          </div>
+
+          <button
+            onClick={onRunNewDiagnosis}
+            className="w-full max-w-xs bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-sm py-3.5 px-6 rounded-full shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Fazer Diagnóstico com IA</span>
+          </button>
+
+          <div className="w-full pt-6 mt-2 border-t border-[#f4f4f5]">
+            <span className="text-xs font-bold text-[#71717a] uppercase tracking-wider block mb-3">
+              Ou selecione um problema comum para analisar agora:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+              {SERVICE_DEMANDS_CATALOG.slice(0, 6).map((demand) => (
+                <button
+                  key={demand.id}
+                  onClick={() => {
+                    if (onSelectQuickDemand) {
+                      onSelectQuickDemand(demand.popularIssues[0] || demand.name);
+                    } else {
+                      onRunNewDiagnosis();
+                    }
+                  }}
+                  className="p-3 rounded-xl border border-[#e4e4e7] hover:border-[#ea580c] hover:bg-[#fff7ed] transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#fff7ed] text-[#ea580c] flex items-center justify-center shrink-0 border border-[#fed7aa]">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors">
+                        {demand.shortName}
+                      </h4>
+                      <p className="text-[10px] text-[#71717a] truncate max-w-[200px]">
+                        {demand.popularIssues[0]}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#a1a1aa] group-hover:text-[#ea580c] transition-colors shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 max-w-3xl mx-auto pb-16">
@@ -87,7 +170,7 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-[#18181b]">
-                  {diagnosis.title}
+                  {diagnosis.title || 'Diagnóstico Concluído'}
                 </h2>
                 <span className="text-[10px] bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] font-bold px-2 py-0.5 rounded-full uppercase">
                   IA Resolva Já v2.4
@@ -172,7 +255,7 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
           </div>
 
           {/* DIY Tips Toggle */}
-          {diagnosis.diyTips && (
+          {diagnosis.diyTips && diagnosis.diyTips.length > 0 && (
             <div className="mb-5">
               <button
                 type="button"
@@ -219,238 +302,258 @@ export const DiagnosisScreen: React.FC<DiagnosisScreenProps> = ({
           </span>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none">
-          <button
-            id="filter-compatibilidade"
-            onClick={() => setActiveFilter('compatibilidade')}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeFilter === 'compatibilidade'
-                ? 'bg-[#18181b] text-white shadow-xs'
-                : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
-            }`}
-          >
-            Melhor compatibilidade
-          </button>
-
-          <button
-            id="filter-confianca"
-            onClick={() => setActiveFilter('confianca')}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeFilter === 'confianca'
-                ? 'bg-[#18181b] text-white shadow-xs'
-                : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
-            }`}
-          >
-            Maior confiança
-          </button>
-
-          <button
-            id="filter-preco"
-            onClick={() => setActiveFilter('preco')}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeFilter === 'preco'
-                ? 'bg-[#18181b] text-white shadow-xs'
-                : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
-            }`}
-          >
-            Menor preço
-          </button>
-        </div>
-
-        {/* Professional Cards List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sortedProfessionals.map((prof) => (
-            <div
-              key={prof.id}
-              className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all group relative"
+        {sortedProfessionals.length === 0 ? (
+          <div className="bg-white rounded-2xl p-6 border border-[#e4e4e7] text-center space-y-3">
+            <p className="text-sm font-semibold text-[#18181b]">Nenhum especialista na fila no momento.</p>
+            <p className="text-xs text-[#71717a]">Ao criar uma nova análise, o sistema busca automaticamente prestadores certificados na sua área.</p>
+            <button
+              onClick={onRunNewDiagnosis}
+              className="px-4 py-2 rounded-full bg-[#ea580c] text-white text-xs font-bold hover:bg-[#c2410c] transition-colors"
             >
-              {/* Top Row: Avatar & Basic Info */}
-              <div className="flex items-start gap-3.5">
-                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0">
-                  <SafeAvatar
-                    src={prof.avatar}
-                    name={prof.name}
-                    size="md"
-                    className="w-full h-full rounded-2xl"
-                  />
-                  {prof.verified && (
-                    <div className="absolute bottom-0 right-0 bg-emerald-600 text-white rounded-tl-lg p-0.5 z-10">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <h3 className="text-base font-bold text-[#18181b] truncate">
-                      {prof.name}
-                    </h3>
-                    <span className="bg-emerald-50 text-emerald-700 font-bold text-xs px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 border border-emerald-200">
-                      <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
-                      {prof.matchPercentage}%
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-[#52525b] font-medium">{prof.role}</p>
-
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">
-                      {prof.priceLevel}
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#71717a] flex items-center gap-1">
-                      <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                      Índice de Confiança: {prof.trustIndex}/100
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommendation quote */}
-              <p className="text-xs text-[#52525b] italic bg-[#f4f4f5] p-2.5 rounded-xl border border-[#e4e4e7] leading-relaxed">
-                "{prof.recommendationReason}"
-              </p>
-
-              {/* Bottom Row: Availability & Profile Link */}
-              <div className="pt-2 border-t border-[#e4e4e7] flex justify-between items-center mt-auto">
-                <span
-                  className={`text-xs font-bold flex items-center gap-1.5 ${
-                    prof.availability === 'Hoje' ? 'text-emerald-700' : 'text-[#71717a]'
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  Disponível {prof.availability}
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onViewProfessionalProfile(prof)}
-                    className="text-[#ea580c] font-bold text-xs hover:underline cursor-pointer"
-                  >
-                    Ver Perfil
-                  </button>
-                  <button
-                    onClick={() => onSelectProfessional(prof)}
-                    className="bg-[#18181b] hover:bg-[#ea580c] text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors cursor-pointer"
-                  >
-                    Contratar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <hr className="border-[#e4e4e7]" />
-
-      {/* 3. Screen 3: Comparar Orçamentos */}
-      <section id="section-orcamentos" className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-[#18181b] tracking-tight">
-            Comparar Orçamentos
-          </h2>
-          <span className="text-xs text-[#71717a]">Valores transparentes</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {sortedProfessionals.map((prof, index) => {
-            const isRecommended = index === 0;
-
-            return (
-              <div
-                key={prof.id}
-                className={`bg-white rounded-2xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all shadow-xs hover:shadow-md ${
-                  isRecommended
-                    ? 'border-2 border-[#ea580c] ring-4 ring-[#ea580c]/10'
-                    : 'border border-[#e4e4e7]'
+              Nova Análise com IA
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Filter Pills */}
+            <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none">
+              <button
+                id="filter-compatibilidade"
+                onClick={() => setActiveFilter('compatibilidade')}
+                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  activeFilter === 'compatibilidade'
+                    ? 'bg-[#18181b] text-white shadow-xs'
+                    : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
                 }`}
               >
-                {/* Recommended Badge */}
-                {isRecommended && (
-                  <div className="absolute top-0 right-0 bg-[#ea580c] text-white text-[10px] uppercase font-extrabold px-3 py-1 rounded-bl-xl tracking-wider flex items-center gap-1">
-                    <Award className="w-3 h-3" /> Recomendado {prof.trustIndex}/100
-                  </div>
-                )}
+                Melhor compatibilidade
+              </button>
 
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="text-base font-bold text-[#18181b]">{prof.name}</h3>
-                      <p className="text-xs text-[#71717a]">{prof.role}</p>
+              <button
+                id="filter-confianca"
+                onClick={() => setActiveFilter('confianca')}
+                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  activeFilter === 'confianca'
+                    ? 'bg-[#18181b] text-white shadow-xs'
+                    : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
+                }`}
+              >
+                Maior confiança
+              </button>
+
+              <button
+                id="filter-preco"
+                onClick={() => setActiveFilter('preco')}
+                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  activeFilter === 'preco'
+                    ? 'bg-[#18181b] text-white shadow-xs'
+                    : 'bg-white text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
+                }`}
+              >
+                Menor preço
+              </button>
+            </div>
+
+            {/* Professional Cards List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sortedProfessionals.map((prof) => (
+                <div
+                  key={prof.id}
+                  className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all group relative"
+                >
+                  {/* Top Row: Avatar & Basic Info */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0">
+                      <SafeAvatar
+                        src={prof.avatar}
+                        name={prof.name}
+                        size="md"
+                        className="w-full h-full rounded-2xl"
+                      />
+                      {prof.verified && (
+                        <div className="absolute bottom-0 right-0 bg-emerald-600 text-white rounded-tl-lg p-0.5 z-10">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </div>
+                      )}
                     </div>
-                    {!isRecommended && (
-                      <span className="bg-[#fff7ed] text-[#ea580c] text-xs font-bold px-2 py-0.5 rounded-full border border-[#fed7aa]">
-                        {prof.trustIndex}/100
-                      </span>
-                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <h3 className="text-base font-bold text-[#18181b] truncate">
+                          {prof.name}
+                        </h3>
+                        <span className="bg-emerald-50 text-emerald-700 font-bold text-xs px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 border border-emerald-200">
+                          <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
+                          {prof.matchPercentage}%
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-[#52525b] font-medium">{prof.role}</p>
+
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">
+                          {prof.priceLevel}
+                        </span>
+                        <span className="text-[11px] font-semibold text-[#71717a] flex items-center gap-1">
+                          <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                          Índice de Confiança: {prof.trustIndex}/100
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Price big display */}
-                  <div className="flex items-baseline gap-1 my-2">
-                    <span className="text-base font-medium text-[#71717a]">R$</span>
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#18181b]">
-                      {prof.totalCost}
-                    </span>
-                  </div>
-
-                  <p
-                    className={`text-xs font-semibold flex items-center gap-1 mb-3 ${
-                      prof.availability === 'Hoje' ? 'text-emerald-700' : 'text-[#71717a]'
-                    }`}
-                  >
-                    {prof.availability === 'Hoje' ? (
-                      <>
-                        <Zap className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
-                        Atendimento Hoje
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3.5 h-3.5" />
-                        Atendimento Amanhã
-                      </>
-                    )}
+                  {/* Recommendation quote */}
+                  <p className="text-xs text-[#52525b] italic bg-[#f4f4f5] p-2.5 rounded-xl border border-[#e4e4e7] leading-relaxed">
+                    "{prof.recommendationReason}"
                   </p>
 
-                  {/* Cost breakdown */}
-                  {isRecommended ? (
-                    <div className="bg-[#f4f4f5] rounded-xl p-3 border border-[#e4e4e7] space-y-1.5 text-xs">
-                      <div className="flex justify-between text-[#52525b]">
-                        <span>Mão de obra:</span>
-                        <span className="font-semibold">R$ {prof.laborCost}</span>
-                      </div>
-                      <div className="flex justify-between text-[#52525b]">
-                        <span>Materiais (est.):</span>
-                        <span className="font-semibold">R$ {prof.materialsCost}</span>
-                      </div>
-                      <div className="flex justify-between text-[#18181b] font-bold border-t border-[#e4e4e7] pt-1.5 mt-1">
-                        <span>Total Estimado:</span>
-                        <span className="text-[#ea580c]">R$ {prof.totalCost}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-[#f4f4f5]/60 rounded-xl p-3 border border-[#e4e4e7] flex items-center justify-center min-h-[78px] text-center text-xs text-[#71717a]">
-                      <span>Detalhes detalhados disponíveis após escolha</span>
-                    </div>
-                  )}
-                </div>
+                  {/* Bottom Row: Availability & Profile Link */}
+                  <div className="pt-2 border-t border-[#e4e4e7] flex justify-between items-center mt-auto">
+                    <span
+                      className={`text-xs font-bold flex items-center gap-1.5 ${
+                        prof.availability === 'Hoje' ? 'text-emerald-700' : 'text-[#71717a]'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      Disponível {prof.availability}
+                    </span>
 
-                <button
-                  id={`btn-escolher-${prof.id}`}
-                  onClick={() => onSelectProfessional(prof)}
-                  className={`w-full font-bold text-xs sm:text-sm py-3 rounded-full transition-all active:scale-98 cursor-pointer ${
-                    isRecommended
-                      ? 'bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-sm'
-                      : 'bg-white hover:bg-[#fff7ed] text-[#ea580c] border border-[#ea580c]'
-                  }`}
-                >
-                  Escolher este profissional
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onViewProfessionalProfile(prof)}
+                        className="text-[#ea580c] font-bold text-xs hover:underline cursor-pointer"
+                      >
+                        Ver Perfil
+                      </button>
+                      <button
+                        onClick={() => onSelectProfessional(prof)}
+                        className="bg-[#18181b] hover:bg-[#ea580c] text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                      >
+                        Contratar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
+
+      {sortedProfessionals.length > 0 && (
+        <>
+          <hr className="border-[#e4e4e7]" />
+
+          {/* 3. Screen 3: Comparar Orçamentos */}
+          <section id="section-orcamentos" className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-[#18181b] tracking-tight">
+                Comparar Orçamentos
+              </h2>
+              <span className="text-xs text-[#71717a]">Valores transparentes</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {sortedProfessionals.map((prof, index) => {
+                const isRecommended = index === 0;
+
+                return (
+                  <div
+                    key={prof.id}
+                    className={`bg-white rounded-2xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all shadow-xs hover:shadow-md ${
+                      isRecommended
+                        ? 'border-2 border-[#ea580c] ring-4 ring-[#ea580c]/10'
+                        : 'border border-[#e4e4e7]'
+                    }`}
+                  >
+                    {/* Recommended Badge */}
+                    {isRecommended && (
+                      <div className="absolute top-0 right-0 bg-[#ea580c] text-white text-[10px] uppercase font-extrabold px-3 py-1 rounded-bl-xl tracking-wider flex items-center gap-1">
+                        <Award className="w-3 h-3" /> Recomendado {prof.trustIndex}/100
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="text-base font-bold text-[#18181b]">{prof.name}</h3>
+                          <p className="text-xs text-[#71717a]">{prof.role}</p>
+                        </div>
+                        {!isRecommended && (
+                          <span className="bg-[#fff7ed] text-[#ea580c] text-xs font-bold px-2 py-0.5 rounded-full border border-[#fed7aa]">
+                            {prof.trustIndex}/100
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Price big display */}
+                      <div className="flex items-baseline gap-1 my-2">
+                        <span className="text-base font-medium text-[#71717a]">R$</span>
+                        <span className="text-3xl sm:text-4xl font-extrabold text-[#18181b]">
+                          {prof.totalCost}
+                        </span>
+                      </div>
+
+                      <p
+                        className={`text-xs font-semibold flex items-center gap-1 mb-3 ${
+                          prof.availability === 'Hoje' ? 'text-emerald-700' : 'text-[#71717a]'
+                        }`}
+                      >
+                        {prof.availability === 'Hoje' ? (
+                          <>
+                            <Zap className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+                            Atendimento Hoje
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5" />
+                            Atendimento Amanhã
+                          </>
+                        )}
+                      </p>
+
+                      {/* Cost breakdown */}
+                      {isRecommended ? (
+                        <div className="bg-[#f4f4f5] rounded-xl p-3 border border-[#e4e4e7] space-y-1.5 text-xs">
+                          <div className="flex justify-between text-[#52525b]">
+                            <span>Mão de obra:</span>
+                            <span className="font-semibold">R$ {prof.laborCost}</span>
+                          </div>
+                          <div className="flex justify-between text-[#52525b]">
+                            <span>Materiais (est.):</span>
+                            <span className="font-semibold">R$ {prof.materialsCost}</span>
+                          </div>
+                          <div className="flex justify-between text-[#18181b] font-bold border-t border-[#e4e4e7] pt-1.5 mt-1">
+                            <span>Total Estimado:</span>
+                            <span className="text-[#ea580c]">R$ {prof.totalCost}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-[#f4f4f5]/60 rounded-xl p-3 border border-[#e4e4e7] flex items-center justify-center min-h-[78px] text-center text-xs text-[#71717a]">
+                          <span>Detalhes detalhados disponíveis após escolha</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      id={`btn-escolher-${prof.id}`}
+                      onClick={() => onSelectProfessional(prof)}
+                      className={`w-full font-bold text-xs sm:text-sm py-3 rounded-full transition-all active:scale-98 cursor-pointer ${
+                        isRecommended
+                          ? 'bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-sm'
+                          : 'bg-white hover:bg-[#fff7ed] text-[#ea580c] border border-[#ea580c]'
+                      }`}
+                    >
+                      Escolher este profissional
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 };
+

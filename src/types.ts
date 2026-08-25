@@ -204,3 +204,18 @@ export interface NotificationItem {
   read: boolean;
   type: 'alert' | 'info' | 'success';
 }
+
+export interface GoogleAuthUser {
+  id: string;
+  email: string;
+  name: string;
+  givenName?: string;
+  familyName?: string;
+  picture: string;
+  verifiedEmail: boolean;
+  role: UserRole;
+  authProvider: 'google';
+  connectedAt: string;
+  token?: string;
+}
+

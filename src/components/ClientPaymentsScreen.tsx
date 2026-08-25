@@ -171,7 +171,7 @@ export const ClientPaymentsScreen: React.FC<ClientPaymentsScreenProps> = ({
             <div>
               <span className="text-[11px] text-zinc-300 block">Saldo em Conta</span>
               <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                R$ {client.walletBalance?.toFixed(2) || '120.00'}
+                R$ {(client.walletBalance ?? 0).toFixed(2)}
               </span>
             </div>
 
@@ -180,7 +180,7 @@ export const ClientPaymentsScreen: React.FC<ClientPaymentsScreenProps> = ({
                 <Sparkles className="w-3 h-3 text-amber-400" /> Cashback Acumulado
               </span>
               <span className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight">
-                R$ {client.cashbackBalance?.toFixed(2) || '28.50'}
+                R$ {(client.cashbackBalance ?? 0).toFixed(2)}
               </span>
             </div>
 
@@ -219,70 +219,89 @@ export const ClientPaymentsScreen: React.FC<ClientPaymentsScreenProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {paymentMethods.map((method) => {
-            const isCard = method.type === 'credit_card' || method.type === 'debit_card';
-
-            return (
-              <div
-                key={method.id}
-                className={`p-4 rounded-2xl border transition-all relative flex flex-col justify-between gap-3 ${
-                  method.isDefault
-                    ? 'bg-white border-[#ea580c] shadow-xs ring-2 ring-[#ea580c]/10'
-                    : 'bg-white border-[#e4e4e7] shadow-2xs hover:border-[#cbd5e1]'
-                }`}
+          {paymentMethods.length === 0 ? (
+            <div className="p-4 sm:p-5 rounded-2xl border border-dashed border-[#e4e4e7] bg-white flex flex-col justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="w-4 h-4 text-[#ea580c]" />
+                  <h4 className="text-sm font-bold text-[#18181b]">Nenhum cartão cadastrado</h4>
+                </div>
+                <p className="text-xs text-[#71717a]">
+                  Cadastre seu cartão com segurança de 256 bits para pagar seus serviços com facilidade e parcelamento.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCardModalOpen(true)}
+                className="w-fit text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-3.5 py-1.5 rounded-full transition-all border border-[#fed7aa] cursor-pointer flex items-center gap-1.5"
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2.5">
-                    {/* Brand Pill */}
-                    <div className="w-10 h-7 rounded-lg bg-[#18181b] text-white flex items-center justify-center font-black text-[10px] tracking-wider uppercase shadow-2xs">
-                      {method.brand || 'CARD'}
+                <Plus className="w-3.5 h-3.5" /> Adicionar Cartão
+              </button>
+            </div>
+          ) : (
+            paymentMethods.map((method) => {
+              return (
+                <div
+                  key={method.id}
+                  className={`p-4 rounded-2xl border transition-all relative flex flex-col justify-between gap-3 ${
+                    method.isDefault
+                      ? 'bg-white border-[#ea580c] shadow-xs ring-2 ring-[#ea580c]/10'
+                      : 'bg-white border-[#e4e4e7] shadow-2xs hover:border-[#cbd5e1]'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2.5">
+                      {/* Brand Pill */}
+                      <div className="w-10 h-7 rounded-lg bg-[#18181b] text-white flex items-center justify-center font-black text-[10px] tracking-wider uppercase shadow-2xs">
+                        {method.brand || 'CARD'}
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-bold text-[#18181b]">
+                          {method.nickname || `Cartão ${method.brand?.toUpperCase()}`}
+                        </h4>
+                        <p className="text-xs text-[#71717a] font-mono">
+                          •••• •••• •••• {method.last4}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <h4 className="text-sm font-bold text-[#18181b]">
-                        {method.nickname || `Cartão ${method.brand?.toUpperCase()}`}
-                      </h4>
-                      <p className="text-xs text-[#71717a] font-mono">
-                        •••• •••• •••• {method.last4}
-                      </p>
-                    </div>
+                    {method.isDefault ? (
+                      <span className="text-[10px] bg-[#fff7ed] text-[#ea580c] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border border-[#fed7aa]">
+                        <CheckCircle2 className="w-3 h-3" /> Padrão
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => onSetDefaultPaymentMethod(method.id)}
+                        className="text-[11px] text-[#52525b] hover:text-[#ea580c] font-medium hover:underline cursor-pointer"
+                      >
+                        Tornar Padrão
+                      </button>
+                    )}
                   </div>
 
-                  {method.isDefault ? (
-                    <span className="text-[10px] bg-[#fff7ed] text-[#ea580c] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 border border-[#fed7aa]">
-                      <CheckCircle2 className="w-3 h-3" /> Padrão
-                    </span>
-                  ) : (
+                  <div className="flex justify-between items-center text-xs text-[#71717a] pt-2 border-t border-[#e4e4e7]">
+                    <span>Titular: {method.holderName || client.name.toUpperCase()}</span>
+                    <span>Val: {method.expiry || '12/28'}</span>
+                  </div>
+
+                  {paymentMethods.length > 1 && (
                     <button
-                      onClick={() => onSetDefaultPaymentMethod(method.id)}
-                      className="text-[11px] text-[#52525b] hover:text-[#ea580c] font-medium hover:underline cursor-pointer"
+                      onClick={() => onDeletePaymentMethod(method.id)}
+                      className="text-[10px] text-rose-500 hover:text-rose-700 self-end font-semibold cursor-pointer"
                     >
-                      Tornar Padrão
+                      Remover
                     </button>
                   )}
                 </div>
-
-                <div className="flex justify-between items-center text-xs text-[#71717a] pt-2 border-t border-[#e4e4e7]">
-                  <span>Titular: {method.holderName || client.name.toUpperCase()}</span>
-                  <span>Val: {method.expiry || '12/28'}</span>
-                </div>
-
-                {paymentMethods.length > 1 && (
-                  <button
-                    onClick={() => onDeletePaymentMethod(method.id)}
-                    className="text-[10px] text-rose-500 hover:text-rose-700 self-end font-semibold cursor-pointer"
-                  >
-                    Remover
-                  </button>
-                )}
-              </div>
-            );
-          })}
+              );
+            })
+          )}
 
           {/* Pix Quick Card Option */}
           <div
             onClick={() => setIsPixModalOpen(true)}
-            className="p-4 rounded-2xl border border-dashed border-[#e4e4e7] hover:border-[#ea580c] bg-[#fafafa] flex items-center justify-between gap-3 cursor-pointer group transition-all"
+            className="p-4 rounded-2xl border border-dashed border-[#fed7aa] hover:border-[#ea580c] bg-[#fff7ed]/50 flex items-center justify-between gap-3 cursor-pointer group transition-all"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -490,33 +509,40 @@ export const ClientPaymentsScreen: React.FC<ClientPaymentsScreenProps> = ({
       </div>
 
       {/* Subscription Plan Card */}
-      <div className="bg-white rounded-3xl p-5 border border-[#e4e4e7] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] flex items-center justify-center font-bold">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-base font-bold text-[#18181b]">
-                Assinatura {client.plan}
-              </h4>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                Ativo
-              </span>
+      {(() => {
+        const isPremium = client.plan?.toLowerCase().includes('premium');
+        return (
+          <div className="bg-white rounded-3xl p-5 border border-[#e4e4e7] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa] flex items-center justify-center font-bold">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-bold text-[#18181b]">
+                    {client.plan || 'Plano Essencial'}
+                  </h4>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                    Ativo
+                  </span>
+                </div>
+                <p className="text-xs text-[#52525b]">
+                  {isPremium
+                    ? 'R$ 29,90/mês • 1 Visita diagnóstica grátis/mês + 20% off na mão de obra'
+                    : 'Sem mensalidade • Pague apenas pelos serviços realizados com caução protegida'}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-[#52525b]">
-              R$ 29,90/mês • 1 Visita diagnóstica grátis/mês + 20% off na mão de obra
-            </p>
-          </div>
-        </div>
 
-        <button
-          onClick={onOpenUpgradePlan}
-          className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-4 py-2 rounded-full transition-all cursor-pointer shrink-0 border border-[#fed7aa]"
-        >
-          Gerenciar Plano
-        </button>
-      </div>
+            <button
+              onClick={onOpenUpgradePlan}
+              className="text-xs font-bold text-[#ea580c] bg-[#fff7ed] hover:bg-[#ea580c] hover:text-white px-4 py-2 rounded-full transition-all cursor-pointer shrink-0 border border-[#fed7aa]"
+            >
+              {isPremium ? 'Gerenciar Plano' : 'Conhecer Premium'}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ================= MODAL: ADICIONAR NOVO CARTÃO ================= */}
       {isAddCardModalOpen && (

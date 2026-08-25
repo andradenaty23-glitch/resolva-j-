@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TabType,
   UserRole,
@@ -12,7 +12,8 @@ import {
   ProviderProfile,
   ProviderJobLead,
   PaymentMethod,
-  TransactionRecord
+  TransactionRecord,
+  GoogleAuthUser
 } from './types';
 import {
   INITIAL_CLIENT_PROFILE,
@@ -38,6 +39,10 @@ import { ClientPaymentsScreen } from './components/ClientPaymentsScreen';
 import { ProviderHomeScreen } from './components/ProviderHomeScreen';
 import { ProviderProfileScreen } from './components/ProviderProfileScreen';
 import { RegistrationModal } from './components/RegistrationModal';
+import { GoogleAuthModal } from './components/GoogleAuthModal';
+import { InstallAppModal } from './components/InstallAppModal';
+import { InstallAppBanner } from './components/InstallAppBanner';
+import { getSavedGoogleUser, saveGoogleUser } from './services/googleAuth';
 import {
   VoiceModal,
   PhotoModal,
@@ -55,9 +60,18 @@ export default function App() {
   const [providerProfile, setProviderProfile] = useState<ProviderProfile>(INITIAL_PROVIDER_PROFILE);
   const [providerLeads, setProviderLeads] = useState<ProviderJobLead[]>(INITIAL_PROVIDER_LEADS);
 
+  // Google Authentication State
+  const [googleUser, setGoogleUser] = useState<GoogleAuthUser | null>(() => getSavedGoogleUser());
+  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
+
+  // App Installation State (PWA / Mobile)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallAppModalOpen, setIsInstallAppModalOpen] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
+
   // Client Data States
   const [activeTab, setActiveTab] = useState<TabType>('inicio');
-  const [diagnosis, setDiagnosis] = useState<DiagnosisResult>(INITIAL_DIAGNOSIS);
+  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(INITIAL_DIAGNOSIS);
   const [professionals, setProfessionals] = useState<Professional[]>(INITIAL_PROFESSIONALS);
   const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
   const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
@@ -79,6 +93,93 @@ export default function App() {
   const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+
+  // PWA beforeinstallprompt event handling
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
+      setNotifications((prev) => [
+        {
+          id: `notif-app-${Date.now()}`,
+          title: 'Aplicativo Instalado com Sucesso!',
+          message: 'RESOLVA JÁ agora está pronto para uso direto da sua tela inicial com carregamento ultra rápido.',
+          time: 'Agora mesmo',
+          read: false,
+          type: 'success'
+        },
+        ...prev
+      ]);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  // Handle Google Auth Login
+  const handleGoogleLoginSuccess = (user: GoogleAuthUser) => {
+    setGoogleUser(user);
+    saveGoogleUser(user);
+
+    if (user.role === 'cliente') {
+      setCurrentRole('cliente');
+      setClientProfile((prev) => ({
+        ...prev,
+        name: user.name,
+        email: user.email,
+        avatar: user.picture || prev.avatar
+      }));
+    } else {
+      setCurrentRole('prestador');
+      setProviderProfile((prev) => ({
+        ...prev,
+        name: user.name,
+        email: user.email,
+        avatar: user.picture || prev.avatar,
+        verified: true
+      }));
+    }
+
+    setNotifications((prev) => [
+      {
+        id: `notif-google-${Date.now()}`,
+        title: 'Autenticado com o Google',
+        message: `Bem-vindo(a), ${user.name}! Seus dados estão sincronizados com sua conta Google.`,
+        time: 'Agora',
+        read: false,
+        type: 'success'
+      },
+      ...prev
+    ]);
+  };
+
+  const handleGoogleLogout = () => {
+    setGoogleUser(null);
+    saveGoogleUser(null);
+    setNotifications((prev) => [
+      {
+        id: `notif-logout-${Date.now()}`,
+        title: 'Sessão Google Encerrada',
+        message: 'Você se desconectou com sucesso da sua conta Google.',
+        time: 'Agora',
+        read: false,
+        type: 'info'
+      },
+      ...prev
+    ]);
+  };
 
   // Counts
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -301,6 +402,71 @@ export default function App() {
 
     setDiagnosis(newDiagnosis);
     setSelectedRoomId(room);
+
+    // Generate matched verified specialists for this problem
+    const generatedProfessionals: Professional[] = [
+      {
+        id: `prof-1-${Date.now()}`,
+        name: 'Carlos Silva',
+        role: `${profType} Certificado`,
+        avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80',
+        rating: 4.9,
+        matchPercentage: 98,
+        priceLevel: '$$',
+        trustIndex: 98,
+        recommendationReason: `Especialista com mais de 200 atendimentos em ${category} na sua região.`,
+        availability: 'Hoje',
+        verified: true,
+        laborCost: costRange.min,
+        materialsCost: Math.round(costRange.min * 0.25),
+        totalCost: costRange.min + Math.round(costRange.min * 0.25),
+        phone: '(11) 98765-4321',
+        reviewsCount: 142,
+        completedJobs: 215,
+        specialties: [category, 'Reparos Rápidos', 'Garantia 90d']
+      },
+      {
+        id: `prof-2-${Date.now()}`,
+        name: 'Roberto Mendes',
+        role: `Técnico Sênior em ${category}`,
+        avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
+        rating: 4.8,
+        matchPercentage: 94,
+        priceLevel: '$',
+        trustIndex: 95,
+        recommendationReason: 'Melhor custo-benefício e avaliação 5 estrelas em agilidade.',
+        availability: 'Hoje',
+        verified: true,
+        laborCost: Math.max(70, costRange.min - 20),
+        materialsCost: Math.round(costRange.min * 0.2),
+        totalCost: Math.max(70, costRange.min - 20) + Math.round(costRange.min * 0.2),
+        phone: '(11) 97654-3210',
+        reviewsCount: 98,
+        completedJobs: 130,
+        specialties: [category, 'Manutenção Preventiva', 'Atendimento Rápido']
+      },
+      {
+        id: `prof-3-${Date.now()}`,
+        name: 'Marcos Oliveira',
+        role: `Mestre Especialista em ${category}`,
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        rating: 5.0,
+        matchPercentage: 91,
+        priceLevel: '$$$',
+        trustIndex: 99,
+        recommendationReason: 'Índice de confiança máximo e selo de excelência da plataforma.',
+        availability: 'Amanhã',
+        verified: true,
+        laborCost: costRange.max,
+        materialsCost: Math.round(costRange.max * 0.3),
+        totalCost: costRange.max + Math.round(costRange.max * 0.3),
+        phone: '(11) 99887-7665',
+        reviewsCount: 230,
+        completedJobs: 340,
+        specialties: [category, 'Laudo Técnico', 'Instalações Complexas']
+      }
+    ];
+    setProfessionals(generatedProfessionals);
     setActiveTab('problemas');
 
     // Also automatically create an incoming lead for providers!
@@ -474,7 +640,7 @@ export default function App() {
 
   return (
     <div className="bg-[#f8fafc] text-[#0f172a] min-h-screen flex flex-col font-sans antialiased selection:bg-[#dbeafe] selection:text-[#1d4ed8]">
-      {/* Top App Header with Role Switcher & New Registration CTA */}
+      {/* Top App Header with Role Switcher & Google Auth / App install CTA */}
       <Header
         notifications={notifications}
         unreadCount={unreadCount}
@@ -485,6 +651,9 @@ export default function App() {
         }}
         onOpenRegistration={() => setIsRegistrationModalOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
+        googleUser={googleUser}
+        onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+        onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
         onOpenSystemStatus={() => {
           alert(
             currentRole === 'cliente'
@@ -495,7 +664,16 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 px-4 sm:px-6 pt-5 pb-24 md:pl-28 max-w-4xl mx-auto w-full">
+      <main className="flex-1 px-4 sm:px-6 pt-4 pb-24 md:pl-28 max-w-4xl mx-auto w-full flex flex-col gap-4">
+        {/* Non-intrusive App Installation Banner */}
+        {showInstallBanner && (
+          <InstallAppBanner
+            onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
+            onDismiss={() => setShowInstallBanner(false)}
+            deferredPrompt={deferredPrompt}
+          />
+        )}
+
         {/* ================= CLIENT ROLE SCREENS ================= */}
         {currentRole === 'cliente' && (
           <>
@@ -530,6 +708,7 @@ export default function App() {
                   setIsProfileModalOpen(true);
                 }}
                 onRunNewDiagnosis={() => setActiveTab('inicio')}
+                onSelectQuickDemand={handleFindSolution}
               />
             )}
 
@@ -583,6 +762,10 @@ export default function App() {
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
                 onNavigateToPayments={() => setActiveTab('pagamentos')}
+                googleUser={googleUser}
+                onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+                onDisconnectGoogle={handleGoogleLogout}
+                onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
               />
             )}
           </>
@@ -713,6 +896,10 @@ export default function App() {
                   setActiveTab('inicio');
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
+                googleUser={googleUser}
+                onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+                onDisconnectGoogle={handleGoogleLogout}
+                onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
               />
             )}
           </>
@@ -737,6 +924,25 @@ export default function App() {
         initialRole={currentRole}
         onRegisterClient={handleRegisterClient}
         onRegisterProvider={handleRegisterProvider}
+        onOpenGoogleAuth={(role) => {
+          setIsRegistrationModalOpen(false);
+          setIsGoogleAuthModalOpen(true);
+        }}
+      />
+
+      {/* Google Authentication Modal */}
+      <GoogleAuthModal
+        isOpen={isGoogleAuthModalOpen}
+        onClose={() => setIsGoogleAuthModalOpen(false)}
+        onSuccess={handleGoogleLoginSuccess}
+        initialRole={currentRole}
+      />
+
+      {/* App Installation Modal (PWA & APK Capacitor Guide) */}
+      <InstallAppModal
+        isOpen={isInstallAppModalOpen}
+        onClose={() => setIsInstallAppModalOpen(false)}
+        deferredPrompt={deferredPrompt}
       />
 
       {/* Modals */}

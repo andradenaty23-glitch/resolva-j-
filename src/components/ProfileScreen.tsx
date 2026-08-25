@@ -15,9 +15,12 @@ import {
   Upload,
   Check,
   Edit3,
-  Trash2
+  Trash2,
+  Smartphone,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
-import { ClientProfile } from '../types';
+import { ClientProfile, GoogleAuthUser } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import { EditProfileModal } from './EditProfileModal';
 import { DeleteProfileModal } from './DeleteProfileModal';
@@ -29,6 +32,10 @@ interface ProfileScreenProps {
   onSwitchToProvider: () => void;
   onOpenNewRegistration: () => void;
   onNavigateToPayments?: () => void;
+  googleUser?: GoogleAuthUser | null;
+  onOpenGoogleAuth?: () => void;
+  onDisconnectGoogle?: () => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -37,7 +44,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onDeleteProfile,
   onSwitchToProvider,
   onOpenNewRegistration,
-  onNavigateToPayments
+  onNavigateToPayments,
+  googleUser,
+  onOpenGoogleAuth,
+  onDisconnectGoogle,
+  onOpenInstallModal
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -159,8 +170,93 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         )}
       </div>
 
+      {/* Google Account Authentication Status */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e4e4e7] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-[#e4e4e7] shadow-2xs shrink-0">
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-[#18181b]">
+                {googleUser ? 'Conta Google Vinculada' : 'Autenticação Google'}
+              </h4>
+              {googleUser && (
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                  <ShieldCheck className="w-2.5 h-2.5" /> Verificado
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-[#71717a]">
+              {googleUser
+                ? `${googleUser.email} • Login com 1 clique ativo`
+                : 'Conecte sua conta Google para login rápido e backup dos seus dados'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-center">
+          {googleUser ? (
+            <button
+              type="button"
+              onClick={onDisconnectGoogle}
+              className="text-xs text-zinc-600 hover:text-rose-600 font-bold px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer border border-[#e4e4e7]"
+            >
+              Desconectar
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenGoogleAuth}
+              className="text-xs font-bold text-white bg-[#18181b] hover:bg-[#ea580c] px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              Conectar Google
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Menu Options */}
       <div className="bg-white rounded-2xl border border-[#e4e4e7] shadow-xs overflow-hidden divide-y divide-[#e4e4e7]">
+        {/* App Installation */}
+        <button
+          onClick={onOpenInstallModal}
+          className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer bg-gradient-to-r from-orange-50/40 to-transparent"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#fff7ed] text-[#ea580c] flex items-center justify-center border border-[#fed7aa]">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-[#18181b]">Instalar Aplicativo no Celular / PC</p>
+                <span className="bg-[#ea580c] text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                  PWA & APK
+                </span>
+              </div>
+              <p className="text-xs text-[#71717a]">Acesso rápido offline, notificações e tela cheia standalone</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-[#71717a]" />
+        </button>
+
         <button
           onClick={onNavigateToPayments}
           className="w-full p-4 flex items-center justify-between hover:bg-[#fff7ed]/50 transition-colors text-left cursor-pointer"
