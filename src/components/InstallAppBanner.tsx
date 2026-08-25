@@ -32,6 +32,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({
         <button
           type="button"
           onClick={onOpenInstallModal}
+          aria-label="Abrir modal para instalar o aplicativo Resolva Já"
           className="bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-1 cursor-pointer shadow-xs"
         >
           <Download className="w-3.5 h-3.5" />
@@ -41,6 +42,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({
         <button
           type="button"
           onClick={onDismiss}
+          aria-label="Fechar aviso de instalação"
           className="text-zinc-400 hover:text-white p-1.5 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer"
           title="Fechar aviso"
         >

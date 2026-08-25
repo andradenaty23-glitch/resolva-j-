@@ -175,7 +175,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   }`}
                   title={`Escolher ${preset.label}`}
                 >
-                  <img src={preset.url} alt={preset.label} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={preset.url} alt={preset.label} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

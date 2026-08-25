@@ -28,31 +28,33 @@ import {
   INITIAL_TRANSACTIONS
 } from './data/mockData';
 import { SERVICE_DEMANDS_CATALOG } from './data/serviceDemands';
+import { matchServiceDemand } from './utils/serviceMatcher';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
-import { HomeScreen } from './components/HomeScreen';
-import { DiagnosisScreen } from './components/DiagnosisScreen';
-import { MinhaCasaScreen } from './components/MinhaCasaScreen';
-import { AgendaScreen } from './components/AgendaScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { ClientPaymentsScreen } from './components/ClientPaymentsScreen';
-import { ProviderHomeScreen } from './components/ProviderHomeScreen';
-import { ProviderProfileScreen } from './components/ProviderProfileScreen';
-import { RegistrationModal } from './components/RegistrationModal';
-import { GoogleAuthModal } from './components/GoogleAuthModal';
-import { InstallAppModal } from './components/InstallAppModal';
 import { InstallAppBanner } from './components/InstallAppBanner';
-import { AppUpdateModal } from './components/AppUpdateModal';
+import { RequireAuth } from './components/RequireAuth';
 import { getSavedGoogleUser, saveGoogleUser } from './services/googleAuth';
-import {
-  VoiceModal,
-  PhotoModal,
-  GuidedWizardModal,
-  BookingModal,
-  ProfessionalProfileModal,
-  AddRoomModal,
-  NotificationsModal
-} from './components/Modals';
+
+const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const DiagnosisScreen = React.lazy(() => import('./components/DiagnosisScreen').then(m => ({ default: m.DiagnosisScreen })));
+const MinhaCasaScreen = React.lazy(() => import('./components/MinhaCasaScreen').then(m => ({ default: m.MinhaCasaScreen })));
+const AgendaScreen = React.lazy(() => import('./components/AgendaScreen').then(m => ({ default: m.AgendaScreen })));
+const ProfileScreen = React.lazy(() => import('./components/ProfileScreen').then(m => ({ default: m.ProfileScreen })));
+const ClientPaymentsScreen = React.lazy(() => import('./components/ClientPaymentsScreen').then(m => ({ default: m.ClientPaymentsScreen })));
+const ProviderHomeScreen = React.lazy(() => import('./components/ProviderHomeScreen').then(m => ({ default: m.ProviderHomeScreen })));
+const ProviderProfileScreen = React.lazy(() => import('./components/ProviderProfileScreen').then(m => ({ default: m.ProviderProfileScreen })));
+const RegistrationModal = React.lazy(() => import('./components/RegistrationModal').then(m => ({ default: m.RegistrationModal })));
+const GoogleAuthModal = React.lazy(() => import('./components/GoogleAuthModal').then(m => ({ default: m.GoogleAuthModal })));
+const InstallAppModal = React.lazy(() => import('./components/InstallAppModal').then(m => ({ default: m.InstallAppModal })));
+const AppUpdateModal = React.lazy(() => import('./components/AppUpdateModal').then(m => ({ default: m.AppUpdateModal })));
+
+const VoiceModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.VoiceModal })));
+const PhotoModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.PhotoModal })));
+const GuidedWizardModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.GuidedWizardModal })));
+const BookingModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.BookingModal })));
+const ProfessionalProfileModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.ProfessionalProfileModal })));
+const AddRoomModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.AddRoomModal })));
+const NotificationsModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.NotificationsModal })));
 
 export default function App() {
   // Active Role and Profiles
@@ -273,255 +275,40 @@ export default function App() {
 
   // Handler for Client: Dynamic AI diagnosis generator
   const handleFindSolution = (problemText: string, imageSrc?: string) => {
-    const textLower = problemText.toLowerCase();
-
-    // Find matched demand category in catalog
-    const matchedDemand = SERVICE_DEMANDS_CATALOG.find((demand) => {
-      if (textLower.includes(demand.id.toLowerCase())) return true;
-      if (textLower.includes(demand.shortName.toLowerCase())) return true;
-      const keyWords = demand.name.toLowerCase().split(' ');
-      return keyWords.some((kw) => kw.length > 3 && textLower.includes(kw));
-    });
-
-    let category = matchedDemand ? matchedDemand.name : 'Encanamento / Hidráulica';
-    let profType = matchedDemand ? matchedDemand.profType : 'Encanador Especializado';
-    let summary = matchedDemand ? matchedDemand.popularIssues[0] : 'Vazamento ou reparo hidráulico residencial';
-    let room = 'cozinha';
-    let urgencyPercentage = matchedDemand ? matchedDemand.urgencyPercentageDefault : 55;
-    let urgency: 'baixa' | 'media' | 'alta' | 'critica' = matchedDemand ? matchedDemand.urgencyDefault : 'media';
-    let diyTips = matchedDemand
-      ? matchedDemand.diyTips
-      : [
-          'Feche o registro geral de água se o vazamento for contínuo.',
-          'Coloque um balde ou pano absorvente sob o ponto de gotejamento.'
-        ];
-    let costRange = matchedDemand ? matchedDemand.estimatedCostRange : { min: 90, max: 180 };
-
-    if (
-      textLower.includes('eletric') ||
-      textLower.includes('disjuntor') ||
-      textLower.includes('luz') ||
-      textLower.includes('faísca') ||
-      textLower.includes('tomada') ||
-      textLower.includes('chuveiro') ||
-      textLower.includes('fiação') ||
-      textLower.includes('curto')
-    ) {
-      category = 'Elétrica Residencial & Comercial';
-      profType = 'Eletricista Certificado';
-      summary = 'Sobrecarga, disjuntor desarmando ou reparo de fiação';
-      room = 'sala';
-      urgencyPercentage = 85;
-      urgency = 'alta';
-      costRange = { min: 100, max: 220 };
-      diyTips = [
-        'Desarme o disjuntor geral imediatamente por segurança.',
-        'Não toque em cabos desencapados ou tomadas com cheiro de queimado.',
-        'Desconecte aparelhos pesados da mesma tomada.'
-      ];
-    } else if (
-      textLower.includes('ar') ||
-      textLower.includes('split') ||
-      textLower.includes('gela') ||
-      textLower.includes('ar condicionado') ||
-      textLower.includes('climatiz')
-    ) {
-      category = 'Ar Condicionado & Refrigeração';
-      profType = 'Técnico em Climatização';
-      summary = 'Obstrução de dreno, higienização ou carga de gás';
-      room = 'quarto1';
-      urgencyPercentage = 50;
-      urgency = 'media';
-      costRange = { min: 140, max: 280 };
-      diyTips = [
-        'Desligue o aparelho para evitar vazamento na parede ou piso.',
-        'Lave periodicamente os filtros de ar removíveis sob água morna.'
-      ];
-    } else if (
-      textLower.includes('chave') ||
-      textLower.includes('tranca') ||
-      textLower.includes('porta') ||
-      textLower.includes('fechadura') ||
-      textLower.includes('cadeado')
-    ) {
-      category = 'Chaveiro & Fechaduras Digitais';
-      profType = 'Chaveiro Profissional 24h';
-      summary = 'Desgaste do tambor da fechadura ou instalação digital';
-      room = 'sala';
-      urgencyPercentage = 80;
-      urgency = 'alta';
-      costRange = { min: 80, max: 190 };
-      diyTips = [
-        'Aplique grafite em pó na entrada da chave (nunca óleo de cozinha).',
-        'Não force a chave para não quebrá-la dentro do cilindro.'
-      ];
-    } else if (
-      textLower.includes('móvel') ||
-      textLower.includes('moveis') ||
-      textLower.includes('armário') ||
-      textLower.includes('guarda-roupa') ||
-      textLower.includes('montag') ||
-      textLower.includes('rack') ||
-      textLower.includes('estante')
-    ) {
-      category = 'Montagem & Desmontagem de Móveis';
-      profType = 'Montador de Móveis Profissional';
-      summary = 'Montagem técnica e alinhamento de mobília residencial';
-      room = 'quarto1';
-      urgencyPercentage = 30;
-      urgency = 'baixa';
-      costRange = { min: 90, max: 200 };
-      diyTips = [
-        'Mantenha as ferragens e manuais originais guardados com cuidado.',
-        'Evite arrastar móveis montados para preservar a estrutura de fixação.'
-      ];
-    } else if (
-      textLower.includes('entup') ||
-      textLower.includes('ralo') ||
-      textLower.includes('esgoto') ||
-      textLower.includes('vaso') ||
-      textLower.includes('privada')
-    ) {
-      category = 'Desentupimento Especializado';
-      profType = 'Técnico em Desentupimento';
-      summary = 'Obstrução com refluxo em ralo, pia ou vaso sanitário';
-      room = 'banheiro';
-      urgencyPercentage = 90;
-      urgency = 'critica';
-      costRange = { min: 120, max: 260 };
-      diyTips = [
-        'Interrompa o uso da água no cômodo para evitar transbordamento.',
-        'Não despeje substâncias químicas corrosivas na tubulação de PVC.'
-      ];
-    } else if (
-      textLower.includes('pintur') ||
-      textLower.includes('tinta') ||
-      textLower.includes('parede') ||
-      textLower.includes('descasc') ||
-      textLower.includes('mofo') ||
-      textLower.includes('gesso')
-    ) {
-      category = 'Pintura & Restauração de Paredes';
-      profType = 'Pintor Profissional';
-      summary = 'Tratamento de umidade, emassamento e pintura residencial';
-      room = 'quarto1';
-      urgencyPercentage = 40;
-      urgency = 'baixa';
-      costRange = { min: 150, max: 350 };
-      diyTips = [
-        'Isole móveis e rodapés com fita crepe antes da aplicação de tinta.',
-        'Mantenha o ambiente bem ventilado para secagem uniforme.'
-      ];
-    }
-
-    // Room detection from text
-    if (textLower.includes('banheiro')) room = 'banheiro';
-    else if (textLower.includes('cozinha')) room = 'cozinha';
-    else if (textLower.includes('quarto')) room = 'quarto1';
-    else if (textLower.includes('sala')) room = 'sala';
-    else if (textLower.includes('varanda') || textLower.includes('sacada')) room = 'varanda';
-
-    // Format user problem text cleanly for diagnosis summary
-    const problemTextSummary = problemText.length > 90 ? problemText.substring(0, 90) + '...' : problemText;
-    const finalProblemSummary = problemTextSummary.startsWith('Problema identificado') ? summary : problemTextSummary;
+    const match = matchServiceDemand(problemText, imageSrc);
 
     const newDiagnosis: DiagnosisResult = {
       id: `diag-${Date.now()}`,
       title: 'Diagnóstico Concluído',
-      problemSummary: finalProblemSummary,
-      category,
-      professionalType: profType,
-      urgency,
-      urgencyPercentage,
-      room,
-      diyTips,
-      estimatedCostRange: costRange,
+      problemSummary: match.summary,
+      category: match.category,
+      professionalType: match.profType,
+      urgency: match.urgency,
+      urgencyPercentage: match.urgencyPercentage,
+      room: match.room,
+      diyTips: match.diyTips,
+      estimatedCostRange: match.costRange,
       createdAt: 'Agora mesmo'
     };
 
     setDiagnosis(newDiagnosis);
-    setSelectedRoomId(room);
-
-    // Generate matched verified specialist proposals tailored to this specific problem
-    const generatedProfessionals: Professional[] = [
-      {
-        id: `prof-1-${Date.now()}`,
-        name: `Técnico Credenciado (${category.split(' ')[0]})`,
-        role: `${profType} Certificado`,
-        avatar: '',
-        rating: 4.9,
-        matchPercentage: 98,
-        priceLevel: '$$',
-        trustIndex: 98,
-        recommendationReason: `Atendimento prioritário e verificado para "${finalProblemSummary}". Garantia contratual de 90 dias.`,
-        availability: 'Hoje',
-        verified: true,
-        laborCost: costRange.min,
-        materialsCost: Math.round(costRange.min * 0.25),
-        totalCost: costRange.min + Math.round(costRange.min * 0.25),
-        phone: '(11) 98765-4321',
-        reviewsCount: 142,
-        completedJobs: 215,
-        specialties: [category, 'Atendimento Prioritário', 'Garantia 90d']
-      },
-      {
-        id: `prof-2-${Date.now()}`,
-        name: `Parceiro Resolva Já (Econômico)`,
-        role: `Técnico em ${category.split('&')[0].trim()}`,
-        avatar: '',
-        rating: 4.8,
-        matchPercentage: 94,
-        priceLevel: '$',
-        trustIndex: 95,
-        recommendationReason: `Melhor custo-benefício para solucionar "${finalProblemSummary}" na sua região.`,
-        availability: 'Hoje',
-        verified: true,
-        laborCost: Math.max(60, costRange.min - 20),
-        materialsCost: Math.round(costRange.min * 0.2),
-        totalCost: Math.max(60, costRange.min - 20) + Math.round(costRange.min * 0.2),
-        phone: '(11) 97654-3210',
-        reviewsCount: 98,
-        completedJobs: 130,
-        specialties: [category, 'Manutenção Rápida', 'Atendimento no Dia']
-      },
-      {
-        id: `prof-3-${Date.now()}`,
-        name: `Engenharia & Reparos (Master)`,
-        role: `Mestre Especialista em ${category.split('&')[0].trim()}`,
-        avatar: '',
-        rating: 5.0,
-        matchPercentage: 91,
-        priceLevel: '$$$',
-        trustIndex: 99,
-        recommendationReason: `Diagnóstico completo e laudo de vistoria técnica para "${finalProblemSummary}".`,
-        availability: 'Amanhã',
-        verified: true,
-        laborCost: costRange.max,
-        materialsCost: Math.round(costRange.max * 0.3),
-        totalCost: costRange.max + Math.round(costRange.max * 0.3),
-        phone: '(11) 99887-7665',
-        reviewsCount: 230,
-        completedJobs: 340,
-        specialties: [category, 'Laudo Técnico', 'Instalações Complexas']
-      }
-    ];
-
-    setProfessionals(generatedProfessionals);
+    setSelectedRoomId(match.room);
+    setProfessionals(match.professionals);
     setActiveTab('problemas');
 
     // Also automatically create an incoming real lead for providers
     const newLead: ProviderJobLead = {
       id: `lead-${Date.now()}`,
       clientName: clientProfile.name || 'Cliente Resolva Já',
-      serviceTitle: problemText || summary,
-      category,
-      room: room === 'cozinha' ? 'Cozinha' : room === 'banheiro' ? 'Banheiro' : 'Residência',
+      serviceTitle: problemText || match.summary,
+      category: match.category,
+      room: match.room === 'cozinha' ? 'Cozinha' : match.room === 'banheiro' ? 'Banheiro' : match.room === 'quarto1' ? 'Quarto' : match.room === 'lavanderia' ? 'Lavanderia' : 'Residência',
       neighborhood: clientProfile.address?.neighborhood
         ? `${clientProfile.address.neighborhood} - ${clientProfile.address.city || 'SP'}`
         : 'Sua Região de Atendimento',
       distanceKm: 2.1,
-      urgency,
-      suggestedBudget: costRange.min,
+      urgency: match.urgency,
+      suggestedBudget: match.costRange.min,
       description: problemText || 'Problema diagnosticado pela IA Resolva Já no imóvel do cliente.',
       imageUrl: imageSrc,
       status: 'aberto',
@@ -533,7 +320,7 @@ export default function App() {
   const handleSelectCategory = (cat: ProblemCategory) => {
     const matched = SERVICE_DEMANDS_CATALOG.find((item) => item.id === cat);
     if (matched) {
-      handleFindSolution(matched.popularIssues[0] || matched.name);
+      handleFindSolution(matched.name);
     } else {
       handleFindSolution(`Problema na categoria ${cat}`);
     }
@@ -649,10 +436,34 @@ export default function App() {
     setProviderLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status: 'orcamento_enviado', suggestedBudget: value } : l))
     );
+
+    const providerPro: Professional = {
+      id: `prof-provider-${Date.now()}`,
+      name: providerProfile.name || 'Prestador Credenciado',
+      role: providerProfile.category || 'Profissional Credenciado',
+      avatar: providerProfile.avatar || '',
+      rating: providerProfile.rating || 5.0,
+      matchPercentage: 100,
+      priceLevel: value < 150 ? '$' : value < 300 ? '$$' : '$$$',
+      trustIndex: providerProfile.trustIndex || 100,
+      recommendationReason: providerProfile.bio || 'Proposta personalizada enviada diretamente pelo prestador credenciado.',
+      availability: 'Hoje',
+      verified: true,
+      laborCost: value,
+      materialsCost: 0,
+      totalCost: value,
+      phone: providerProfile.phone || '(11) 99999-0000',
+      reviewsCount: providerProfile.reviewsCount || 1,
+      completedJobs: providerProfile.completedJobsCount || 1,
+      specialties: providerProfile.specialties || ['Atendimento Residencial']
+    };
+
+    setProfessionals((prev) => [providerPro, ...prev.filter((p) => p.name !== providerPro.name)]);
+
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
-      title: 'Proposta Enviada',
-      message: `Você enviou uma proposta de R$ ${value} para o chamado selecionado.`,
+      title: 'Proposta Enviada com Sucesso',
+      message: `Você enviou uma proposta de R$ ${value} para o chamado selecionado. O cliente receberá a notificação imediatamente.`,
       time: 'Agora mesmo',
       read: false,
       type: 'info'
@@ -665,6 +476,46 @@ export default function App() {
       ...prev,
       availability: prev.availability === 'Disponível Agora' ? 'Ocupado' : 'Disponível Agora'
     }));
+  };
+
+  const handleUpdateAppointmentStatus = (id: string, newStatus: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado') => {
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
+    );
+    if (newStatus === 'concluido') {
+      const apt = appointments.find((a) => a.id === id);
+      if (apt) {
+        setProviderProfile((prev) => ({
+          ...prev,
+          completedJobsCount: (prev.completedJobsCount || 0) + 1,
+          totalEarningsMonth: (prev.totalEarningsMonth || 0) + (apt.totalCost || 0)
+        }));
+        const newNotif: NotificationItem = {
+          id: `notif-${Date.now()}`,
+          title: 'Serviço Concluído com Sucesso',
+          message: `Atendimento "${apt.serviceTitle}" finalizado. Pagamento de R$ ${apt.totalCost} liberado da custódia.`,
+          time: 'Agora mesmo',
+          read: false,
+          type: 'success'
+        };
+        setNotifications((prev) => [newNotif, ...prev]);
+      }
+    }
+  };
+
+  const handleAddManualAppointment = (apt: Appointment) => {
+    setAppointments((prev) => [apt, ...prev]);
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: apt.isBlockedSlot ? 'Horário Bloqueado' : 'Agendamento Criado',
+      message: apt.isBlockedSlot
+        ? `Horário bloqueado com sucesso na sua agenda.`
+        : `Atendimento "${apt.serviceTitle}" adicionado à sua escala.`,
+      time: 'Agora mesmo',
+      read: false,
+      type: 'info'
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
   };
 
   // Registration Handlers
@@ -708,7 +559,13 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 px-3 sm:px-5 pt-2 sm:pt-3 pb-24 md:pb-10 md:pl-28 max-w-3xl mx-auto w-full flex flex-col gap-3.5">
-        {/* Non-intrusive App Installation Banner */}
+        <React.Suspense fallback={
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] gap-3">
+            <div className="animate-spin w-8 h-8 border-4 border-[#ea580c] border-t-transparent rounded-full" />
+            <span className="text-xs text-slate-500 font-medium">Carregando interface...</span>
+          </div>
+        }>
+          {/* Non-intrusive App Installation Banner */}
         {showInstallBanner && (
           <InstallAppBanner
             onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
@@ -717,10 +574,19 @@ export default function App() {
           />
         )}
 
-        {/* ================= CLIENT ROLE SCREENS ================= */}
-        {currentRole === 'cliente' && (
+        {(!googleUser && (
+          (currentRole === 'cliente' && ['agenda', 'pagamentos', 'minhacasa', 'perfil'].includes(activeTab)) ||
+          (currentRole === 'prestador' && ['inicio', 'problemas', 'agenda', 'minhacasa', 'perfil'].includes(activeTab))
+        )) ? (
+          <RequireAuth user={googleUser} onOpenAuth={() => setIsGoogleAuthModalOpen(true)}>
+            <div />
+          </RequireAuth>
+        ) : (
           <>
-            {activeTab === 'inicio' && (
+            {/* ================= CLIENT ROLE SCREENS ================= */}
+            {currentRole === 'cliente' && (
+              <>
+                {activeTab === 'inicio' && (
               <HomeScreen
                 onFindSolution={handleFindSolution}
                 onSelectCategory={handleSelectCategory}
@@ -776,6 +642,7 @@ export default function App() {
 
             {activeTab === 'agenda' && (
               <AgendaScreen
+                role="cliente"
                 appointments={appointments}
                 onCancelAppointment={(id) => {
                   setAppointments((prev) => prev.filter((a) => a.id !== id));
@@ -904,11 +771,14 @@ export default function App() {
 
             {activeTab === 'agenda' && (
               <AgendaScreen
+                role="prestador"
                 appointments={appointments}
                 onCancelAppointment={(id) => {
                   setAppointments((prev) => prev.filter((a) => a.id !== id));
                 }}
+                onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
                 onNewService={() => setActiveTab('inicio')}
+                onAddManualAppointment={handleAddManualAppointment}
               />
             )}
 
@@ -963,6 +833,9 @@ export default function App() {
             )}
           </>
         )}
+        </>
+        )}
+        </React.Suspense>
       </main>
 
       {/* Bottom & Desktop Navigation */}
@@ -976,6 +849,7 @@ export default function App() {
         currentRole={currentRole}
       />
 
+      <React.Suspense fallback={null}>
       {/* Registration Modal for Clients & Providers */}
       <RegistrationModal
         isOpen={isRegistrationModalOpen}
@@ -1020,9 +894,9 @@ export default function App() {
       <PhotoModal
         isOpen={isPhotoModalOpen}
         onClose={() => setIsPhotoModalOpen(false)}
-        onPhotoSelected={(photoUrl) => {
+        onPhotoSelected={(photoUrl, description) => {
           setSelectedPhoto(photoUrl);
-          handleFindSolution('Problema identificado a partir da foto enviada', photoUrl);
+          handleFindSolution(description || 'Problema identificado a partir da foto enviada', photoUrl);
         }}
       />
 
@@ -1036,6 +910,9 @@ export default function App() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         professional={selectedProfessional}
+        clientName={clientProfile.name || 'Cliente Resolva Já'}
+        clientPhone={clientProfile.phone || '(11) 98765-4321'}
+        clientAvatar={clientProfile.avatar}
         clientAddress={
           clientProfile.address?.street
             ? `${clientProfile.address.street}, ${clientProfile.address.number || ''} ${clientProfile.address.complement || ''} - ${clientProfile.address.neighborhood || ''}, ${clientProfile.address.city || 'São Paulo'}`
@@ -1065,6 +942,7 @@ export default function App() {
         notifications={notifications}
         onMarkAllAsRead={handleMarkAllNotificationsRead}
       />
+      </React.Suspense>
     </div>
   );
 }

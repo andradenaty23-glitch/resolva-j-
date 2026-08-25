@@ -184,6 +184,7 @@ export interface Appointment {
   id: string;
   clientName?: string;
   clientPhone?: string;
+  clientAvatar?: string;
   professionalName: string;
   professionalAvatar: string;
   role: string;
@@ -194,6 +195,9 @@ export interface Appointment {
   totalCost: number;
   status: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado';
   address: string;
+  notes?: string;
+  isBlockedSlot?: boolean;
+  blockReason?: string;
 }
 
 export interface NotificationItem {

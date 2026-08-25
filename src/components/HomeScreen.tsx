@@ -149,57 +149,62 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const displayedDemands = showAllDemands ? filteredDemands : filteredDemands.slice(0, 8);
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5 max-w-xl mx-auto pb-6">
+    <div className="flex flex-col gap-4 sm:gap-6 max-w-2xl mx-auto w-full pb-8 overflow-hidden animate-fadeIn">
       {/* Hero Section: O que aconteceu? */}
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-[#18181b] tracking-tight">
-            O que aconteceu?
-          </h2>
-          <span className="inline-flex items-center gap-1 text-[11px] text-[#ea580c] font-bold bg-[#fff7ed] border border-[#fed7aa] px-2 py-0.5 rounded-full shadow-2xs">
-            <Sparkles className="w-3 h-3" /> IA Diagnóstico
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+              O que você precisa resolver?
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              Diagnóstico imediato, estimativa de preço e profissionais verificados
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-xs text-[#ea580c] font-bold bg-[#fff7ed] border border-[#fed7aa] px-2.5 py-1 rounded-full shadow-2xs shrink-0 select-none">
+            <Sparkles className="w-3.5 h-3.5" /> IA Ativa
           </span>
         </div>
 
         {/* Big Input Container */}
-        <div className="bg-white rounded-2xl shadow-xs p-3 sm:p-4 flex flex-col gap-3 border border-[#e4e4e7] focus-within:border-[#ea580c] focus-within:ring-2 focus-within:ring-[#ea580c]/20 transition-all">
+        <div className="bg-white rounded-2xl shadow-xs p-3.5 sm:p-5 flex flex-col gap-3 border border-slate-200 focus-within:border-[#ea580c] focus-within:ring-3 focus-within:ring-[#ea580c]/15 transition-all">
           <textarea
             id="input-problem-description"
             rows={2.5}
             value={problemDescription}
             onChange={(e) => setProblemDescription(e.target.value)}
-            placeholder="Descreva a demanda ou problema com suas palavras (ex: vazamento embaixo da pia, montagem de armário, tomada faiscando, troca de fechadura)..."
-            className="w-full bg-transparent border-none resize-none focus:outline-hidden text-sm sm:text-base text-[#18181b] placeholder-[#a1a1aa] p-0 font-normal leading-relaxed"
+            placeholder="Descreva o problema (ex: vazamento na pia, montagem de móvel, disjuntor caindo, ar pingando)..."
+            className="w-full bg-transparent border-none resize-none focus:outline-hidden text-base text-slate-900 placeholder:text-slate-400 p-0 font-medium leading-relaxed"
           />
 
           {/* Photo attachment preview if uploaded */}
           {selectedPhoto && (
-            <div className="relative inline-block w-20 h-20 rounded-xl overflow-hidden border border-[#d4d4d8] shadow-xs group">
-              <img src={selectedPhoto} alt="Problema anexado" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+            <div className="relative inline-block w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-slate-300 shadow-xs group">
+              <img loading="lazy" decoding="async" src={selectedPhoto} alt="Problema anexado" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={onClearPhoto}
-                className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full transition-colors cursor-pointer"
+                className="absolute top-1 right-1 bg-slate-900/80 hover:bg-slate-900 text-white p-1 rounded-full transition-colors cursor-pointer min-w-[28px] min-h-[28px] flex items-center justify-center"
                 title="Remover foto"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
 
           {/* Input Method Badges / Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pt-2 border-t border-[#f4f4f5]">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2.5 border-t border-slate-100 touch-pan-x">
             <button
               type="button"
               id="btn-mode-digitar"
               onClick={() => setActiveInputMode('digitar')}
-              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer min-h-[40px] ${
                 activeInputMode === 'digitar'
-                  ? 'bg-[#18181b] text-white shadow-xs'
-                  : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Keyboard className="w-3.5 h-3.5" />
+              <Keyboard className="w-4 h-4" />
               Digitar
             </button>
 
@@ -210,13 +215,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 setActiveInputMode('falar');
                 onOpenVoiceInput();
               }}
-              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer min-h-[40px] ${
                 activeInputMode === 'falar'
-                  ? 'bg-[#18181b] text-white shadow-xs'
-                  : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Mic className="w-3.5 h-3.5" />
+              <Mic className="w-4 h-4" />
               Falar
             </button>
 
@@ -227,27 +232,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 setActiveInputMode('foto');
                 onOpenPhotoInput();
               }}
-              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer min-h-[40px] ${
                 activeInputMode === 'foto' || selectedPhoto
-                  ? 'bg-[#18181b] text-white shadow-xs'
-                  : 'bg-[#f4f4f5] text-[#52525b] border border-[#e4e4e7] hover:bg-[#fff7ed] hover:text-[#ea580c]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-[#fff7ed] hover:text-[#ea580c]'
               }`}
             >
-              <Camera className="w-3.5 h-3.5" />
-              {selectedPhoto ? 'Foto anexada' : 'Mostrar por foto'}
+              <Camera className="w-4 h-4" />
+              {selectedPhoto ? 'Foto anexada' : 'Enviar foto'}
             </button>
           </div>
         </div>
 
         {/* Quick Suggestion Chips */}
-        <div className="flex flex-wrap gap-1 mt-0.5">
-          <span className="text-[11px] text-[#71717a] font-medium py-0.5">Exemplos:</span>
+        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider py-1">Exemplos:</span>
           {quickPrompts.map((prompt, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setProblemDescription(prompt)}
-              className="text-[10px] bg-white border border-[#e4e4e7] text-[#52525b] hover:border-[#ea580c] hover:text-[#ea580c] px-2 py-0.5 rounded-full transition-colors truncate max-w-[190px] cursor-pointer"
+              className="text-xs bg-white border border-slate-200 text-slate-600 hover:border-[#ea580c] hover:text-[#ea580c] hover:bg-[#fff7ed]/50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs font-medium max-w-[280px] truncate"
             >
               {prompt}
             </button>
@@ -255,75 +260,75 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         {/* Action CTAs */}
-        <div className="flex flex-col gap-1.5 mt-1">
+        <div className="flex flex-col gap-2 mt-1">
           <button
             type="button"
             id="btn-find-solution"
             onClick={() => handleSubmit()}
-            className="w-full bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.99] text-white font-bold text-sm sm:text-base py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
+            className="w-full bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.99] text-white font-bold text-sm sm:text-base py-3.5 px-5 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group cursor-pointer min-h-[48px]"
           >
-            <span>Encontrar solução</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <span>Encontrar Solução com IA</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
 
           <button
             type="button"
             id="btn-guided-wizard"
             onClick={onOpenGuidedWizard}
-            className="w-full bg-transparent hover:bg-[#fff7ed] text-[#ea580c] font-bold text-[11px] py-2 rounded-lg transition-colors tracking-wider uppercase flex items-center justify-center gap-1 cursor-pointer"
+            className="w-full bg-slate-100 hover:bg-[#fff7ed] text-slate-700 hover:text-[#ea580c] border border-slate-200 font-bold text-xs sm:text-sm py-2.5 rounded-xl transition-all tracking-wide uppercase flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs min-h-[44px]"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
-            NÃO SEI O QUE É (Assistente Guiado)
+            <HelpCircle className="w-4 h-4 text-[#ea580c]" />
+            Não sei o que é? Usar Assistente Guiado
           </button>
         </div>
       </section>
 
       {/* Demandas de Serviços & Categorias Grid */}
-      <section className="flex flex-col gap-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-[#18181b]">Demandas de Serviços</h3>
-            <p className="text-[11px] text-[#71717a]">Selecione uma especialidade para diagnóstico imediato</p>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Demandas Populares</h2>
+            <p className="text-xs text-slate-500 font-medium">Selecione uma especialidade com garantia de 90 dias</p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
             <button
               onClick={() => setSelectedFilterTab('todos')}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'todos'
-                  ? 'bg-[#18181b] text-white'
-                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Todos ({SERVICE_DEMANDS_CATALOG.length})
             </button>
             <button
               onClick={() => setSelectedFilterTab('urgente')}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'urgente'
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Urgentes / 24h
             </button>
             <button
               onClick={() => setSelectedFilterTab('instalacao')}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'instalacao'
-                  ? 'bg-[#ea580c] text-white'
-                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+                  ? 'bg-[#ea580c] text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Instalação
             </button>
             <button
               onClick={() => setSelectedFilterTab('reforma')}
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedFilterTab === 'reforma'
-                  ? 'bg-[#ea580c] text-white'
-                  : 'bg-[#f4f4f5] text-[#71717a] hover:bg-[#e4e4e7]'
+                  ? 'bg-[#ea580c] text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Reformas
@@ -332,7 +337,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         {/* Dynamic Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
           {displayedDemands.map((demand) => {
             const Icon = getIconComponent(demand.iconName);
             return (
@@ -340,30 +345,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 key={demand.id}
                 id={`cat-${demand.id}`}
                 onClick={() => handleDemandClick(demand)}
-                className="relative flex flex-col items-start p-2.5 bg-white rounded-xl shadow-xs border border-[#e4e4e7] hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
+                className="relative flex flex-col items-start p-3.5 bg-white rounded-2xl shadow-xs border border-slate-200 hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
               >
                 {demand.badge && (
-                  <span className="absolute top-2 right-2 text-[8px] font-black uppercase px-1 py-0.2 rounded-full bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">
+                  <span className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">
                     {demand.badge}
                   </span>
                 )}
 
-                <div className="w-8 h-8 rounded-lg bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors mb-1.5">
-                  <Icon className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] group-hover:bg-[#ea580c] group-hover:text-white transition-colors mb-2.5 border border-[#fed7aa]/50">
+                  <Icon className="w-5 h-5" />
                 </div>
 
-                <span className="text-xs font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors leading-tight line-clamp-1">
+                <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#ea580c] transition-colors leading-tight line-clamp-1">
                   {demand.shortName}
                 </span>
 
-                <span className="text-[10px] text-[#71717a] mt-0.5 line-clamp-1 leading-tight">
+                <span className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed font-normal">
                   {demand.description}
                 </span>
 
-                <div className="mt-2 pt-1.5 border-t border-[#f4f4f5] w-full flex justify-between items-center text-[10px]">
-                  <span className="font-bold text-emerald-700">R$ {demand.estimatedCostRange.min}+</span>
-                  <span className="text-[#ea580c] font-bold group-hover:translate-x-0.5 transition-transform flex items-center text-[9px]">
-                    Pedir <ChevronRight className="w-3 h-3 ml-0.2" />
+                <div className="mt-3 pt-2.5 border-t border-slate-100 w-full flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-emerald-700">R$ {demand.estimatedCostRange.min}+</span>
+                  <span className="text-[#ea580c] font-bold group-hover:translate-x-0.5 transition-transform flex items-center text-xs">
+                    Pedir <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                   </span>
                 </div>
               </button>
@@ -376,22 +381,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             type="button"
             onClick={() => setShowAllDemands((prev) => !prev)}
-            className="w-full py-2 rounded-lg border border-[#e4e4e7] bg-white hover:bg-[#fff7ed] text-[#ea580c] font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs mt-0.5"
+            className="w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-[#fff7ed] text-[#ea580c] font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs mt-1"
           >
             <span>{showAllDemands ? 'Mostrar Menos Categorias' : `Ver Todas as ${filteredDemands.length} Categorias`}</span>
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAllDemands ? '-rotate-90' : 'rotate-90'}`} />
+            <ChevronRight className={`w-4 h-4 transition-transform ${showAllDemands ? '-rotate-90' : 'rotate-90'}`} />
           </button>
         )}
       </section>
 
       {/* Minha Casa Alert Summary Card */}
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-2.5">
         <div className="flex justify-between items-center">
-          <h3 className="text-base sm:text-lg font-bold text-[#18181b]">Minha Casa</h3>
+          <div>
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Gestão da Residência</h3>
+            <p className="text-xs text-slate-500 font-medium">Status de manutenção dos cômodos e aparelhos</p>
+          </div>
           <button
             id="btn-ver-tudo-casa"
             onClick={onNavigateToMinhaCasa}
-            className="text-[#ea580c] font-bold text-[11px] hover:underline uppercase tracking-wide cursor-pointer"
+            className="text-[#ea580c] font-bold text-xs hover:underline uppercase tracking-wider cursor-pointer"
           >
             Ver tudo
           </button>
@@ -400,44 +408,64 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {problemRooms.length > 0 ? (
           <div
             onClick={() => onNavigateToRoom(problemRooms[0].id)}
-            className="bg-white rounded-xl shadow-xs p-3 flex items-center justify-between border-l-4 border-[#ea580c] border-y border-r border-[#e4e4e7] hover:shadow-md hover:border-[#ea580c] transition-all cursor-pointer group"
+            className="bg-white rounded-2xl shadow-xs p-4 flex items-center justify-between border-l-4 border-[#ea580c] border-y border-r border-slate-200 hover:shadow-md hover:border-[#ea580c] transition-all cursor-pointer group"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c]">
-                <UtensilsCrossed className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#ea580c] border border-[#fed7aa]/60">
+                <UtensilsCrossed className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors">
+                <h4 className="text-base font-bold text-slate-900 group-hover:text-[#ea580c] transition-colors">
                   {problemRooms[0].name}
                 </h4>
-                <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+                <p className="text-xs sm:text-sm font-semibold text-rose-600 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
                   {problemRooms[0].statusText}
                 </p>
               </div>
             </div>
 
-            <div className="w-7 h-7 rounded-full bg-[#f4f4f5] group-hover:bg-[#fff7ed] flex items-center justify-center text-[#52525b] group-hover:text-[#ea580c] transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-[#fff7ed] flex items-center justify-center text-slate-600 group-hover:text-[#ea580c] transition-colors">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
         ) : (
           <div
             onClick={onNavigateToMinhaCasa}
-            className="bg-white rounded-xl shadow-xs p-3 flex items-center justify-between border border-[#e4e4e7] hover:shadow-md transition-all cursor-pointer"
+            className="bg-white rounded-2xl shadow-xs p-4 flex items-center justify-between border border-slate-200 hover:shadow-md transition-all cursor-pointer group"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
-                <UtensilsCrossed className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                <UtensilsCrossed className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-[#18181b]">Todos os cômodos em ordem</h4>
-                <p className="text-[10px] text-[#71717a]">Nenhum vazamento ou falha ativa</p>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Todos os cômodos em ordem</h4>
+                <p className="text-xs text-slate-500">Nenhum vazamento ou falha ativa detectada</p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#71717a]" />
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
           </div>
         )}
+      </section>
+
+      {/* Trust & Guarantee Banner */}
+      <section className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 border border-slate-800 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
+            <Shield className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+              Garantia Resolva Já de 90 Dias
+            </h4>
+            <p className="text-xs text-slate-300">
+              Pagamento protegido em custódia até você aprovar o serviço finalizado.
+            </p>
+          </div>
+        </div>
+        <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-lg shrink-0">
+          100% Protegido
+        </span>
       </section>
     </div>
   );

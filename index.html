@@ -1,32 +1,66 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>RESOLVA JÁ - Diagnóstico & Serviços Residenciais</title>
-    <meta name="description" content="RESOLVA JÁ: Diagnóstico inteligente de problemas domésticos com IA, gerenciamento de cômodos e contratação de profissionais." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>RESOLVA JÁ - Diagnóstico Inteligente & Serviços Residenciais</title>
+    <meta name="description" content="RESOLVA JÁ: Diagnóstico inteligente de problemas domésticos com IA, gerenciamento de cômodos residenciais, orçamentos rápidos e contratação de profissionais certificados." />
+    <meta name="keywords" content="reparos residenciais, eletricista, encanador, diagnóstico IA, reforma residencial, conserto doméstico, manutenção predial, profissionais certificados" />
+    <meta name="author" content="RESOLVA JÁ Tecnologia" />
     
     <!-- PWA & Mobile App Settings -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ea580c" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Resolva Já" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.svg" />
 
-    <!-- Open Graph & Social -->
-    <meta property="og:title" content="RESOLVA JÁ - Diagnóstico & Serviços Residenciais" />
-    <meta property="og:description" content="Diagnóstico inteligente de problemas domésticos com IA e contratação de profissionais certificados." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Google Fonts: Plus Jakarta Sans & Inter for Ultra-Clean SaaS Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- Google Identity Services (GSI) for Google Authentication -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Open Graph & Social Sharing -->
+    <meta property="og:title" content="RESOLVA JÁ - Diagnóstico Inteligente & Serviços Residenciais" />
+    <meta property="og:description" content="Diagnóstico inteligente de problemas domésticos com IA e contratação de profissionais certificados com garantia de 90 dias." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ais-pre-45el5vjh5dwxmie4rczmip-497944597034.us-east1.run.app/" />
+    <meta property="og:image" content="https://ais-pre-45el5vjh5dwxmie4rczmip-497944597034.us-east1.run.app/icon-512.svg" />
+    <meta property="og:site_name" content="RESOLVA JÁ" />
+    <meta property="og:locale" content="pt_BR" />
+    
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://ais-pre-45el5vjh5dwxmie4rczmip-497944597034.us-east1.run.app/" />
+    <meta name="twitter:title" content="RESOLVA JÁ - Diagnóstico & Serviços Residenciais" />
+    <meta name="twitter:description" content="Solução completa para reparos e manutenção residencial com inteligência artificial." />
+    <meta name="twitter:image" content="https://ais-pre-45el5vjh5dwxmie4rczmip-497944597034.us-east1.run.app/icon-512.svg" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://ais-pre-45el5vjh5dwxmie4rczmip-497944597034.us-east1.run.app/" />
+
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "RESOLVA JÁ",
+        "applicationCategory": "HomeServicesApplication",
+        "operatingSystem": "All",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        },
+        "description": "Aplicativo inteligente para diagnóstico de reparos residenciais, gestão de cômodos e contratação de prestadores credenciados."
+      }
+    </script>
   </head>
-  <body class="bg-[#fafafa] text-[#18181b] antialiased select-none sm:select-auto">
-    <div id="root"></div>
+  <body class="bg-[#fafafa] text-[#18181b] antialiased select-none sm:select-auto min-h-full">
+    <div id="root" class="min-h-screen"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

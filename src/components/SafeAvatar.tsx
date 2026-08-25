@@ -53,6 +53,8 @@ export const SafeAvatar: React.FC<SafeAvatarProps> = ({
           src={src}
           alt={alt}
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
           onError={() => setHasError(true)}
           className={`rounded-2xl object-cover shadow-xs border border-white/20 transition-transform ${sizeClasses[size]} ${className}`}
         />

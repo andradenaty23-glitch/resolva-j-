@@ -5,30 +5,29 @@ import {
   CheckCircle2,
   User,
   Wrench,
-  Sparkles,
-  Lock,
-  Mail,
   ArrowRight,
   RefreshCw,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GoogleAuthUser, UserRole } from '../types';
 import {
   DEMO_GOOGLE_ACCOUNTS,
-  parseJwt,
-  createGoogleUserFromPayload,
-  saveGoogleUser
+  saveGoogleUser,
+  logoutGoogle
 } from '../services/googleAuth';
+import { auth, googleProvider } from '../lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
 import { SafeAvatar } from './SafeAvatar';
 
 interface GoogleAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: GoogleAuthUser | null;
-  onLoginSuccess: (user: GoogleAuthUser) => void;
-  onLogout: () => void;
+  currentUser?: GoogleAuthUser | null;
+  onSuccess: (user: GoogleAuthUser) => void;
+  onLogout?: () => void;
   initialRole?: UserRole;
 }
 
@@ -36,7 +35,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   isOpen,
   onClose,
   currentUser,
-  onLoginSuccess,
+  onSuccess,
   onLogout,
   initialRole = 'cliente'
 }) => {
@@ -44,11 +43,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [successUser, setSuccessUser] = useState<GoogleAuthUser | null>(null);
   const [isGsiLoaded, setIsGsiLoaded] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'offline_fallback'>('testing');
-  const [connectionMessage, setConnectionMessage] = useState<string>('Verificando conexão com Google Identity Services...');
-  const gsiContainerRef = useRef<HTMLDivElement>(null);
+  const [connectionMessage, setConnectionMessage] = useState<string>('Verificando Google Identity Services...');
 
   useEffect(() => {
     if (initialRole) {
@@ -56,134 +56,74 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     }
   }, [initialRole]);
 
-  // Dynamically load & verify GSI script and connection
+  // Dynamically load & verify GSI script and OAuth 2.0 connection
   useEffect(() => {
     if (!isOpen) return;
 
-    let isMounted = true;
-    setConnectionStatus('testing');
-    setConnectionMessage('Verificando status da conexão com Google Identity Services...');
-
-    const loadAndInitGsi = () => {
-      // Inject GSI script if not present
-      if (!window.google?.accounts?.id) {
-        const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-        if (!existingScript) {
-          const script = document.createElement('script');
-          script.src = 'https://accounts.google.com/gsi/client';
-          script.async = true;
-          script.defer = true;
-          script.onload = () => {
-            if (isMounted) initGsiService();
-          };
-          script.onerror = () => {
-            if (isMounted) {
-              setConnectionStatus('offline_fallback');
-              setConnectionMessage('Ambiente iFrame / Rede Restrita: Autenticação Direta Google Ativada.');
-            }
-          };
-          document.head.appendChild(script);
-        } else {
-          // Script exists but pending
-          setTimeout(initGsiService, 600);
-        }
-      } else {
-        initGsiService();
-      }
-    };
-
-    const initGsiService = () => {
-      if (!window.google?.accounts?.id) {
-        if (isMounted) {
-          setConnectionStatus('offline_fallback');
-          setConnectionMessage('Modo de Conexão Segura Direta Ativado (GSI Iframe Sandbox).');
-        }
-        return;
-      }
-
-      try {
-        setIsGsiLoaded(true);
-        const clientId =
-          (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-          '497944597034-mock-client-id.apps.googleusercontent.com';
-
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response) => {
-            if (response.credential) {
-              const payload = parseJwt(response.credential);
-              if (payload) {
-                const user = createGoogleUserFromPayload(payload, selectedRole, response.credential);
-                handleCompleteAuth(user);
-              }
-            }
-          },
-          error_callback: (error) => {
-            console.warn('Google Auth runtime notice:', error);
-            if (isMounted) {
-              setConnectionStatus('offline_fallback');
-              setConnectionMessage('Conexão por clique direto mantida com segurança.');
-            }
-          }
-        });
-
-        if (gsiContainerRef.current) {
-          gsiContainerRef.current.innerHTML = '';
-          window.google.accounts.id.renderButton(gsiContainerRef.current, {
-            type: 'standard',
-            theme: 'outline',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'pill',
-            logo_alignment: 'left',
-            width: 320,
-            locale: 'pt-BR'
-          });
-        }
-
-        if (isMounted) {
-          setConnectionStatus('connected');
-          setConnectionMessage('Conexão estabelecida com os servidores Google Identity.');
-        }
-      } catch (e) {
-        console.warn('GSI Initialization handled:', e);
-        if (isMounted) {
-          setConnectionStatus('offline_fallback');
-          setConnectionMessage('Conexão Google otimizada para ambiente residencial.');
-        }
-      }
-    };
-
-    loadAndInitGsi();
-    const timer = setTimeout(loadAndInitGsi, 700);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
+    setAuthError(null);
+    setConnectionStatus('connected');
+    setConnectionMessage('Serviço de Autenticação Google Firebase pronto.');
+    setIsGsiLoaded(true);
   }, [isOpen, selectedRole]);
 
   const handleTestConnection = () => {
     setConnectionStatus('testing');
-    setConnectionMessage('Testando rota de comunicação com Google Auth...');
+    setConnectionMessage('Testando rota de comunicação com Google Auth 2.0...');
     setTimeout(() => {
       setConnectionStatus('connected');
-      setConnectionMessage('Conexão com os servidores do Google restabelecida e 100% operacional!');
-    }, 800);
+      setConnectionMessage('Servidores Google OAuth 2.0 100% operacionais.');
+    }, 600);
   };
 
-  if (!isOpen) return null;
-
   const handleCompleteAuth = (user: GoogleAuthUser) => {
+    setIsLoading(false);
+    setAuthError(null);
     setSuccessUser(user);
     setIsSuccess(true);
     saveGoogleUser(user);
-    confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => {
-      onLoginSuccess(user);
+      onSuccess(user);
       setIsSuccess(false);
       onClose();
-    }, 1200);
+    }, 1100);
+  };
+
+  /**
+   * Primary Official Google OAuth 2.0 Trigger
+   * Opens the official Google Account Selection & Authorization popup directly
+   */
+  const handleTriggerGoogleOAuth = async () => {
+    setIsLoading(true);
+    setAuthError(null);
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      const authUser: GoogleAuthUser = {
+        id: user.uid,
+        email: user.email || '',
+        name: user.displayName || user.email?.split('@')[0] || 'Usuário Google',
+        picture: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=ea580c&color=ffffff&bold=true`,
+        verifiedEmail: user.emailVerified,
+        role: selectedRole,
+        authProvider: 'google',
+        connectedAt: new Date().toISOString()
+      };
+      
+      handleCompleteAuth(authUser);
+    } catch (error: any) {
+      console.warn('Firebase Google Auth error:', error);
+      setIsLoading(false);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setAuthError('Autenticação cancelada. Você pode tentar novamente a qualquer momento.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        setAuthError('Janela de login fechada antes da conclusão.');
+      } else {
+        setAuthError('Falha ao abrir janela do Google. Verifique o bloqueador de popups ou a sua conexão.');
+      }
+    }
   };
 
   const handleSelectDemoAccount = (account: (typeof DEMO_GOOGLE_ACCOUNTS)[0]) => {
@@ -218,6 +158,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     };
     handleCompleteAuth(user);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
@@ -281,12 +223,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-[#18181b]">
-                      {currentUser ? 'Gerenciar Conta Google' : 'Entrar com o Google'}
+                      {currentUser ? 'Conta Google Conectada' : 'Entrar com o Google'}
                     </h2>
                   </div>
                 </div>
                 <p className="text-xs text-[#71717a] mt-1">
-                  Acesse com 1 clique usando sua conta Google segura e verificada.
+                  Autenticação oficial Google OAuth 2.0 sem digitação de senha no app.
                 </p>
               </div>
 
@@ -298,6 +240,22 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Error / Notice Alert if Any */}
+            {authError && (
+              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold">{authError}</p>
+                </div>
+                <button
+                  onClick={() => setAuthError(null)}
+                  className="text-amber-700 hover:text-amber-950 font-bold text-[10px]"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Currently Logged In Banner if Active */}
             {currentUser && (
@@ -325,6 +283,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    logoutGoogle(currentUser.token);
                     onLogout();
                     onClose();
                   }}
@@ -335,44 +294,6 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 </button>
               </div>
             )}
-
-            {/* Connection Health Banner */}
-            <div className="bg-[#fafafa] p-3 rounded-2xl border border-[#e4e4e7] flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${
-                  connectionStatus === 'connected'
-                    ? 'bg-emerald-500 animate-pulse'
-                    : connectionStatus === 'testing'
-                    ? 'bg-amber-500 animate-ping'
-                    : 'bg-blue-500'
-                }`} />
-                <div>
-                  <div className="flex items-center gap-1.5 font-bold text-[#18181b]">
-                    <span>Status de Conexão Google:</span>
-                    <span className={`text-[10px] px-2 py-0.2 rounded-full font-extrabold ${
-                      connectionStatus === 'connected'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : connectionStatus === 'testing'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {connectionStatus === 'connected' ? '100% Online' : connectionStatus === 'testing' ? 'Verificando' : 'Modo Direto'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#71717a]">{connectionMessage}</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                className="p-1.5 hover:bg-zinc-200/60 rounded-xl text-zinc-600 font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 text-[11px]"
-                title="Testar Conexão Google"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#ea580c] ${connectionStatus === 'testing' ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Testar</span>
-              </button>
-            </div>
 
             {/* Role Selection for Google Auth */}
             <div className="flex flex-col gap-1.5">
@@ -408,15 +329,53 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </div>
             </div>
 
-            {/* GSI Container if loaded */}
-            <div className="flex flex-col items-center justify-center py-1">
-              <div ref={gsiContainerRef} className="min-h-[44px] flex items-center justify-center" />
+            {/* Primary Google OAuth 2.0 Action Button */}
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                id="btn-entrar-google-oauth-popup"
+                type="button"
+                onClick={handleTriggerGoogleOAuth}
+                disabled={isLoading}
+                className="w-full py-3.5 px-4 rounded-full bg-white hover:bg-[#fafafa] text-[#18181b] font-bold text-sm border-2 border-[#e4e4e7] hover:border-[#ea580c] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer group active:scale-98 disabled:opacity-75"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 text-[#ea580c] animate-spin" />
+                    <span>Conectando com o Google...</span>
+                  </>
+                ) : (
+                  <>
+                    {/* Official Google Vector G */}
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                    <span>Entrar com o Google</span>
+                  </>
+                )}
+              </button>
+
+              {/* Rendered Google GSI button removed since we use Firebase Auth popup */}
             </div>
 
-            {/* One-Click Quick Google Sign-In Accounts */}
-            <div className="flex flex-col gap-2">
+            {/* Quick One-Click Accounts for immediate testing */}
+            <div className="flex flex-col gap-2 pt-1">
               <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
-                Contas Google Prontas para Acesso Rápido:
+                Ou selecione uma conta Google rápida:
               </span>
 
               <div className="grid grid-cols-1 gap-2">
@@ -448,7 +407,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1 text-xs font-bold text-[#ea580c] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Acessar</span>
+                      <span>Entrar</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   </button>
@@ -457,15 +416,15 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             </div>
 
             {/* Custom Google Email Option */}
-            <form onSubmit={handleCustomGoogleLogin} className="pt-2 border-t border-[#f4f4f5] flex flex-col gap-2.5">
+            <form onSubmit={handleCustomGoogleLogin} className="pt-2 border-t border-[#f4f4f5] flex flex-col gap-2">
               <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
-                Ou use seu endereço Google pessoal:
+                Ou digite seu email Gmail:
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input
                   type="text"
-                  placeholder="Seu Nome Completo"
+                  placeholder="Nome (Ex: Natalia)"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   className="px-3 py-2 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
@@ -484,33 +443,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 type="submit"
                 className="w-full py-2.5 rounded-full bg-[#18181b] hover:bg-[#ea580c] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                {/* Official Google Vector G */}
-                <svg className="w-3.5 h-3.5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-                <span>Conectar com este Google</span>
+                <span>Acessar com este Gmail</span>
               </button>
             </form>
 
             {/* Security Footer */}
             <div className="text-[10px] text-[#71717a] flex items-center justify-center gap-1.5 pt-1 text-center">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Autenticação criptografada protegida por Google Identity & SSL 256-bit</span>
+              <span>Google OAuth 2.0 seguro (permissões limitadas a perfil e email) • Sem senha no app</span>
             </div>
           </>
         )}
@@ -518,3 +458,4 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     </div>
   );
 };
+

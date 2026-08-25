@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Wrench, Calendar, LayoutGrid, User, Radar, Briefcase, FileText, CreditCard, BarChart3 } from 'lucide-react';
+import { Home, Wrench, Calendar, LayoutGrid, User, Briefcase, FileText, CreditCard, BarChart3 } from 'lucide-react';
 import { TabType, UserRole } from '../types';
 
 interface BottomNavProps {
@@ -25,11 +25,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   const providerTabs = [
-    { id: 'inicio' as TabType, label: 'Painel & Gráficos', icon: BarChart3 },
-    { id: 'problemas' as TabType, label: 'Orçamentos', icon: FileText, badge: 1 },
-    { id: 'agenda' as TabType, label: 'Agenda', icon: Calendar },
-    { id: 'minhacasa' as TabType, label: 'Serviços', icon: Briefcase },
-    { id: 'perfil' as TabType, label: 'Perfil PRO', icon: User }
+    { id: 'inicio' as TabType, label: 'Painel', fullLabel: 'Painel & Gráficos', icon: BarChart3 },
+    { id: 'problemas' as TabType, label: 'Orçamentos', fullLabel: 'Orçamentos', icon: FileText, badge: 1 },
+    { id: 'agenda' as TabType, label: 'Agenda', fullLabel: 'Agenda', icon: Calendar },
+    { id: 'minhacasa' as TabType, label: 'Serviços', fullLabel: 'Serviços', icon: Briefcase },
+    { id: 'perfil' as TabType, label: 'Perfil PRO', fullLabel: 'Perfil PRO', icon: User }
   ];
 
   const tabs = currentRole === 'cliente' ? clientTabs : providerTabs;
@@ -37,38 +37,44 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <>
       {/* Mobile Bottom Bar */}
-      <nav className="fixed bottom-0 left-0 w-full flex justify-between items-center pt-1.5 pb-3 px-1 bg-white/95 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-[#e4e4e7] z-50 md:hidden overflow-x-auto">
+      <nav
+        aria-label="Navegação Principal Mobile"
+        className="fixed bottom-0 left-0 w-full max-w-full flex justify-around items-stretch pt-1.5 pb-2 px-1 bg-white/95 backdrop-blur-lg shadow-[0_-4px_25px_rgba(0,0,0,0.06)] border-t border-slate-200/90 z-50 md:hidden overflow-hidden safe-bottom select-none"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const displayLabel = tab.label;
 
           return (
             <button
               key={tab.id}
               id={`mobile-tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center justify-center transition-all active:scale-95 duration-150 flex-1 min-w-[50px] max-w-[70px] group relative cursor-pointer py-0.5"
+              aria-label={`${displayLabel}${tab.badge && tab.badge > 0 ? `, ${tab.badge} pendente(s)` : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+              className="flex flex-col items-center justify-center transition-all active:scale-95 duration-150 flex-1 min-w-0 min-h-[48px] group relative cursor-pointer px-0.5 py-1 focus-visible:outline-hidden"
             >
               <div
-                className={`flex items-center justify-center rounded-full transition-all duration-200 relative ${
+                className={`flex items-center justify-center rounded-xl transition-all duration-200 relative ${
                   isActive
-                    ? 'bg-[#18181b] text-[#ea580c] px-3.5 py-1 shadow-xs'
-                    : 'text-[#71717a] p-1 hover:bg-[#f4f4f5]'
+                    ? 'bg-slate-900 text-[#ea580c] px-2.5 sm:px-3 py-1 shadow-xs'
+                    : 'text-slate-500 p-1 hover:text-slate-900'
                 }`}
               >
-                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
+                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.2]' : 'stroke-[1.75]'}`} />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}
               </div>
               <span
-                className={`text-[9.5px] sm:text-[10.5px] font-medium tracking-tighter mt-0.5 truncate max-w-full ${
-                  isActive ? 'text-[#18181b] font-bold' : 'text-[#71717a]'
+                className={`text-[10px] sm:text-[11px] mt-0.5 truncate max-w-full text-center leading-tight tracking-tight px-0.5 ${
+                  isActive ? 'text-slate-900 font-extrabold' : 'text-slate-500 font-medium'
                 }`}
               >
-                {tab.label}
+                {displayLabel}
               </span>
             </button>
           );
@@ -76,34 +82,40 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       </nav>
 
       {/* Desktop Side Bar */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-full w-24 bg-white border-r border-[#e4e4e7] z-40 flex-col items-center py-6 gap-6 shadow-sm">
-        <div className="w-12 h-12 rounded-2xl bg-[#18181b] flex items-center justify-center text-[#ea580c] font-extrabold text-sm tracking-tighter shadow-md mb-4 border border-[#27272a]">
+      <aside
+        aria-label="Navegação Principal Desktop"
+        className="hidden md:flex fixed top-0 left-0 h-full w-24 bg-white border-r border-slate-200/80 z-40 flex-col items-center py-6 gap-6 shadow-xs"
+      >
+        <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-[#ea580c] font-black text-base tracking-tight shadow-md mb-2 border border-slate-800">
           RJ
         </div>
 
-        <div className="flex flex-col gap-3 w-full px-3">
+        <div className="flex flex-col gap-2.5 w-full px-2.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const labelText = (tab as any).fullLabel || tab.label;
 
             return (
               <button
                 key={tab.id}
                 id={`desktop-tab-${tab.id}`}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all duration-200 w-full relative cursor-pointer ${
+                aria-label={`${labelText}${tab.badge && tab.badge > 0 ? `, ${tab.badge} pendente(s)` : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center p-2.5 rounded-2xl transition-all duration-200 w-full min-h-[52px] relative cursor-pointer ${
                   isActive
-                    ? 'bg-[#18181b] text-[#ea580c] shadow-md'
-                    : 'text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b]'
+                    ? 'bg-slate-900 text-[#ea580c] shadow-sm scale-100'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
-                title={tab.label}
+                title={labelText}
               >
-                <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
-                <span className="text-[10px] font-semibold mt-1 text-center leading-tight">
-                  {tab.label}
+                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.2]' : 'stroke-[1.75]'}`} />
+                <span className="text-[11px] font-bold mt-1 text-center leading-tight">
+                  {labelText}
                 </span>
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute top-1 right-2 w-4 h-4 bg-rose-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute top-1 right-2 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}
