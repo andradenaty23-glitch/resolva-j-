@@ -57,15 +57,22 @@ const AddRoomModal = React.lazy(() => import('./components/Modals').then(m => ({
 const NotificationsModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.NotificationsModal })));
 
 export default function App() {
-  // Active Role and Profiles
-  const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
+  // Google Authentication State
+  const [googleUser, setGoogleUser] = useState<GoogleAuthUser | null>(() => getSavedGoogleUser());
+  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
+  
+  // Active Role and Profiles (Strictly isolated between Cliente and Prestador)
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => googleUser?.role || 'cliente');
+  const [authModalRole, setAuthModalRole] = useState<UserRole>(() => googleUser?.role || 'cliente');
   const [clientProfile, setClientProfile] = useState<ClientProfile>(INITIAL_CLIENT_PROFILE);
   const [providerProfile, setProviderProfile] = useState<ProviderProfile>(INITIAL_PROVIDER_PROFILE);
   const [providerLeads, setProviderLeads] = useState<ProviderJobLead[]>(INITIAL_PROVIDER_LEADS);
 
-  // Google Authentication State
-  const [googleUser, setGoogleUser] = useState<GoogleAuthUser | null>(() => getSavedGoogleUser());
-  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
+  const handleOpenGoogleAuth = (role?: UserRole) => {
+    const targetRole = role || currentRole;
+    setAuthModalRole(targetRole);
+    setIsGoogleAuthModalOpen(true);
+  };
 
   // App Installation & Update State (PWA / Mobile)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -545,7 +552,7 @@ export default function App() {
         onOpenRegistration={() => setIsRegistrationModalOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         googleUser={googleUser}
-        onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+        onOpenGoogleAuth={() => handleOpenGoogleAuth(currentRole)}
         onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
         onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
         onOpenSystemStatus={() => {
@@ -578,7 +585,7 @@ export default function App() {
           (currentRole === 'cliente' && ['agenda', 'pagamentos', 'minhacasa', 'perfil'].includes(activeTab)) ||
           (currentRole === 'prestador' && ['inicio', 'problemas', 'agenda', 'minhacasa', 'perfil'].includes(activeTab))
         )) ? (
-          <RequireAuth user={googleUser} onOpenAuth={() => setIsGoogleAuthModalOpen(true)}>
+          <RequireAuth user={googleUser} onOpenAuth={() => handleOpenGoogleAuth(currentRole)}>
             <div />
           </RequireAuth>
         ) : (
@@ -679,7 +686,7 @@ export default function App() {
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
                 onNavigateToPayments={() => setActiveTab('pagamentos')}
                 googleUser={googleUser}
-                onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+                onOpenGoogleAuth={() => handleOpenGoogleAuth('cliente')}
                 onDisconnectGoogle={handleGoogleLogout}
                 onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
                 onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
@@ -826,7 +833,7 @@ export default function App() {
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
                 googleUser={googleUser}
-                onOpenGoogleAuth={() => setIsGoogleAuthModalOpen(true)}
+                onOpenGoogleAuth={() => handleOpenGoogleAuth('prestador')}
                 onDisconnectGoogle={handleGoogleLogout}
                 onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
               />
@@ -859,7 +866,7 @@ export default function App() {
         onRegisterProvider={handleRegisterProvider}
         onOpenGoogleAuth={(role) => {
           setIsRegistrationModalOpen(false);
-          setIsGoogleAuthModalOpen(true);
+          handleOpenGoogleAuth(role);
         }}
       />
 
@@ -868,7 +875,7 @@ export default function App() {
         isOpen={isGoogleAuthModalOpen}
         onClose={() => setIsGoogleAuthModalOpen(false)}
         onSuccess={handleGoogleLoginSuccess}
-        initialRole={currentRole}
+        initialRole={authModalRole}
       />
 
       {/* App Installation Modal (PWA & APK Capacitor Guide) */}
