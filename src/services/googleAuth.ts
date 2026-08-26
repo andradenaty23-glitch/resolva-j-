@@ -1,7 +1,8 @@
-import { GoogleAuthUser, UserRole } from '../types';
-import { auth, googleProvider } from '../lib/firebase';
-import { signOut, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthUser, UserRole, ClientProfile, ProviderProfile } from '../types';
+import { auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { INITIAL_CLIENT_PROFILE, INITIAL_PROVIDER_PROFILE } from '../data/mockData';
 
 export const GOOGLE_OAUTH_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
@@ -37,11 +38,16 @@ export interface ParsedGoogleToken {
   family_name?: string;
 }
 
-const STORAGE_KEY = 'resolva_ja_google_auth_v1';
+// Strictly Isolated LocalStorage Keys
+const CLIENT_AUTH_KEY = 'resolva_ja_auth_cliente_v2';
+const PROVIDER_AUTH_KEY = 'resolva_ja_auth_prestador_v2';
+const CLIENT_PROFILE_KEY = 'resolva_ja_profile_cliente_v2';
+const PROVIDER_PROFILE_KEY = 'resolva_ja_profile_prestador_v2';
 
-export function getSavedGoogleUser(): GoogleAuthUser | null {
+// ---------------- CLIENT SESSION & PROFILE ----------------
+export function getSavedClientUser(): GoogleAuthUser | null {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(CLIENT_AUTH_KEY);
     if (!data) return null;
     return JSON.parse(data);
   } catch {
@@ -49,21 +55,86 @@ export function getSavedGoogleUser(): GoogleAuthUser | null {
   }
 }
 
-export function saveGoogleUser(user: GoogleAuthUser | null): void {
+export function saveClientUser(user: GoogleAuthUser | null): void {
   try {
     if (!user) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(CLIENT_AUTH_KEY);
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(CLIENT_AUTH_KEY, JSON.stringify(user));
     }
   } catch (e) {
-    console.warn('Failed to save user session:', e);
+    console.warn('Failed to save client user:', e);
   }
 }
 
-export async function logoutGoogle(token?: string): Promise<void> {
+export function getSavedClientProfile(): ClientProfile {
   try {
-    saveGoogleUser(null);
+    const data = localStorage.getItem(CLIENT_PROFILE_KEY);
+    if (!data) return INITIAL_CLIENT_PROFILE;
+    return { ...INITIAL_CLIENT_PROFILE, ...JSON.parse(data) };
+  } catch {
+    return INITIAL_CLIENT_PROFILE;
+  }
+}
+
+export function saveClientProfile(profile: ClientProfile): void {
+  try {
+    localStorage.setItem(CLIENT_PROFILE_KEY, JSON.stringify(profile));
+  } catch (e) {
+    console.warn('Failed to save client profile:', e);
+  }
+}
+
+// ---------------- PROVIDER SESSION & PROFILE ----------------
+export function getSavedProviderUser(): GoogleAuthUser | null {
+  try {
+    const data = localStorage.getItem(PROVIDER_AUTH_KEY);
+    if (!data) return null;
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+export function saveProviderUser(user: GoogleAuthUser | null): void {
+  try {
+    if (!user) {
+      localStorage.removeItem(PROVIDER_AUTH_KEY);
+    } else {
+      localStorage.setItem(PROVIDER_AUTH_KEY, JSON.stringify(user));
+    }
+  } catch (e) {
+    console.warn('Failed to save provider user:', e);
+  }
+}
+
+export function getSavedProviderProfile(): ProviderProfile {
+  try {
+    const data = localStorage.getItem(PROVIDER_PROFILE_KEY);
+    if (!data) return INITIAL_PROVIDER_PROFILE;
+    return { ...INITIAL_PROVIDER_PROFILE, ...JSON.parse(data) };
+  } catch {
+    return INITIAL_PROVIDER_PROFILE;
+  }
+}
+
+export function saveProviderProfile(profile: ProviderProfile): void {
+  try {
+    localStorage.setItem(PROVIDER_PROFILE_KEY, JSON.stringify(profile));
+  } catch (e) {
+    console.warn('Failed to save provider profile:', e);
+  }
+}
+
+// ---------------- INDEPENDENT LOGOUT ----------------
+export async function logoutUser(role: UserRole, token?: string): Promise<void> {
+  try {
+    if (role === 'cliente') {
+      saveClientUser(null);
+    } else {
+      saveProviderUser(null);
+    }
+
     if (auth.currentUser) {
       await signOut(auth);
     }
@@ -73,11 +144,11 @@ export async function logoutGoogle(token?: string): Promise<void> {
     }
     if (token && window.google?.accounts?.oauth2?.revoke) {
       window.google.accounts.oauth2.revoke(token, () => {
-        console.log('Google OAuth token revoked successfully');
+        console.log(`Google OAuth token revoked for ${role}`);
       });
     }
   } catch (err) {
-    console.warn('Error during Google logout:', err);
+    console.warn('Error during logout:', err);
   }
 }
 
@@ -116,7 +187,7 @@ export const DEMO_GOOGLE_ACCOUNTS: Array<{
     description: 'Conta Google Residencial • Verificada'
   },
   {
-    name: 'Carlos Mendes',
+    name: 'Carlos Mendes (Cliente)',
     email: 'carlos.mendes.engenharia@gmail.com',
     picture: 'https://ui-avatars.com/api/?name=Carlos+Mendes&background=2563eb&color=ffffff&bold=true',
     role: 'cliente',

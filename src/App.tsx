@@ -33,7 +33,17 @@ import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { InstallAppBanner } from './components/InstallAppBanner';
 import { RequireAuth } from './components/RequireAuth';
-import { getSavedGoogleUser, saveGoogleUser } from './services/googleAuth';
+import {
+  getSavedClientUser,
+  saveClientUser,
+  getSavedProviderUser,
+  saveProviderUser,
+  getSavedClientProfile,
+  saveClientProfile,
+  getSavedProviderProfile,
+  saveProviderProfile,
+  logoutUser
+} from './services/googleAuth';
 
 const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const DiagnosisScreen = React.lazy(() => import('./components/DiagnosisScreen').then(m => ({ default: m.DiagnosisScreen })));
@@ -57,16 +67,22 @@ const AddRoomModal = React.lazy(() => import('./components/Modals').then(m => ({
 const NotificationsModal = React.lazy(() => import('./components/Modals').then(m => ({ default: m.NotificationsModal })));
 
 export default function App() {
-  // Google Authentication State
-  const [googleUser, setGoogleUser] = useState<GoogleAuthUser | null>(() => getSavedGoogleUser());
-  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
-  
-  // Active Role and Profiles (Strictly isolated between Cliente and Prestador)
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => googleUser?.role || 'cliente');
-  const [authModalRole, setAuthModalRole] = useState<UserRole>(() => googleUser?.role || 'cliente');
-  const [clientProfile, setClientProfile] = useState<ClientProfile>(INITIAL_CLIENT_PROFILE);
-  const [providerProfile, setProviderProfile] = useState<ProviderProfile>(INITIAL_PROVIDER_PROFILE);
+  // Isolated Authentication Sessions for Cliente and Prestador PRO
+  const [clientUser, setClientUser] = useState<GoogleAuthUser | null>(() => getSavedClientUser());
+  const [providerUser, setProviderUser] = useState<GoogleAuthUser | null>(() => getSavedProviderUser());
+
+  // Isolated Profiles for Cliente and Prestador PRO
+  const [clientProfile, setClientProfile] = useState<ClientProfile>(() => getSavedClientProfile());
+  const [providerProfile, setProviderProfile] = useState<ProviderProfile>(() => getSavedProviderProfile());
   const [providerLeads, setProviderLeads] = useState<ProviderJobLead[]>(INITIAL_PROVIDER_LEADS);
+
+  // Active Role and Auth Modal State
+  const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
+  const [authModalRole, setAuthModalRole] = useState<UserRole>('cliente');
+  const [isGoogleAuthModalOpen, setIsGoogleAuthModalOpen] = useState(false);
+
+  // Active user depending on role
+  const currentAuthUser = currentRole === 'cliente' ? clientUser : providerUser;
 
   const handleOpenGoogleAuth = (role?: UserRole) => {
     const targetRole = role || currentRole;
@@ -139,35 +155,61 @@ export default function App() {
     };
   }, []);
 
-  // Handle Google Auth Login
-  const handleGoogleLoginSuccess = (user: GoogleAuthUser) => {
-    setGoogleUser(user);
-    saveGoogleUser(user);
+  // Handle Updates with Persistent Storage
+  const handleUpdateClient = (updated: Partial<ClientProfile>) => {
+    setClientProfile((prev) => {
+      const next = { ...prev, ...updated };
+      saveClientProfile(next);
+      return next;
+    });
+  };
 
+  const handleUpdateProvider = (updated: Partial<ProviderProfile>) => {
+    setProviderProfile((prev) => {
+      const next = { ...prev, ...updated };
+      saveProviderProfile(next);
+      return next;
+    });
+  };
+
+  // Handle Google Auth Login - strictly isolated per role
+  const handleGoogleLoginSuccess = (user: GoogleAuthUser) => {
     if (user.role === 'cliente') {
+      setClientUser(user);
+      saveClientUser(user);
       setCurrentRole('cliente');
-      setClientProfile((prev) => ({
-        ...prev,
-        name: user.name,
-        email: user.email,
-        avatar: user.picture || prev.avatar
-      }));
+      setClientProfile((prev) => {
+        const updated: ClientProfile = {
+          ...prev,
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+          avatar: user.picture || prev.avatar
+        };
+        saveClientProfile(updated);
+        return updated;
+      });
     } else {
+      setProviderUser(user);
+      saveProviderUser(user);
       setCurrentRole('prestador');
-      setProviderProfile((prev) => ({
-        ...prev,
-        name: user.name,
-        email: user.email,
-        avatar: user.picture || prev.avatar,
-        verified: true
-      }));
+      setProviderProfile((prev) => {
+        const updated: ProviderProfile = {
+          ...prev,
+          name: user.name || prev.name,
+          email: user.email || prev.email,
+          avatar: user.picture || prev.avatar,
+          verified: true
+        };
+        saveProviderProfile(updated);
+        return updated;
+      });
     }
 
     setNotifications((prev) => [
       {
         id: `notif-google-${Date.now()}`,
-        title: 'Autenticado com o Google',
-        message: `Bem-vindo(a), ${user.name}! Seus dados estão sincronizados com sua conta Google.`,
+        title: `Autenticado como ${user.role === 'cliente' ? 'Cliente' : 'Prestador PRO'}`,
+        message: `Bem-vindo(a), ${user.name}! Sessão e dados salvos no seu perfil ${user.role === 'cliente' ? 'de Cliente' : 'Profissional PRO'}.`,
         time: 'Agora',
         read: false,
         type: 'success'
@@ -176,14 +218,24 @@ export default function App() {
     ]);
   };
 
-  const handleGoogleLogout = () => {
-    setGoogleUser(null);
-    saveGoogleUser(null);
+  const handleLogoutRole = async (role: UserRole) => {
+    if (role === 'cliente') {
+      const token = clientUser?.token;
+      setClientUser(null);
+      saveClientUser(null);
+      await logoutUser('cliente', token);
+    } else {
+      const token = providerUser?.token;
+      setProviderUser(null);
+      saveProviderUser(null);
+      await logoutUser('prestador', token);
+    }
+
     setNotifications((prev) => [
       {
         id: `notif-logout-${Date.now()}`,
-        title: 'Sessão Google Encerrada',
-        message: 'Você se desconectou com sucesso da sua conta Google.',
+        title: `Sessão de ${role === 'cliente' ? 'Cliente' : 'Prestador PRO'} Encerrada`,
+        message: 'Você se desconectou com sucesso deste perfil.',
         time: 'Agora',
         read: false,
         type: 'info'
@@ -199,28 +251,18 @@ export default function App() {
   // Handlers for Profile Deletion
   const handleDeleteClientProfile = () => {
     const emptyClient: ClientProfile = {
+      ...INITIAL_CLIENT_PROFILE,
       id: `client-${Date.now()}`,
       name: 'Cliente Resolva Já',
       email: '',
       phone: '',
       avatar: '',
-      cpf: '',
-      residenceType: 'apartamento',
-      plan: 'Resolva Já Free',
-      walletBalance: 0.0,
-      cashbackBalance: 0.0,
-      registeredAt: 'Conta redefinida',
-      address: {
-        street: '',
-        number: '',
-        complement: '',
-        neighborhood: '',
-        city: 'São Paulo',
-        state: 'SP',
-        cep: ''
-      }
+      cpf: ''
     };
     setClientProfile(emptyClient);
+    saveClientProfile(emptyClient);
+    setClientUser(null);
+    saveClientUser(null);
     setAppointments([]);
     setTransactions([]);
     setNotifications((prev) => [
@@ -239,32 +281,18 @@ export default function App() {
 
   const handleDeleteProviderProfile = () => {
     const emptyProvider: ProviderProfile = {
+      ...INITIAL_PROVIDER_PROFILE,
       id: `prov-${Date.now()}`,
       name: 'Prestador de Serviços',
       email: '',
       phone: '',
       document: '',
-      avatar: '',
-      category: 'Reparos e Manutenção',
-      rating: 5.0,
-      reviewsCount: 0,
-      completedJobsCount: 0,
-      experienceYears: 0,
-      verified: true,
-      laborBaseRate: 100,
-      operatingRadiusKm: 15,
-      availability: 'Disponível Agora',
-      trustIndex: 100,
-      specialties: ['Reparos Gerais'],
-      bio: '',
-      totalEarningsMonth: 0,
-      registeredAt: 'Conta redefinida',
-      bankAccount: {
-        bank: 'Conta Bancária',
-        pixKey: ''
-      }
+      avatar: ''
     };
     setProviderProfile(emptyProvider);
+    saveProviderProfile(emptyProvider);
+    setProviderUser(null);
+    saveProviderUser(null);
     setProviderLeads([]);
     setNotifications((prev) => [
       {
@@ -528,12 +556,38 @@ export default function App() {
   // Registration Handlers
   const handleRegisterClient = (newClient: ClientProfile) => {
     setClientProfile(newClient);
+    saveClientProfile(newClient);
+    const user: GoogleAuthUser = {
+      id: newClient.id,
+      name: newClient.name,
+      email: newClient.email,
+      picture: newClient.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newClient.name)}&background=ea580c&color=ffffff&bold=true`,
+      role: 'cliente',
+      authProvider: 'email',
+      verifiedEmail: true,
+      connectedAt: new Date().toISOString()
+    };
+    setClientUser(user);
+    saveClientUser(user);
     setCurrentRole('cliente');
     setActiveTab('inicio');
   };
 
   const handleRegisterProvider = (newProvider: ProviderProfile) => {
     setProviderProfile(newProvider);
+    saveProviderProfile(newProvider);
+    const user: GoogleAuthUser = {
+      id: newProvider.id,
+      name: newProvider.name,
+      email: newProvider.email,
+      picture: newProvider.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newProvider.name)}&background=16a34a&color=ffffff&bold=true`,
+      role: 'prestador',
+      authProvider: 'email',
+      verifiedEmail: true,
+      connectedAt: new Date().toISOString()
+    };
+    setProviderUser(user);
+    saveProviderUser(user);
     setCurrentRole('prestador');
     setActiveTab('inicio');
   };
@@ -551,7 +605,7 @@ export default function App() {
         }}
         onOpenRegistration={() => setIsRegistrationModalOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
-        googleUser={googleUser}
+        googleUser={currentAuthUser}
         onOpenGoogleAuth={() => handleOpenGoogleAuth(currentRole)}
         onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
         onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
@@ -581,11 +635,9 @@ export default function App() {
           />
         )}
 
-        {(!googleUser && (
-          (currentRole === 'cliente' && ['agenda', 'pagamentos', 'minhacasa', 'perfil'].includes(activeTab)) ||
-          (currentRole === 'prestador' && ['inicio', 'problemas', 'agenda', 'minhacasa', 'perfil'].includes(activeTab))
-        )) ? (
-          <RequireAuth user={googleUser} onOpenAuth={() => handleOpenGoogleAuth(currentRole)}>
+        {((currentRole === 'cliente' && !clientUser && ['agenda', 'pagamentos', 'minhacasa', 'perfil'].includes(activeTab)) ||
+          (currentRole === 'prestador' && !providerUser && ['inicio', 'problemas', 'agenda', 'minhacasa', 'perfil'].includes(activeTab))) ? (
+          <RequireAuth user={currentAuthUser} onOpenAuth={() => handleOpenGoogleAuth(currentRole)}>
             <div />
           </RequireAuth>
         ) : (
@@ -677,7 +729,7 @@ export default function App() {
               <ProfileScreen
                 client={clientProfile}
                 notifications={notifications}
-                onUpdateClient={(updated) => setClientProfile((prev) => ({ ...prev, ...updated }))}
+                onUpdateClient={handleUpdateClient}
                 onDeleteProfile={handleDeleteClientProfile}
                 onSwitchToProvider={() => {
                   setCurrentRole('prestador');
@@ -685,9 +737,9 @@ export default function App() {
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
                 onNavigateToPayments={() => setActiveTab('pagamentos')}
-                googleUser={googleUser}
+                googleUser={clientUser}
                 onOpenGoogleAuth={() => handleOpenGoogleAuth('cliente')}
-                onDisconnectGoogle={handleGoogleLogout}
+                onDisconnectGoogle={() => handleLogoutRole('cliente')}
                 onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
                 onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
                 onMarkAllNotificationsAsRead={() => {
@@ -825,16 +877,16 @@ export default function App() {
             {activeTab === 'perfil' && (
               <ProviderProfileScreen
                 provider={providerProfile}
-                onUpdateProvider={(updated) => setProviderProfile((prev) => ({ ...prev, ...updated }))}
+                onUpdateProvider={handleUpdateProvider}
                 onDeleteProfile={handleDeleteProviderProfile}
                 onSwitchToClient={() => {
                   setCurrentRole('cliente');
                   setActiveTab('inicio');
                 }}
                 onOpenNewRegistration={() => setIsRegistrationModalOpen(true)}
-                googleUser={googleUser}
+                googleUser={providerUser}
                 onOpenGoogleAuth={() => handleOpenGoogleAuth('prestador')}
-                onDisconnectGoogle={handleGoogleLogout}
+                onDisconnectGoogle={() => handleLogoutRole('prestador')}
                 onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
               />
             )}
@@ -874,7 +926,9 @@ export default function App() {
       <GoogleAuthModal
         isOpen={isGoogleAuthModalOpen}
         onClose={() => setIsGoogleAuthModalOpen(false)}
+        currentUser={authModalRole === 'cliente' ? clientUser : providerUser}
         onSuccess={handleGoogleLoginSuccess}
+        onLogout={() => handleLogoutRole(authModalRole)}
         initialRole={authModalRole}
       />
 

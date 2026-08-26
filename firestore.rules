@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.id == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    // Service Requests Collection
+    match /service_requests/{requestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(requestId) && incoming().clientId == request.auth.uid;
+      allow update: if isSignedIn() && (existing().clientId == request.auth.uid || incoming().clientId == existing().clientId);
+      allow delete: if isSignedIn() && existing().clientId == request.auth.uid;
+
+      // Proposals Subcollection
+      match /proposals/{proposalId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(proposalId) && incoming().providerId == request.auth.uid;
+        allow update: if isSignedIn() && (existing().providerId == request.auth.uid || get(/databases/$(database)/documents/service_requests/$(requestId)).data.clientId == request.auth.uid);
+        allow delete: if isSignedIn() && existing().providerId == request.auth.uid;
+      }
+    }
+  }
+}

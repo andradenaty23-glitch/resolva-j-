@@ -9,16 +9,15 @@ import {
   LogOut,
   AlertCircle,
   Loader2,
-  Sparkles,
-  ExternalLink,
   Mail
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GoogleAuthUser, UserRole } from '../types';
 import {
   DEMO_GOOGLE_ACCOUNTS,
-  saveGoogleUser,
-  logoutGoogle,
+  saveClientUser,
+  saveProviderUser,
+  logoutUser,
   GOOGLE_OAUTH_CLIENT_ID,
   fetchGoogleUserProfile
 } from '../services/googleAuth';
@@ -56,7 +55,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     if (initialRole) {
       setSelectedRole(initialRole);
     }
-  }, [initialRole]);
+  }, [initialRole, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,7 +71,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     setErrorDetails(null);
     setSuccessUser(user);
     setIsSuccess(true);
-    saveGoogleUser(user);
+    
+    // Save to strictly isolated role storage
+    if (user.role === 'cliente') {
+      saveClientUser(user);
+    } else {
+      saveProviderUser(user);
+    }
+
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => {
       onSuccess(user);
@@ -102,8 +108,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 const authUser: GoogleAuthUser = {
                   id: profile.sub || `google-${Date.now()}`,
                   email: profile.email,
-                  name: profile.name || profile.given_name || 'Usuário Google',
-                  picture: profile.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=ea580c&color=ffffff&bold=true`,
+                  name: profile.name || profile.given_name || (selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'),
+                  picture: profile.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
                   verifiedEmail: profile.email_verified ?? true,
                   role: selectedRole,
                   authProvider: 'google',
@@ -147,8 +153,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       const authUser: GoogleAuthUser = {
         id: user.uid,
         email: user.email || '',
-        name: user.displayName || user.email?.split('@')[0] || 'Usuário Google',
-        picture: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=ea580c&color=ffffff&bold=true`,
+        name: user.displayName || user.email?.split('@')[0] || (selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'),
+        picture: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
         verifiedEmail: user.emailVerified,
         role: selectedRole,
         authProvider: 'google',
@@ -171,8 +177,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       if (firebaseError?.code === 'auth/popup-closed-by-user') {
         setAuthError('Janela de login foi fechada. Você pode tentar novamente ou usar o acesso rápido abaixo.');
       } else if (firebaseError?.code === 'auth/unauthorized-domain' || firebaseError?.code === 'auth/operation-not-allowed') {
-        setAuthError('O domínio de visualização precisa de autorização no console do Google/Firebase.');
-        setErrorDetails('Você pode entrar instantaneamente usando seu e-mail Gmail ou selecionar uma das contas de demonstração abaixo sem restrições.');
+        setAuthError('Ambiente protegido: utilize seu Gmail para acesso instantâneo abaixo.');
+        setErrorDetails('Você pode digitar seu e-mail do Google para autenticação imediata sem restrições.');
       } else {
         setAuthError('O navegador ou bloqueador de popups impediu a janela externa do Google.');
         setErrorDetails('Utilize o acesso rápido com seu Gmail abaixo para entrar imediatamente.');
@@ -204,7 +210,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       id: `google-${Date.now()}`,
       email,
       name,
-      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ea580c&color=ffffff&bold=true`,
+      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
       verifiedEmail: true,
       role: selectedRole,
       authProvider: 'google',
@@ -277,12 +283,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                   </div>
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-[#18181b]">
-                      {currentUser ? 'Conta Google Conectada' : 'Entrar com o Google'}
+                      {currentUser ? `Conta Google (${selectedRole === 'cliente' ? 'Cliente' : 'Prestador'})` : 'Entrar com o Google'}
                     </h2>
                   </div>
                 </div>
                 <p className="text-xs text-[#71717a] mt-1">
-                  Acesso rápido e seguro integrado ao ecossistema RESOLVA JÁ.
+                  Acesso seguro e perfil 100% isolado no ecossistema RESOLVA JÁ.
                 </p>
               </div>
 
@@ -315,8 +321,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </div>
             )}
 
-            {/* Currently Logged In Banner if Active */}
-            {currentUser && (
+            {/* Currently Logged In Banner if Active for this profile */}
+            {currentUser && currentUser.role === selectedRole && (
               <div className="bg-[#f4f4f5] p-3.5 rounded-2xl border border-[#e4e4e7] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <SafeAvatar
@@ -329,7 +335,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-[#18181b]">{currentUser.name}</span>
                       <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
-                        Ativo
+                        Ativo ({selectedRole === 'cliente' ? 'Cliente' : 'Prestador'})
                       </span>
                     </div>
                     <p className="text-[11px] text-[#71717a] truncate max-w-[200px]">
@@ -341,12 +347,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    logoutGoogle(currentUser.token);
+                    logoutUser(selectedRole, currentUser.token);
                     if (onLogout) onLogout();
                     onClose();
                   }}
                   className="text-xs text-rose-600 font-bold hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Desconectar do Google"
+                  title="Desconectar apenas esta conta"
                 >
                   <LogOut className="w-3.5 h-3.5" /> Sair
                 </button>
@@ -356,7 +362,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             {/* Role Selection for Google Auth */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-[#18181b]">
-                Tipo de Acesso Desejado:
+                Perfil de Acesso Desejado:
               </label>
               <div className="grid grid-cols-2 gap-2 bg-[#f4f4f5] p-1.5 rounded-2xl border border-[#e4e4e7]">
                 <button
@@ -369,7 +375,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                   }`}
                 >
                   <User className="w-3.5 h-3.5" />
-                  <span>Cliente Residencial</span>
+                  <span>Perfil Cliente</span>
                 </button>
 
                 <button
@@ -382,7 +388,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                   }`}
                 >
                   <Wrench className="w-3.5 h-3.5" />
-                  <span>Prestador PRO</span>
+                  <span>Perfil Prestador</span>
                 </button>
               </div>
             </div>
@@ -422,7 +428,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                         d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                       />
                     </svg>
-                    <span>Entrar com Conta Google</span>
+                    <span>Entrar como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
                   </>
                 )}
               </button>
@@ -432,13 +438,13 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             <form onSubmit={handleCustomGoogleLogin} className="pt-2 border-t border-[#f4f4f5] flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
                 <Mail className="w-3.5 h-3.5 text-[#ea580c]" />
-                <span>Ou entre diretamente com seu e-mail Gmail:</span>
+                <span>Ou entre com seu Gmail ({selectedRole === 'cliente' ? 'Cliente' : 'Prestador'}):</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input
                   type="text"
-                  placeholder="Seu Nome (Ex: Natalia)"
+                  placeholder={selectedRole === 'cliente' ? 'Seu Nome (Ex: Carlos)' : 'Nome do Prestador (Ex: Ricardo)'}
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   className="px-3 py-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
@@ -455,20 +461,22 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-[#18181b] hover:bg-[#ea580c] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className={`w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  selectedRole === 'cliente' ? 'bg-[#18181b] hover:bg-[#27272a]' : 'bg-[#ea580c] hover:bg-[#c2410c]'
+                }`}
               >
-                <span>Conectar com este Gmail</span>
+                <span>Conectar Gmail como {selectedRole === 'cliente' ? 'Cliente' : 'Prestador'}</span>
               </button>
             </form>
 
             {/* Quick 1-Click Accounts */}
             <div className="flex flex-col gap-2 pt-1 border-t border-[#f4f4f5]">
               <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
-                Contas Google de Teste (1-Clique):
+                Contas Google de Demonstração:
               </span>
 
               <div className="grid grid-cols-1 gap-2">
-                {DEMO_GOOGLE_ACCOUNTS.map((acc, index) => (
+                {DEMO_GOOGLE_ACCOUNTS.filter(acc => acc.role === selectedRole).map((acc, index) => (
                   <button
                     key={index}
                     type="button"
@@ -507,7 +515,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             {/* Security Footer */}
             <div className="text-[10px] text-[#71717a] flex items-center justify-center gap-1.5 pt-1 text-center">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Autenticação criptografada • Proteção de dados padrão LGPD</span>
+              <span>Sessões estritamente separadas entre Cliente e Prestador</span>
             </div>
           </>
         )}

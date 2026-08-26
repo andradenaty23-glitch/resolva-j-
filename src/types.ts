@@ -218,7 +218,7 @@ export interface GoogleAuthUser {
   picture: string;
   verifiedEmail: boolean;
   role: UserRole;
-  authProvider: 'google';
+  authProvider: 'google' | 'email';
   connectedAt: string;
   token?: string;
 }

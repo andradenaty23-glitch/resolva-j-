@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for client or provider",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["cliente", "prestador", "admin"] },
+        "avatar": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "ServiceRequest": {
+      "title": "ServiceRequest",
+      "description": "A service order or maintenance request created by a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "category": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "urgency": { "type": "string", "enum": ["baixa", "media", "alta", "emergencia"] },
+        "status": { "type": "string", "enum": ["aberto", "em_andamento", "concluido", "cancelado"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "clientId", "title", "status"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "A quote or proposal sent by a provider to a service request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requestId": { "type": "string" },
+        "providerId": { "type": "string" },
+        "providerName": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pendente", "aceita", "recusada"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "requestId", "providerId", "price", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/service_requests/{requestId}": {
+      "schema": "ServiceRequest",
+      "description": "Service requests created by clients"
+    },
+    "/service_requests/{requestId}/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "Proposals submitted for a service request"
+    }
+  }
+}
