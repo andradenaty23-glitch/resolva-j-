@@ -13,12 +13,21 @@ import {
   Mail,
   Phone,
   Camera,
-  ArrowRight
+  ArrowRight,
+  Briefcase,
+  DollarSign,
+  Compass,
+  CreditCard,
+  Building,
+  Home,
+  Store,
+  Check,
+  Search,
+  Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ClientProfile, ProviderProfile, UserRole } from '../types';
 import { PhotoUploader } from './PhotoUploader';
-import { SafeAvatar } from './SafeAvatar';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -46,13 +55,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientCpf, setClientCpf] = useState('');
+  const [clientPassword, setClientPassword] = useState('');
   const [residenceType, setResidenceType] = useState<'apartamento' | 'casa' | 'comercial'>('apartamento');
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
   const [complement, setComplement] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('São Paulo');
+  const [state, setState] = useState('SP');
   const [cep, setCep] = useState('');
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
 
   // Provider form state
   const [providerPhoto, setProviderPhoto] = useState('');
@@ -60,10 +72,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [providerEmail, setProviderEmail] = useState('');
   const [providerPhone, setProviderPhone] = useState('');
   const [providerDocument, setProviderDocument] = useState('');
-  const [category, setCategory] = useState('Encanamento / Hidráulica');
+  const [providerPassword, setProviderPassword] = useState('');
+  const [category, setCategory] = useState('Hidráulica & Encanamento');
   const [experienceYears, setExperienceYears] = useState(5);
-  const [laborBaseRate, setLaborBaseRate] = useState(100);
-  const [operatingRadius, setOperatingRadius] = useState(15);
+  const [laborBaseRate, setLaborBaseRate] = useState(120);
+  const [operatingRadius, setOperatingRadius] = useState(20);
   const [pixKey, setPixKey] = useState('');
   const [bio, setBio] = useState('');
 
@@ -74,80 +87,134 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Formatting helpers
+  const formatPhone = (val: string) => {
+    const numbers = val.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  };
+
+  const formatCpfCnpj = (val: string) => {
+    const numbers = val.replace(/\D/g, '').slice(0, 14);
+    if (numbers.length <= 11) {
+      // CPF
+      if (numbers.length <= 3) return numbers;
+      if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+      if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+      return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`;
+    } else {
+      // CNPJ
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12)}`;
+    }
+  };
+
+  const handleCepLookup = async (cepValue: string) => {
+    const cleanCep = cepValue.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      setIsLoadingCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          if (data.logradouro) setStreet(data.logradouro);
+          if (data.bairro) setNeighborhood(data.bairro);
+          if (data.localidade) setCity(data.localidade);
+          if (data.uf) setState(data.uf);
+        }
+      } catch (e) {
+        console.warn('ViaCEP lookup failed:', e);
+      } finally {
+        setIsLoadingCep(false);
+      }
+    }
+  };
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '').slice(0, 8);
+    if (val.length > 5) {
+      val = `${val.slice(0, 5)}-${val.slice(5)}`;
+    }
+    setCep(val);
+    if (val.replace(/\D/g, '').length === 8) {
+      handleCepLookup(val);
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleClientSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newClient: ClientProfile = {
       id: `client-${Date.now()}`,
-      name: clientName.trim() || 'Usuário',
+      name: clientName.trim() || 'Usuário Cliente',
       email: clientEmail.trim() || 'usuario@exemplo.com',
-      phone: clientPhone.trim(),
+      phone: clientPhone.trim() || '(11) 98888-7777',
       cpf: clientCpf.trim(),
       residenceType,
       address: {
-        street: street.trim(),
-        number: number.trim(),
+        street: street.trim() || 'Rua Principal',
+        number: number.trim() || '100',
         complement: complement.trim(),
-        neighborhood: neighborhood.trim(),
+        neighborhood: neighborhood.trim() || 'Centro',
         city: city.trim() || 'São Paulo',
-        state: 'SP',
-        cep: cep.trim()
+        state: state.trim() || 'SP',
+        cep: cep.trim() || '01001-000'
       },
       plan: 'Resolva Já Free',
       walletBalance: 0.00,
       cashbackBalance: 0.00,
-      avatar: clientPhoto,
+      avatar: clientPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(clientName || 'Cliente')}&background=ea580c&color=ffffff&bold=true`,
       registeredAt: 'Agora'
     };
 
-    setSuccessMessage('Conta de Cliente Criada com Sucesso!');
+    setSuccessMessage('Conta de Cliente criada com sucesso!');
     setIsSuccess(true);
-    confetti({ particleCount: 60, spread: 60 });
+    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
     setTimeout(() => {
       onRegisterClient(newClient);
       setIsSuccess(false);
       onClose();
-    }, 1300);
+    }, 1000);
   };
 
   const handleProviderSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newProvider: ProviderProfile = {
       id: `provider-${Date.now()}`,
-      name: providerName.trim() || 'Profissional',
+      name: providerName.trim() || 'Profissional PRO',
       email: providerEmail.trim() || 'prestador@exemplo.com',
-      phone: providerPhone.trim(),
-      document: providerDocument.trim(),
+      phone: providerPhone.trim() || '(11) 99999-8888',
+      document: providerDocument.trim() || '29.384.102/0001-92',
       category,
-      specialties: [category, 'Reparos Residenciais', 'Instalação e Manutenção'],
+      specialties: [category, 'Reparos Residenciais', 'Instalação e Manutenção Especializada'],
       experienceYears: Number(experienceYears) || 5,
-      laborBaseRate: Number(laborBaseRate) || 100,
-      operatingRadiusKm: Number(operatingRadius) || 15,
+      laborBaseRate: Number(laborBaseRate) || 120,
+      operatingRadiusKm: Number(operatingRadius) || 20,
       availability: 'Disponível Agora',
       verified: true,
-      trustIndex: 90,
+      trustIndex: 95,
       rating: 5.0,
       reviewsCount: 1,
       completedJobsCount: 1,
-      bio: bio.trim() || 'Profissional credenciado Resolva Já PRO.',
-      avatar: providerPhoto,
+      bio: bio.trim() || `Técnico profissional credenciado em ${category} no ecossistema Resolva Já.`,
+      avatar: providerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(providerName || 'Prestador')}&background=16a34a&color=ffffff&bold=true`,
       bankAccount: {
         bank: 'Banco Principal',
-        pixKey: pixKey.trim() || providerEmail.trim()
+        pixKey: pixKey.trim() || providerEmail.trim() || 'contato@resolvaja.com'
       },
       totalEarningsMonth: 0,
       registeredAt: 'Agora'
     };
 
-    setSuccessMessage('Credenciamento de Prestador Concluído!');
+    setSuccessMessage('Credenciamento PRO concluído com sucesso!');
     setIsSuccess(true);
-    confetti({ particleCount: 60, spread: 60 });
+    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
     setTimeout(() => {
       onRegisterProvider(newProvider);
       setIsSuccess(false);
       onClose();
-    }, 1300);
+    }, 1000);
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -155,33 +222,33 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (selectedRole === 'cliente') {
       const existingClient: ClientProfile = {
         id: 'client-1',
-        name: clientName || (loginEmail ? loginEmail.split('@')[0] : 'Cliente'),
-        email: loginEmail || clientEmail || '',
-        phone: clientPhone || '',
+        name: clientName || (loginEmail ? loginEmail.split('@')[0] : 'Cliente Residencial'),
+        email: loginEmail || clientEmail || 'cliente.resolva@gmail.com',
+        phone: clientPhone || '(11) 98765-4321',
         cpf: clientCpf || '',
         residenceType,
         address: {
-          street: street || '',
-          number: number || '',
+          street: street || 'Av. Paulista',
+          number: number || '1000',
           complement,
-          neighborhood: neighborhood || '',
-          city: city || '',
+          neighborhood: neighborhood || 'Bela Vista',
+          city: city || 'São Paulo',
           state: 'SP',
-          cep: cep || ''
+          cep: cep || '01310-100'
         },
         plan: 'Resolva Já Free',
         walletBalance: 0.00,
         cashbackBalance: 0.00,
-        avatar: clientPhoto,
+        avatar: clientPhoto || 'https://ui-avatars.com/api/?name=Cliente+Residencial&background=ea580c&color=ffffff&bold=true',
         registeredAt: 'Conta ativa'
       };
-      setSuccessMessage(`Login realizado com sucesso! Bem-vinda, ${existingClient.name}`);
+      setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingClient.name}`);
       setIsSuccess(true);
       setTimeout(() => {
         onRegisterClient(existingClient);
         setIsSuccess(false);
         onClose();
-      }, 1000);
+      }, 900);
     } else {
       const existingProvider: ProviderProfile = {
         id: 'provider-1',
@@ -209,54 +276,67 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         totalEarningsMonth: 4680,
         registeredAt: 'Março de 2024'
       };
-      setSuccessMessage(`Login realizado com sucesso! Bem-vindo, ${existingProvider.name}`);
+      setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingProvider.name}`);
       setIsSuccess(true);
       setTimeout(() => {
         onRegisterProvider(existingProvider);
         setIsSuccess(false);
         onClose();
-      }, 1000);
+      }, 900);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] max-h-[92vh] overflow-y-auto animate-scaleUp">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 border border-[#e4e4e7] max-h-[92vh] overflow-y-auto">
         {isSuccess ? (
           <div className="py-10 flex flex-col items-center text-center gap-3 animate-fadeIn">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1 shadow-xs">
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <h3 className="text-xl font-bold text-[#18181b]">
               {successMessage}
             </h3>
             <p className="text-xs text-[#71717a] max-w-xs">
-              Autenticado no ecossistema RESOLVA JÁ. Sincronizando seu perfil e dados...
+              Perfil configurado no ecossistema RESOLVA JÁ. Sincronizando dados...
             </p>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start">
               <div>
-                <span className="text-[10px] font-extrabold text-[#ea580c] bg-[#fff7ed] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  RESOLVA JÁ Autenticação
-                </span>
-                <h2 className="text-xl font-black text-[#18181b] mt-1">
-                  {modalMode === 'cadastro' ? 'Criar Nova Conta' : 'Acessar Minha Conta'}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold text-[#ea580c] bg-[#fff7ed] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    {modalMode === 'cadastro' ? 'Novo Cadastro' : 'Acesso Seguro'}
+                  </span>
+                </div>
+                <h2 className="text-xl font-extrabold text-[#18181b] mt-1">
+                  {modalMode === 'cadastro'
+                    ? selectedRole === 'cliente'
+                      ? 'Cadastro de Cliente Residencial'
+                      : 'Credenciamento de Prestador PRO'
+                    : selectedRole === 'cliente'
+                    ? 'Login Cliente Residencial'
+                    : 'Login Painel Prestador PRO'}
                 </h2>
+                <p className="text-xs text-[#71717a] mt-0.5">
+                  {modalMode === 'cadastro'
+                    ? 'Crie seu perfil em segundos e acesse todas as funcionalidades do aplicativo.'
+                    : 'Digite suas credenciais ou utilize o acesso rápido com a Conta Google.'}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-zinc-100 text-zinc-500 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Mode Switcher: Cadastro vs Login */}
-            <div className="flex bg-[#f4f4f5] p-1 rounded-2xl">
+            <div className="flex bg-[#f4f4f5] p-1 rounded-2xl border border-[#e4e4e7]">
               <button
                 type="button"
                 onClick={() => setModalMode('cadastro')}
@@ -267,7 +347,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 }`}
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>Criar Conta</span>
+                <span>Criar Nova Conta</span>
               </button>
               <button
                 type="button"
@@ -279,7 +359,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 }`}
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Entrar (Login)</span>
+                <span>Já Tenho Conta (Login)</span>
               </button>
             </div>
 
@@ -289,32 +369,32 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 type="button"
                 id="tab-cad-cliente"
                 onClick={() => setSelectedRole('cliente')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   selectedRole === 'cliente'
                     ? 'bg-[#18181b] text-white shadow-xs'
-                    : 'text-[#71717a] hover:bg-white'
+                    : 'text-[#71717a] hover:bg-white hover:text-[#18181b]'
                 }`}
               >
                 <User className="w-4 h-4" />
-                <span>Perfil Cliente</span>
+                <span>Cliente Residencial</span>
               </button>
 
               <button
                 type="button"
                 id="tab-cad-prestador"
                 onClick={() => setSelectedRole('prestador')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   selectedRole === 'prestador'
                     ? 'bg-[#ea580c] text-white shadow-xs'
-                    : 'text-[#71717a] hover:bg-white'
+                    : 'text-[#71717a] hover:bg-white hover:text-[#ea580c]'
                 }`}
               >
                 <Wrench className="w-4 h-4" />
-                <span>Perfil Prestador</span>
+                <span>Prestador PRO</span>
               </button>
             </div>
 
-            {/* Google Quick Auth Button */}
+            {/* Google Quick 1-Click Auth Button */}
             {onOpenGoogleAuth && (
               <button
                 type="button"
@@ -322,7 +402,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   onClose();
                   onOpenGoogleAuth(selectedRole);
                 }}
-                className="w-full py-2.5 px-4 rounded-2xl bg-white hover:bg-[#fff7ed] text-[#18181b] border border-[#e4e4e7] hover:border-[#ea580c] font-bold text-xs shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-[#fff7ed] text-[#18181b] border-2 border-[#e4e4e7] hover:border-[#ea580c] font-bold text-xs shadow-2xs transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -342,13 +422,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                   />
                 </svg>
-                <span>{modalMode === 'cadastro' ? 'Cadastrar com o Google' : 'Continuar com o Google'}</span>
+                <span>{modalMode === 'cadastro' ? 'Preencher cadastro com Conta Google' : 'Entrar rápido com Google'}</span>
               </button>
             )}
 
             <div className="flex items-center gap-2 text-[#a1a1aa] text-[11px]">
               <div className="flex-1 h-px bg-[#e4e4e7]" />
-              <span>ou com e-mail e senha</span>
+              <span>ou preencha os dados do formulário</span>
               <div className="flex-1 h-px bg-[#e4e4e7]" />
             </div>
 
@@ -367,8 +447,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       setProviderPhoto(url);
                     }
                   }}
-                  title="Foto do seu Perfil (Opcional)"
-                  subtitle="Selecione do celular/PC para adicionar ou atualizar sua foto"
+                  title="Foto de Perfil (Opcional)"
+                  subtitle="Toque para carregar ou atualizar sua imagem de avatar"
                 />
 
                 <div>
@@ -399,7 +479,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="Sua senha segura"
+                      placeholder="••••••••"
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
                     />
                   </div>
@@ -417,10 +497,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-1 cursor-pointer flex items-center justify-center gap-2"
+                  className={`w-full py-3.5 rounded-full text-white font-bold text-xs shadow-md transition-all mt-1 cursor-pointer flex items-center justify-center gap-2 ${
+                    selectedRole === 'cliente'
+                      ? 'bg-[#18181b] hover:bg-[#27272a]'
+                      : 'bg-[#ea580c] hover:bg-[#c2410c]'
+                  }`}
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Entrar como {selectedRole === 'cliente' ? 'Cliente' : 'Prestador PRO'}</span>
+                  <span>Entrar como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
                 </button>
               </form>
             ) : (
@@ -434,8 +518,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       userName={clientName || 'Cliente'}
                       role="cliente"
                       onPhotoSelected={setClientPhoto}
-                      title="Adicionar Foto de Perfil"
-                      subtitle="Upload do celular/PC ou escolha das opções"
+                      title="Foto de Perfil"
+                      subtitle="Envie uma foto do dispositivo ou escolha um avatar"
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -444,19 +528,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="text"
                           required
-                          placeholder="Seu nome completo"
+                          placeholder="Ex: Carlos Eduardo Mendes"
                           value={clientName}
                           onChange={(e) => setClientName(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">CPF (opcional)</label>
+                        <label className="text-xs font-bold text-[#18181b] block mb-1">CPF (Opcional)</label>
                         <input
                           type="text"
                           placeholder="000.000.000-00"
                           value={clientCpf}
-                          onChange={(e) => setClientCpf(e.target.value)}
+                          onChange={(e) => setClientCpf(formatCpfCnpj(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
@@ -478,44 +562,78 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <label className="text-xs font-bold text-[#18181b] block mb-1">WhatsApp / Telefone</label>
                         <input
                           type="tel"
+                          required
                           placeholder="(11) 90000-0000"
                           value={clientPhone}
-                          onChange={(e) => setClientPhone(e.target.value)}
+                          onChange={(e) => setClientPhone(formatPhone(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-[#18181b] block mb-1">Tipo de Imóvel</label>
+                      <label className="text-xs font-bold text-[#18181b] block mb-1">Crie uma Senha de Acesso</label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={clientPassword}
+                        onChange={(e) => setClientPassword(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-[#18181b] block mb-1">Tipo de Imóvel Residencial</label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { id: 'apartamento', label: 'Apartamento' },
-                          { id: 'casa', label: 'Casa' },
-                          { id: 'comercial', label: 'Comercial' }
-                        ].map((rt) => (
-                          <button
-                            key={rt.id}
-                            type="button"
-                            onClick={() => setResidenceType(rt.id as any)}
-                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                              residenceType === rt.id
-                                ? 'bg-[#18181b] text-white border-[#18181b]'
-                                : 'bg-white text-[#52525b] border-[#e4e4e7]'
-                            }`}
-                          >
-                            {rt.label}
-                          </button>
-                        ))}
+                          { id: 'apartamento', label: 'Apartamento', icon: Building },
+                          { id: 'casa', label: 'Casa', icon: Home },
+                          { id: 'comercial', label: 'Comercial', icon: Store }
+                        ].map((rt) => {
+                          const Icon = rt.icon;
+                          return (
+                            <button
+                              key={rt.id}
+                              type="button"
+                              onClick={() => setResidenceType(rt.id as any)}
+                              className={`py-2 px-2 text-center rounded-xl text-xs font-bold border transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                                residenceType === rt.id
+                                  ? 'bg-[#18181b] text-white border-[#18181b]'
+                                  : 'bg-white text-[#52525b] border-[#e4e4e7] hover:bg-zinc-50'
+                              }`}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                              <span>{rt.label}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Address */}
-                    <div className="space-y-2 pt-1 border-t border-[#e4e4e7]">
-                      <label className="text-xs font-bold text-[#18181b] flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#ea580c]" /> Endereço Residencial (Opcional)
-                      </label>
+                    {/* Address with auto-CEP */}
+                    <div className="space-y-2 pt-2 border-t border-[#e4e4e7]">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-[#18181b] flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-[#ea580c]" /> Endereço Residencial (Opcional)
+                        </label>
+                        {isLoadingCep && (
+                          <span className="text-[10px] text-[#ea580c] flex items-center gap-1 font-bold">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Buscando CEP...
+                          </span>
+                        )}
+                      </div>
+
                       <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="CEP (00000-000)"
+                            value={cep}
+                            onChange={handleCepChange}
+                            className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                          />
+                        </div>
                         <div className="col-span-2">
                           <input
                             type="text"
@@ -525,6 +643,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                             className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                           />
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
                           <input
                             type="text"
@@ -534,61 +655,56 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                             className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                           />
                         </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Apto / Bloco"
-                          value={complement}
-                          onChange={(e) => setComplement(e.target.value)}
-                          className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Bairro"
-                          value={neighborhood}
-                          onChange={(e) => setNeighborhood(e.target.value)}
-                          className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
-                        />
-                        <input
-                          type="text"
-                          placeholder="CEP"
-                          value={cep}
-                          onChange={(e) => setCep(e.target.value)}
-                          className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
-                        />
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Apto / Bloco"
+                            value={complement}
+                            onChange={(e) => setComplement(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Bairro"
+                            value={neighborhood}
+                            onChange={(e) => setNeighborhood(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <button
                       type="submit"
                       id="btn-submit-cliente"
-                      className="w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
                     >
                       <UserPlus className="w-4 h-4" />
-                      <span>Concluir Cadastro</span>
+                      <span>Concluir Cadastro de Cliente</span>
                     </button>
                   </form>
                 ) : (
-                  /* FORM PRESTADOR */
+                  /* ===================== FORM PRESTADOR PRO ===================== */
                   <form onSubmit={handleProviderSubmit} className="flex flex-col gap-3.5 mt-1">
                     {/* PHOTO UPLOADER FOR PROVIDER */}
                     <PhotoUploader
                       currentPhoto={providerPhoto}
-                      userName={providerName || 'Prestador'}
+                      userName={providerName || 'Prestador PRO'}
                       role="prestador"
                       onPhotoSelected={setProviderPhoto}
-                      title="Foto Profissional para o Perfil"
-                      subtitle="Foto nítida gera até 3x mais fechamentos de serviços"
+                      title="Foto Profissional"
+                      subtitle="Foto nítida e profissional aumenta em até 3x o fechamento de propostas"
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">Nome Completo / MEI</label>
+                        <label className="text-xs font-bold text-[#18181b] block mb-1">Nome Profissional / Empresa</label>
                         <input
                           type="text"
                           required
-                          placeholder="Seu nome profissional"
+                          placeholder="Ex: Ricardo Mendes Reparos"
                           value={providerName}
                           onChange={(e) => setProviderName(e.target.value)}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -601,7 +717,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                           required
                           placeholder="00.000.000/0001-00 ou CPF"
                           value={providerDocument}
-                          onChange={(e) => setProviderDocument(e.target.value)}
+                          onChange={(e) => setProviderDocument(formatCpfCnpj(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
@@ -609,7 +725,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">E-mail Profissional</label>
+                        <label className="text-xs font-bold text-[#18181b] block mb-1">E-mail de Trabalho</label>
                         <input
                           type="email"
                           required
@@ -626,65 +742,80 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                           required
                           placeholder="(11) 90000-0000"
                           value={providerPhone}
-                          onChange={(e) => setProviderPhone(e.target.value)}
+                          onChange={(e) => setProviderPhone(formatPhone(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                     </div>
 
-                    {/* Category & Rates */}
+                    <div>
+                      <label className="text-xs font-bold text-[#18181b] block mb-1">Crie uma Senha de Acesso PRO</label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={providerPassword}
+                        onChange={(e) => setProviderPassword(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Category Selection */}
                     <div>
                       <label className="text-xs font-bold text-[#18181b] block mb-1">Especialidade Principal</label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
+                        className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white font-medium"
                       >
-                        <option value="Hidráulica & Encanamento">Hidráulica & Encanamento</option>
-                        <option value="Elétrica Residencial & Comercial">Elétrica Residencial & Comercial</option>
-                        <option value="Ar Condicionado & Refrigeração">Ar Condicionado & Refrigeração</option>
-                        <option value="Montagem & Desmontagem de Móveis">Montagem & Desmontagem de Móveis</option>
-                        <option value="Desentupimento Especializado">Desentupimento Especializado</option>
-                        <option value="Pintura Residencial & Acabamento">Pintura Residencial & Acabamento</option>
-                        <option value="Chaveiro & Fechaduras Digitais">Chaveiro & Fechaduras Digitais</option>
-                        <option value="Alvenaria & Pequenas Reformas">Alvenaria & Pequenas Reformas</option>
-                        <option value="Serralheria, Portões & Janelas">Serralheria, Portões & Janelas</option>
-                        <option value="Marcenaria & Móveis Planejados">Marcenaria & Móveis Planejados</option>
-                        <option value="Instalação de Eletrodomésticos">Instalação de Eletrodomésticos</option>
-                        <option value="Segurança Eletrônica & CFTV">Segurança Eletrônica & CFTV</option>
-                        <option value="Limpeza Pós-Obra & Fachadas">Limpeza Pós-Obra & Fachadas</option>
-                        <option value="Aquecedores a Gás & Boiler">Aquecedores a Gás & Boiler</option>
-                        <option value="Gesso & Paredes em Drywall">Gesso & Paredes em Drywall</option>
-                        <option value="Reparos Gerais & Marido de Aluguel">Reparos Gerais & Marido de Aluguel</option>
+                        <option value="Hidráulica & Encanamento">🔧 Hidráulica & Encanamento</option>
+                        <option value="Elétrica Residencial & Comercial">⚡ Elétrica Residencial & Comercial</option>
+                        <option value="Ar Condicionado & Climatização">❄️ Ar Condicionado & Climatização</option>
+                        <option value="Montagem & Reparo de Móveis">🪑 Montagem & Reparo de Móveis</option>
+                        <option value="Desentupimento Especializado">🚰 Desentupimento Especializado</option>
+                        <option value="Pintura & Acabamento Fino">🎨 Pintura & Acabamento Fino</option>
+                        <option value="Chaveiro & Fechaduras Digitais">🔑 Chaveiro & Fechaduras Digitais</option>
+                        <option value="Alvenaria & Pequenas Reformas">🧱 Alvenaria & Pequenas Reformas</option>
+                        <option value="Serralheria & Portões Automáticos">🚪 Serralheria & Portões Automáticos</option>
+                        <option value="Marcenaria & Móveis Planejados">🪵 Marcenaria & Móveis Planejados</option>
+                        <option value="Instalação de Eletrodomésticos">🔌 Instalação de Eletrodomésticos</option>
+                        <option value="Segurança Eletrônica, Alarmes & CFTV">📹 Segurança Eletrônica, Alarmes & CFTV</option>
+                        <option value="Limpeza Pós-Obra & Fachadas">✨ Limpeza Pós-Obra & Fachadas</option>
+                        <option value="Aquecedores a Gás & Boiler">🔥 Aquecedores a Gás & Boiler</option>
+                        <option value="Gesso, Sancas & Drywall">📐 Gesso, Sancas & Drywall</option>
+                        <option value="Reparos Gerais & Marido de Aluguel">🔨 Reparos Gerais & Marido de Aluguel</option>
                       </select>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Exp. (Anos)</label>
+                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Experiência (Anos)</label>
                         <input
                           type="number"
                           min="1"
+                          max="40"
                           value={experienceYears}
                           onChange={(e) => setExperienceYears(Number(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Mão de Obra (R$)</label>
+                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Visita Base (R$)</label>
                         <input
                           type="number"
                           min="30"
+                          step="10"
                           value={laborBaseRate}
                           onChange={(e) => setLaborBaseRate(Number(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Raio (Km)</label>
+                        <label className="text-[11px] font-bold text-[#18181b] block mb-1">Raio de Ação (Km)</label>
                         <input
                           type="number"
                           min="1"
+                          max="100"
                           value={operatingRadius}
                           onChange={(e) => setOperatingRadius(Number(e.target.value))}
                           className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -693,10 +824,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-[#18181b] block mb-1">Chave Pix para Recebimento Direto</label>
+                      <label className="text-xs font-bold text-[#18181b] block mb-1">Chave Pix para Recebimento das Propostas</label>
                       <input
                         type="text"
-                        placeholder="Chave Pix (E-mail, CPF ou Celular)"
+                        placeholder="Chave Pix (E-mail, CPF, CNPJ ou Telefone)"
                         value={pixKey}
                         onChange={(e) => setPixKey(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -704,10 +835,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-[#18181b] block mb-1">Apresentação / Bio Profissional</label>
+                      <label className="text-xs font-bold text-[#18181b] block mb-1">Apresentação & Diferenciais</label>
                       <textarea
                         rows={2}
-                        placeholder="Breve descrição dos seus serviços e experiência..."
+                        placeholder="Descreva sua experiência, ferramentas, garantias e diferenciais profissionais..."
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
@@ -717,7 +848,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     <button
                       type="submit"
                       id="btn-submit-prestador"
-                      className="w-full py-3.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full py-3.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Concluir Credenciamento PRO</span>

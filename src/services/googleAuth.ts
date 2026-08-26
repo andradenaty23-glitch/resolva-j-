@@ -1,13 +1,12 @@
 import { GoogleAuthUser, UserRole } from '../types';
-import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../lib/firebase';
+import { signOut, signInWithPopup } from 'firebase/auth';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 export const GOOGLE_OAUTH_CLIENT_ID =
-  (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
-
-if (!GOOGLE_OAUTH_CLIENT_ID) {
-  console.warn('Security Warning: VITE_GOOGLE_CLIENT_ID is not defined in environment variables. Google Authentication will not work properly.');
-}
+  (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
+  (firebaseConfig as any)?.oAuthClientId ||
+  '';
 
 declare global {
   interface Window {
@@ -69,7 +68,6 @@ export async function logoutGoogle(token?: string): Promise<void> {
       await signOut(auth);
     }
     
-    // Attempt standard GSI cleanup if still present
     if (window.google?.accounts?.id) {
       window.google.accounts.id.disableAutoSelect();
     }
@@ -80,6 +78,26 @@ export async function logoutGoogle(token?: string): Promise<void> {
     }
   } catch (err) {
     console.warn('Error during Google logout:', err);
+  }
+}
+
+/**
+ * Fetch Google User Profile info using an OAuth access token
+ */
+export async function fetchGoogleUserProfile(accessToken: string): Promise<ParsedGoogleToken | null> {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Google API responded with status ${response.status}`);
+    }
+    return await response.json();
+  } catch (err) {
+    console.warn('Error fetching Google user profile with token:', err);
+    return null;
   }
 }
 
