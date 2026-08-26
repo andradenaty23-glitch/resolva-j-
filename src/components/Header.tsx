@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Bell, ShieldCheck, User, Wrench, UserPlus, Smartphone, LogIn, RefreshCw } from 'lucide-react';
+import { Cpu, Bell, ShieldCheck, User, Wrench, UserPlus, Smartphone, LogIn, RefreshCw, ShieldAlert } from 'lucide-react';
 import { GoogleAuthUser, NotificationItem, UserRole } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 
@@ -15,6 +15,8 @@ interface HeaderProps {
   onOpenGoogleAuth: () => void;
   onOpenInstallModal: () => void;
   onOpenUpdateModal?: () => void;
+  onOpenAdminPanel?: () => void;
+  isAdmin?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,7 +30,9 @@ export const Header: React.FC<HeaderProps> = ({
   googleUser,
   onOpenGoogleAuth,
   onOpenInstallModal,
-  onOpenUpdateModal
+  onOpenUpdateModal,
+  onOpenAdminPanel,
+  isAdmin = false
 }) => {
   return (
     <header className="w-full top-0 sticky bg-white/95 backdrop-blur-md shadow-xs z-40 border-b border-slate-200/80 transition-all select-none">
@@ -89,6 +93,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Admin Panel Quick Action */}
+          {onOpenAdminPanel && (
+            <button
+              id="btn-admin-panel"
+              onClick={onOpenAdminPanel}
+              aria-label="Painel de Administração do Firestore"
+              className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 p-2 sm:px-2.5 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 min-h-[38px]"
+              title="Auditoria & Painel Firestore (Admin)"
+            >
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+          )}
+
           {/* App Install Button */}
           <button
             id="btn-install-app"
@@ -173,5 +191,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-

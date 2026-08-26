@@ -1,6 +1,6 @@
-export type UserRole = 'cliente' | 'prestador';
+export type UserRole = 'cliente' | 'prestador' | 'profissional' | 'admin';
 
-export type TabType = 'inicio' | 'problemas' | 'agenda' | 'minhacasa' | 'pagamentos' | 'perfil';
+export type TabType = 'inicio' | 'problemas' | 'agenda' | 'minhacasa' | 'pagamentos' | 'perfil' | 'admin';
 
 export type ProblemCategory =
   | 'hidraulica'
@@ -20,6 +20,125 @@ export type ProblemCategory =
   | 'aquecedor_gas'
   | 'gesso_drywall';
 
+// ================= FIRESTORE DATABASE TYPES =================
+export type TipoUsuario = 'cliente' | 'profissional' | 'admin';
+
+export interface UsuarioDoc {
+  uid: string;
+  nome: string;
+  email: string;
+  foto: string;
+  telefone: string;
+  tipo: TipoUsuario;
+  cidade: string;
+  bairro: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  // Campos complementares opcionais para enriquecer o perfil
+  residenceType?: 'apartamento' | 'casa' | 'comercial';
+  endereco?: string;
+  cep?: string;
+  cpf?: string;
+  bio?: string;
+  especialidades?: string[];
+  raioKm?: number;
+  valorBase?: number;
+  chavePix?: string;
+  avaliacaoMedia?: number;
+  totalAvaliacoes?: number;
+}
+
+export interface CategoriaDoc {
+  id: string;
+  nome: string;
+  descricao: string;
+  icone: string;
+  ativa: boolean;
+  criadoEm: string;
+}
+
+export interface ServicoDoc {
+  id: string;
+  profissionalId: string;
+  profissionalNome?: string;
+  profissionalFoto?: string;
+  nome: string;
+  descricao: string;
+  categoriaId: string;
+  categoriaNome: string;
+  telefone: string;
+  whatsapp: string;
+  cidade: string;
+  bairro: string;
+  endereco: string;
+  preco: number;
+  imagem: string;
+  disponivel: boolean;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type StatusSolicitacao =
+  | 'pendente'
+  | 'aceita'
+  | 'recusada'
+  | 'em_andamento'
+  | 'concluida'
+  | 'cancelada';
+
+export interface SolicitacaoDoc {
+  id: string;
+  clienteId: string;
+  clienteNome?: string;
+  clienteFoto?: string;
+  clienteTelefone?: string;
+  profissionalId: string;
+  profissionalNome?: string;
+  profissionalFoto?: string;
+  servicoId: string;
+  servicoNome: string;
+  descricao: string;
+  dataSolicitacao: string;
+  status: StatusSolicitacao;
+  observacao?: string;
+  valor?: number;
+  endereco?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface AvaliacaoDoc {
+  id: string;
+  clienteId: string;
+  clienteNome?: string;
+  clienteFoto?: string;
+  profissionalId: string;
+  servicoId: string;
+  solicitacaoId: string;
+  nota: number; // 1 a 5
+  comentario: string;
+  criadoEm: string;
+}
+
+export interface FavoritoDoc {
+  id: string;
+  usuarioId: string;
+  servicoId: string;
+  criadoEm: string;
+}
+
+export interface NotificacaoDoc {
+  id: string;
+  usuarioId: string;
+  titulo: string;
+  mensagem: string;
+  tipo: 'info' | 'success' | 'alert' | 'warning';
+  lida: boolean;
+  referenciaId?: string;
+  criadoEm: string;
+}
+
+// ================= UI / LEGACY COMPATIBILITY TYPES =================
 export interface PaymentMethod {
   id: string;
   type: 'credit_card' | 'debit_card' | 'pix' | 'boleto' | 'wallet';
@@ -86,7 +205,7 @@ export interface ProviderProfile {
   name: string;
   email: string;
   phone: string;
-  document: string; // CPF or CNPJ
+  document: string;
   category: string;
   specialties: string[];
   experienceYears: number;
@@ -157,6 +276,8 @@ export interface Professional {
   reviewsCount: number;
   completedJobs: number;
   specialties: string[];
+  bairro?: string;
+  cidade?: string;
 }
 
 export interface DeviceItem {
@@ -193,11 +314,16 @@ export interface Appointment {
   serviceTitle: string;
   room: string;
   totalCost: number;
-  status: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado';
+  status: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado' | 'pendente' | 'aceita' | 'recusada' | 'em_andamento';
   address: string;
   notes?: string;
   isBlockedSlot?: boolean;
   blockReason?: string;
+  solicitacaoId?: string;
+  servicoId?: string;
+  clienteId?: string;
+  profissionalId?: string;
+  avaliacaoFeita?: boolean;
 }
 
 export interface NotificationItem {
@@ -207,6 +333,7 @@ export interface NotificationItem {
   time: string;
   read: boolean;
   type: 'alert' | 'info' | 'success';
+  referenciaId?: string;
 }
 
 export interface GoogleAuthUser {
@@ -218,8 +345,8 @@ export interface GoogleAuthUser {
   picture: string;
   verifiedEmail: boolean;
   role: UserRole;
+  tipo?: TipoUsuario;
   authProvider: 'google' | 'email';
   connectedAt: string;
   token?: string;
 }
-

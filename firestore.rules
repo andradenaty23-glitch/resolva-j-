@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny all
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }
@@ -15,8 +15,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'andradenaty23@gmail.com' ||
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin')
+      );
     }
 
     function incoming() {
@@ -27,29 +31,71 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Users Collection
-    match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn() && resource.data.id == request.auth.uid;
-      allow create: if isOwner(userId) && isValidId(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+    // 1. Coleção usuarios
+    match /usuarios/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid) && 
+        (incoming().tipo != 'admin' || isAdmin());
+      allow update: if (isOwner(uid) || isAdmin()) &&
+        incoming().uid == uid &&
+        (incoming().tipo == existing().tipo || isAdmin());
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
-    // Service Requests Collection
-    match /service_requests/{requestId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(requestId) && incoming().clientId == request.auth.uid;
-      allow update: if isSignedIn() && (existing().clientId == request.auth.uid || incoming().clientId == existing().clientId);
-      allow delete: if isSignedIn() && existing().clientId == request.auth.uid;
+    // 2. Coleção categorias
+    match /categorias/{categoriaId} {
+      allow read: if true; // Categorias são públicas para clientes e profissionais
+      allow write: if isSignedIn(); // Permite criar/inicializar categorias
+    }
 
-      // Proposals Subcollection
-      match /proposals/{proposalId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() && isValidId(proposalId) && incoming().providerId == request.auth.uid;
-        allow update: if isSignedIn() && (existing().providerId == request.auth.uid || get(/databases/$(database)/documents/service_requests/$(requestId)).data.clientId == request.auth.uid);
-        allow delete: if isSignedIn() && existing().providerId == request.auth.uid;
-      }
+    // 3. Coleção servicos
+    match /servicos/{servicoId} {
+      allow read: if true; // Serviços disponíveis são pesquisáveis
+      allow create: if isSignedIn() && incoming().profissionalId == request.auth.uid;
+      allow update: if isSignedIn() && (existing().profissionalId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (existing().profissionalId == request.auth.uid || isAdmin());
+    }
+
+    // 4. Coleção solicitacoes
+    match /solicitacoes/{solicitacaoId} {
+      allow read: if isSignedIn() && (
+        resource.data.clienteId == request.auth.uid ||
+        resource.data.profissionalId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && incoming().clienteId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        existing().clienteId == request.auth.uid ||
+        existing().profissionalId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Coleção avaliacoes
+    match /avaliacoes/{avaliacaoId} {
+      allow read: if true; // Avaliações são públicas para reputação dos profissionais
+      allow create: if isSignedIn() && 
+        incoming().clienteId == request.auth.uid &&
+        incoming().nota >= 1 && incoming().nota <= 5;
+      allow update: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Coleção favoritos
+    match /favoritos/{favoritoId} {
+      allow read: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().usuarioId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+    }
+
+    // 7. Coleção notificacoes
+    match /notificacoes/{notificacaoId} {
+      allow read: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+      allow create: if isSignedIn(); // Usuários autenticados criam notificações em ações
+      allow update: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
     }
   }
 }

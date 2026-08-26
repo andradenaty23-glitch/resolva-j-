@@ -25,10 +25,13 @@ import {
   Flame,
   Square,
   SlidersHorizontal,
-  Search
+  Search,
+  CheckCircle2,
+  Store
 } from 'lucide-react';
-import { ProblemCategory, Room } from '../types';
+import { ProblemCategory, Room, ServicoDoc, CategoriaDoc, ClientProfile, FavoritoDoc } from '../types';
 import { SERVICE_DEMANDS_CATALOG, ServiceDemandCategory } from '../data/serviceDemands';
+import { FirestoreServicesCatalog } from './FirestoreServicesCatalog';
 
 interface HomeScreenProps {
   onFindSolution: (problemText: string, imageSrc?: string) => void;
@@ -41,6 +44,12 @@ interface HomeScreenProps {
   problemRooms: Room[];
   selectedPhoto: string | null;
   onClearPhoto: () => void;
+  firestoreServicos?: ServicoDoc[];
+  firestoreCategorias?: CategoriaDoc[];
+  clientProfile?: ClientProfile;
+  favoritos?: FavoritoDoc[];
+  onRequestService?: (servico: ServicoDoc) => void;
+  isLoadingServices?: boolean;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -53,7 +62,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToMinhaCasa,
   problemRooms,
   selectedPhoto,
-  onClearPhoto
+  onClearPhoto,
+  firestoreServicos = [],
+  firestoreCategorias = [],
+  clientProfile,
+  favoritos = [],
+  onRequestService,
+  isLoadingServices = false
 }) => {
   const [problemDescription, setProblemDescription] = useState('');
   const [activeInputMode, setActiveInputMode] = useState<'digitar' | 'falar' | 'foto'>('digitar');
@@ -99,18 +114,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         return Paintbrush;
       case 'Key':
         return Key;
-      case 'Layers':
-        return Layers;
-      case 'Shield':
-        return Shield;
-      case 'Component':
-        return ComponentIcon;
       case 'Refrigerator':
         return Refrigerator;
       case 'Video':
         return Video;
-      case 'Sparkles':
-        return Sparkles;
       case 'Flame':
         return Flame;
       case 'Square':
@@ -120,36 +127,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
-  const filteredDemands = SERVICE_DEMANDS_CATALOG.filter((item) => {
-    if (selectedFilterTab === 'urgente') {
-      return item.urgencyDefault === 'critica' || item.urgencyDefault === 'alta' || item.badge?.includes('24');
-    }
-    if (selectedFilterTab === 'instalacao') {
-      return (
-        item.id === 'montagem_moveis' ||
-        item.id === 'eletrodomesticos' ||
-        item.id === 'seguranca_cftv' ||
-        item.id === 'ar_condicionado' ||
-        item.id === 'geral'
-      );
-    }
-    if (selectedFilterTab === 'reforma') {
-      return (
-        item.id === 'pintura' ||
-        item.id === 'alvenaria' ||
-        item.id === 'gesso_drywall' ||
-        item.id === 'marcenaria' ||
-        item.id === 'serralheria' ||
-        item.id === 'limpeza_pos_obra'
-      );
-    }
+  const filteredDemands = SERVICE_DEMANDS_CATALOG.filter((demand) => {
+    if (selectedFilterTab === 'todos') return true;
+    if (selectedFilterTab === 'urgente') return demand.urgencyDefault === 'alta' || demand.urgencyDefault === 'critica';
+    if (selectedFilterTab === 'instalacao') return demand.name.toLowerCase().includes('instala') || demand.description.toLowerCase().includes('instala');
+    if (selectedFilterTab === 'reforma') return demand.name.toLowerCase().includes('reforma') || demand.name.toLowerCase().includes('pintura') || demand.name.toLowerCase().includes('marcenaria');
     return true;
   });
 
   const displayedDemands = showAllDemands ? filteredDemands : filteredDemands.slice(0, 8);
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6 max-w-2xl mx-auto w-full pb-8 overflow-hidden animate-fadeIn">
+    <div className="flex flex-col gap-5 sm:gap-6 max-w-2xl mx-auto w-full pb-8 overflow-hidden animate-fadeIn">
       {/* Hero Section: O que aconteceu? */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
@@ -251,84 +240,106 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <button
               key={idx}
               type="button"
-              onClick={() => setProblemDescription(prompt)}
-              className="text-xs bg-white border border-slate-200 text-slate-600 hover:border-[#ea580c] hover:text-[#ea580c] hover:bg-[#fff7ed]/50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs font-medium max-w-[280px] truncate"
+              onClick={() => {
+                setProblemDescription(prompt);
+                onFindSolution(prompt);
+              }}
+              className="text-xs bg-white hover:bg-[#fff7ed] text-slate-700 hover:text-[#ea580c] border border-slate-200 hover:border-[#fed7aa] px-3 py-1.5 rounded-full transition-all cursor-pointer font-medium shadow-2xs"
             >
               {prompt}
             </button>
           ))}
         </div>
 
-        {/* Action CTAs */}
-        <div className="flex flex-col gap-2 mt-1">
+        {/* Big Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1">
           <button
             type="button"
             id="btn-find-solution"
             onClick={() => handleSubmit()}
-            className="w-full bg-[#ea580c] hover:bg-[#c2410c] active:scale-[0.99] text-white font-bold text-sm sm:text-base py-3.5 px-5 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group cursor-pointer min-h-[48px]"
+            disabled={!problemDescription.trim() && !selectedPhoto}
+            className="w-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-extrabold text-sm sm:text-base py-3.5 px-5 rounded-2xl transition-all shadow-md shadow-[#ea580c]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
           >
-            <span>Encontrar Solução com IA</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <span>Ver Diagnóstico & Preços</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
 
           <button
             type="button"
             id="btn-guided-wizard"
             onClick={onOpenGuidedWizard}
-            className="w-full bg-slate-100 hover:bg-[#fff7ed] text-slate-700 hover:text-[#ea580c] border border-slate-200 font-bold text-xs sm:text-sm py-2.5 rounded-xl transition-all tracking-wide uppercase flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs min-h-[44px]"
+            className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-slate-300 font-bold text-sm sm:text-base py-3.5 px-5 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs active:scale-[0.99]"
           >
             <HelpCircle className="w-4 h-4 text-[#ea580c]" />
-            Não sei o que é? Usar Assistente Guiado
+            <span>Não sei explicar o que é</span>
           </button>
         </div>
       </section>
 
-      {/* Demandas de Serviços & Categorias Grid */}
-      <section className="flex flex-col gap-3">
+      {/* Real Firestore Services Catalog */}
+      {firestoreServicos && firestoreServicos.length > 0 && clientProfile && (
+        <section className="pt-2">
+          <FirestoreServicesCatalog
+            servicos={firestoreServicos}
+            categorias={firestoreCategorias}
+            client={clientProfile}
+            favoritos={favoritos}
+            onRequestService={(servico) => {
+              if (onRequestService) {
+                onRequestService(servico);
+              }
+            }}
+            isLoading={isLoadingServices}
+          />
+        </section>
+      )}
+
+      {/* Catalog of Problems and Services */}
+      <section className="flex flex-col gap-3 pt-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Demandas Populares</h2>
-            <p className="text-xs text-slate-500 font-medium">Selecione uma especialidade com garantia de 90 dias</p>
+            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              Especialidades mais Procuradas
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Selecione o tipo de serviço para diagnóstico ou contratação direta
+            </p>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+          {/* Catalog Filter Tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto overflow-x-auto max-w-full">
             <button
+              type="button"
               onClick={() => setSelectedFilterTab('todos')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedFilterTab === 'todos'
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                selectedFilterTab === 'todos' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Todos ({SERVICE_DEMANDS_CATALOG.length})
+              Todos
             </button>
             <button
+              type="button"
               onClick={() => setSelectedFilterTab('urgente')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedFilterTab === 'urgente'
-                  ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                selectedFilterTab === 'urgente' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Urgentes / 24h
+              Emergência
             </button>
             <button
+              type="button"
               onClick={() => setSelectedFilterTab('instalacao')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedFilterTab === 'instalacao'
-                  ? 'bg-[#ea580c] text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                selectedFilterTab === 'instalacao' ? 'bg-white text-[#ea580c] shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Instalação
             </button>
             <button
+              type="button"
               onClick={() => setSelectedFilterTab('reforma')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedFilterTab === 'reforma'
-                  ? 'bg-[#ea580c] text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                selectedFilterTab === 'reforma' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Reformas
@@ -336,16 +347,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        {/* Demands Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
           {displayedDemands.map((demand) => {
             const Icon = getIconComponent(demand.iconName);
             return (
               <button
                 key={demand.id}
-                id={`cat-${demand.id}`}
+                type="button"
                 onClick={() => handleDemandClick(demand)}
-                className="relative flex flex-col items-start p-3.5 bg-white rounded-2xl shadow-xs border border-slate-200 hover:border-[#ea580c] hover:shadow-md transition-all active:scale-[0.98] group cursor-pointer text-left overflow-hidden"
+                className="bg-white rounded-2xl p-3.5 sm:p-4 flex flex-col items-start text-left border border-slate-200 hover:border-[#ea580c] hover:shadow-md transition-all cursor-pointer group relative overflow-hidden active:scale-[0.98]"
               >
                 {demand.badge && (
                   <span className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]">

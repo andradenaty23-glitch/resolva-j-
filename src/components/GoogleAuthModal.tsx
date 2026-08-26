@@ -9,20 +9,19 @@ import {
   LogOut,
   AlertCircle,
   Loader2,
-  Mail
+  Mail,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { GoogleAuthUser, UserRole } from '../types';
+import { GoogleAuthUser, UserRole, TipoUsuario } from '../types';
 import {
-  DEMO_GOOGLE_ACCOUNTS,
-  saveClientUser,
-  saveProviderUser,
-  logoutUser,
-  GOOGLE_OAUTH_CLIENT_ID,
-  fetchGoogleUserProfile
-} from '../services/googleAuth';
-import { auth, googleProvider } from '../lib/firebase';
-import { signInWithPopup } from 'firebase/auth';
+  loginWithGoogle,
+  loginWithEmailPassword,
+  registerWithEmailPassword,
+  logoutFirebaseAuth,
+  syncUserDocument
+} from '../services/firebaseAuth';
 import { SafeAvatar } from './SafeAvatar';
 
 interface GoogleAuthModalProps {
@@ -43,8 +42,10 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   initialRole = 'cliente'
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
-  const [customEmail, setCustomEmail] = useState('');
-  const [customName, setCustomName] = useState('');
+  const [authMode, setAuthMode] = useState<'google' | 'email_login' | 'email_signup'>('google');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -71,13 +72,6 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     setErrorDetails(null);
     setSuccessUser(user);
     setIsSuccess(true);
-    
-    // Save to strictly isolated role storage
-    if (user.role === 'cliente') {
-      saveClientUser(user);
-    } else {
-      saveProviderUser(user);
-    }
 
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => {
@@ -88,135 +82,82 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   };
 
   /**
-   * Attempt Google Identity Services (GSI) Token Client
-   */
-  const tryGsiTokenAuth = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      try {
-        if (!window.google?.accounts?.oauth2 || !GOOGLE_OAUTH_CLIENT_ID) {
-          resolve(false);
-          return;
-        }
-
-        const client = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_OAUTH_CLIENT_ID,
-          scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-          callback: async (tokenResponse: any) => {
-            if (tokenResponse?.access_token) {
-              const profile = await fetchGoogleUserProfile(tokenResponse.access_token);
-              if (profile && profile.email) {
-                const authUser: GoogleAuthUser = {
-                  id: profile.sub || `google-${Date.now()}`,
-                  email: profile.email,
-                  name: profile.name || profile.given_name || (selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'),
-                  picture: profile.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
-                  verifiedEmail: profile.email_verified ?? true,
-                  role: selectedRole,
-                  authProvider: 'google',
-                  connectedAt: new Date().toISOString(),
-                  token: tokenResponse.access_token
-                };
-                handleCompleteAuth(authUser);
-                resolve(true);
-                return;
-              }
-            }
-            resolve(false);
-          },
-          error_callback: (err: any) => {
-            console.warn('GSI Error:', err);
-            resolve(false);
-          }
-        });
-
-        client.requestAccessToken({ prompt: 'select_account' });
-      } catch (err) {
-        console.warn('Failed GSI token client:', err);
-        resolve(false);
-      }
-    });
-  };
-
-  /**
-   * Primary Multi-Tier Google Authentication Trigger
+   * Firebase Google Sign-In
    */
   const handleTriggerGoogleOAuth = async () => {
     setIsLoading(true);
     setAuthError(null);
     setErrorDetails(null);
 
-    // 1. Try Firebase Auth popup
+    const tipo: TipoUsuario = selectedRole === 'prestador' ? 'profissional' : 'cliente';
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      const authUser: GoogleAuthUser = {
-        id: user.uid,
-        email: user.email || '',
-        name: user.displayName || user.email?.split('@')[0] || (selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'),
-        picture: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
-        verifiedEmail: user.emailVerified,
-        role: selectedRole,
-        authProvider: 'google',
-        connectedAt: new Date().toISOString()
-      };
-      
-      handleCompleteAuth(authUser);
-      return;
+      const result = await loginWithGoogle(tipo);
+      if (result) {
+        handleCompleteAuth(result.user);
+      }
     } catch (firebaseError: any) {
       console.warn('Firebase signInWithPopup failed:', firebaseError?.code, firebaseError?.message);
-
-      // 2. If Firebase fails (e.g. domain unauthorized in sandbox, iframe constraints), attempt GSI
-      const gsiSuccess = await tryGsiTokenAuth();
-      if (gsiSuccess) {
-        return;
-      }
-
       setIsLoading(false);
 
       if (firebaseError?.code === 'auth/popup-closed-by-user') {
-        setAuthError('Janela de login foi fechada. Você pode tentar novamente ou usar o acesso rápido abaixo.');
-      } else if (firebaseError?.code === 'auth/unauthorized-domain' || firebaseError?.code === 'auth/operation-not-allowed') {
-        setAuthError('Ambiente protegido: utilize seu Gmail para acesso instantâneo abaixo.');
-        setErrorDetails('Você pode digitar seu e-mail do Google para autenticação imediata sem restrições.');
+        setAuthError('Janela do Google fechada. Tente novamente ou use o login por e-mail.');
+      } else if (
+        firebaseError?.code === 'auth/unauthorized-domain' ||
+        firebaseError?.code === 'auth/operation-not-allowed'
+      ) {
+        setAuthError('Domínio em modo sandbox. Você pode entrar com e-mail/senha ou usar o acesso rápido.');
+        setAuthMode('email_signup');
       } else {
-        setAuthError('O navegador ou bloqueador de popups impediu a janela externa do Google.');
-        setErrorDetails('Utilize o acesso rápido com seu Gmail abaixo para entrar imediatamente.');
+        setAuthError('Não foi possível autenticar pelo Google no momento.');
+        setErrorDetails(firebaseError?.message || 'Tente pelo formulário de e-mail abaixo.');
       }
     }
   };
 
-  const handleSelectDemoAccount = (account: (typeof DEMO_GOOGLE_ACCOUNTS)[0]) => {
-    const user: GoogleAuthUser = {
-      id: `google-${Date.now()}`,
-      email: account.email,
-      name: account.name,
-      picture: account.picture,
-      verifiedEmail: true,
-      role: selectedRole,
-      authProvider: 'google',
-      connectedAt: new Date().toISOString()
-    };
-    handleCompleteAuth(user);
-  };
-
-  const handleCustomGoogleLogin = (e: React.FormEvent) => {
+  /**
+   * Email/Password Auth
+   */
+  const handleEmailAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customEmail) return;
+    if (!email.trim() || !password.trim()) {
+      setAuthError('Preencha todos os campos obrigatórios.');
+      return;
+    }
 
-    const email = customEmail.trim();
-    const name = customName.trim() || email.split('@')[0];
-    const user: GoogleAuthUser = {
-      id: `google-${Date.now()}`,
-      email,
-      name,
-      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${selectedRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
-      verifiedEmail: true,
-      role: selectedRole,
-      authProvider: 'google',
-      connectedAt: new Date().toISOString()
-    };
-    handleCompleteAuth(user);
+    setIsLoading(true);
+    setAuthError(null);
+    setErrorDetails(null);
+
+    const tipo: TipoUsuario = selectedRole === 'prestador' ? 'profissional' : 'cliente';
+
+    try {
+      if (authMode === 'email_signup') {
+        const result = await registerWithEmailPassword(
+          email.trim(),
+          password,
+          name.trim() || email.split('@')[0],
+          tipo
+        );
+        handleCompleteAuth(result.user);
+      } else {
+        const result = await loginWithEmailPassword(email.trim(), password);
+        handleCompleteAuth(result.user);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      console.error('Email auth error:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setAuthError('Este e-mail já está cadastrado. Alterne para a opção "Entrar com Senha".');
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setAuthError('E-mail ou senha incorretos.');
+      } else if (err.code === 'auth/weak-password') {
+        setAuthError('A senha deve ter no mínimo 6 caracteres.');
+      } else {
+        setAuthError('Falha na autenticação. Verifique os dados e tente novamente.');
+        setErrorDetails(err.message);
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -238,285 +179,260 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-
-            <div className="mt-1">
-              <h3 className="text-xl font-bold text-[#18181b]">
-                Conectado com Sucesso!
-              </h3>
-              <p className="text-sm font-semibold text-[#ea580c] mt-0.5">
-                Bem-vindo(a), {successUser.name}
-              </p>
-              <p className="text-xs text-[#71717a] mt-1">{successUser.email}</p>
-            </div>
-
-            <div className="bg-emerald-50 text-emerald-800 text-xs px-4 py-2 rounded-full font-medium flex items-center gap-1.5 border border-emerald-200 mt-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Autenticado como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
-            </div>
+            <h3 className="text-xl font-bold text-slate-900">Autenticado no Firebase!</h3>
+            <p className="text-sm text-slate-600">
+              Bem-vindo(a), <span className="font-semibold text-slate-900">{successUser.name}</span>. Dados sincronizados no Cloud Firestore.
+            </p>
           </div>
         ) : (
           <>
-            {/* Modal Header */}
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-[#e4e4e7] shadow-2xs">
-                    {/* Official Google Vector G */}
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-[#18181b]">
-                      {currentUser ? `Conta Google (${selectedRole === 'cliente' ? 'Cliente' : 'Prestador'})` : 'Entrar com o Google'}
-                    </h2>
-                  </div>
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-[#f4f4f5] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#ea580c]/10 text-[#ea580c] flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-[#71717a] mt-1">
-                  Acesso seguro e perfil 100% isolado no ecossistema RESOLVA JÁ.
-                </p>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                    Autenticação Firebase
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Acesso seguro via Google Sign-In & Firestore
+                  </p>
+                </div>
               </div>
-
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Error / Notice Alert if Any */}
-            {authError && (
-              <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5 animate-fadeIn">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="font-bold text-amber-950">{authError}</p>
-                  {errorDetails && <p className="text-[11px] text-amber-800">{errorDetails}</p>}
-                </div>
-                <button
-                  onClick={() => {
-                    setAuthError(null);
-                    setErrorDetails(null);
-                  }}
-                  className="text-amber-700 hover:text-amber-950 font-bold text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {/* Currently Logged In Banner if Active for this profile */}
-            {currentUser && currentUser.role === selectedRole && (
-              <div className="bg-[#f4f4f5] p-3.5 rounded-2xl border border-[#e4e4e7] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <SafeAvatar
-                    src={currentUser.picture}
-                    name={currentUser.name}
-                    size="sm"
-                    className="w-10 h-10 rounded-full border border-[#ea580c]"
-                  />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[#18181b]">{currentUser.name}</span>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
-                        Ativo ({selectedRole === 'cliente' ? 'Cliente' : 'Prestador'})
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#71717a] truncate max-w-[200px]">
-                      {currentUser.email}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    logoutUser(selectedRole, currentUser.token);
-                    if (onLogout) onLogout();
-                    onClose();
-                  }}
-                  className="text-xs text-rose-600 font-bold hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Desconectar apenas esta conta"
-                >
-                  <LogOut className="w-3.5 h-3.5" /> Sair
-                </button>
-              </div>
-            )}
-
-            {/* Role Selection for Google Auth */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#18181b]">
-                Perfil de Acesso Desejado:
+            {/* Role Selection */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wider">
+                Perfil de Acesso
               </label>
-              <div className="grid grid-cols-2 gap-2 bg-[#f4f4f5] p-1.5 rounded-2xl border border-[#e4e4e7]">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedRole('cliente')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`p-3 rounded-2xl border flex items-center gap-2.5 text-left transition cursor-pointer ${
                     selectedRole === 'cliente'
-                      ? 'bg-[#18181b] text-white shadow-xs'
-                      : 'text-[#71717a] hover:bg-white hover:text-[#18181b]'
+                      ? 'border-[#ea580c] bg-[#ea580c]/5 ring-2 ring-[#ea580c]/20'
+                      : 'border-[#e4e4e7] bg-white hover:bg-slate-50'
                   }`}
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Perfil Cliente</span>
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      selectedRole === 'cliente' ? 'bg-[#ea580c] text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Cliente</div>
+                    <div className="text-[10px] text-slate-500">Contratar serviços</div>
+                  </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedRole('prestador')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`p-3 rounded-2xl border flex items-center gap-2.5 text-left transition cursor-pointer ${
                     selectedRole === 'prestador'
-                      ? 'bg-[#ea580c] text-white shadow-xs'
-                      : 'text-[#71717a] hover:bg-white hover:text-[#ea580c]'
+                      ? 'border-emerald-600 bg-emerald-500/5 ring-2 ring-emerald-500/20'
+                      : 'border-[#e4e4e7] bg-white hover:bg-slate-50'
                   }`}
                 >
-                  <Wrench className="w-3.5 h-3.5" />
-                  <span>Perfil Prestador</span>
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      selectedRole === 'prestador' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <Wrench className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Prestador PRO</div>
+                    <div className="text-[10px] text-slate-500">Receber chamados</div>
+                  </div>
                 </button>
               </div>
             </div>
 
-            {/* Primary Google OAuth 2.0 Action Button */}
-            <div className="flex flex-col gap-2 pt-1">
+            {/* Error Message */}
+            {authError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2 text-rose-800 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <div>
+                  <div className="font-bold">{authError}</div>
+                  {errorDetails && <div className="text-[11px] text-rose-600 mt-0.5">{errorDetails}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Google Sign In Button */}
+            <div className="flex flex-col gap-2">
               <button
-                id="btn-entrar-google-oauth-popup"
                 type="button"
                 onClick={handleTriggerGoogleOAuth}
                 disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-full bg-white hover:bg-[#fafafa] text-[#18181b] font-bold text-sm border-2 border-[#e4e4e7] hover:border-[#ea580c] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer group active:scale-98 disabled:opacity-75"
+                className="w-full py-3.5 px-4 rounded-2xl border-2 border-slate-200 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm transition flex items-center justify-center gap-3 shadow-xs cursor-pointer disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-5 h-5 text-[#ea580c] animate-spin" />
-                    <span>Conectando com o Google...</span>
+                    <Loader2 className="w-5 h-5 animate-spin text-[#ea580c]" />
+                    <span>Conectando ao Firebase...</span>
                   </>
                 ) : (
                   <>
-                    {/* Official Google Vector G */}
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
-                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       />
                       <path
                         fill="#34A853"
-                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                       />
                       <path
                         fill="#FBBC05"
-                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
                       />
                       <path
                         fill="#EA4335"
-                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Entrar como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
+                    <span>Entrar com o Google</span>
                   </>
                 )}
               </button>
             </div>
 
-            {/* Custom Google Email Fast Login */}
-            <form onSubmit={handleCustomGoogleLogin} className="pt-2 border-t border-[#f4f4f5] flex flex-col gap-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
-                <Mail className="w-3.5 h-3.5 text-[#ea580c]" />
-                <span>Ou entre com seu Gmail ({selectedRole === 'cliente' ? 'Cliente' : 'Prestador'}):</span>
+            {/* Email/Password Option Toggle */}
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder={selectedRole === 'cliente' ? 'Seu Nome (Ex: Carlos)' : 'Nome do Prestador (Ex: Ricardo)'}
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  className="px-3 py-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
-                />
-                <input
-                  type="email"
-                  required
-                  placeholder="seu.email@gmail.com"
-                  value={customEmail}
-                  onChange={(e) => setCustomEmail(e.target.value)}
-                  className="px-3 py-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden bg-white"
-                />
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-slate-400 font-medium">Ou autentique via E-mail</span>
               </div>
+            </div>
 
+            <div className="flex gap-2">
               <button
-                type="submit"
-                className={`w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  selectedRole === 'cliente' ? 'bg-[#18181b] hover:bg-[#27272a]' : 'bg-[#ea580c] hover:bg-[#c2410c]'
+                type="button"
+                onClick={() => setAuthMode(authMode === 'email_signup' ? 'google' : 'email_signup')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                  authMode === 'email_signup'
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                <span>Conectar Gmail como {selectedRole === 'cliente' ? 'Cliente' : 'Prestador'}</span>
+                Criar Nova Conta
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => setAuthMode(authMode === 'email_login' ? 'google' : 'email_login')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                  authMode === 'email_login'
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                Entrar com Senha
+              </button>
+            </div>
 
-            {/* Quick 1-Click Accounts */}
-            <div className="flex flex-col gap-2 pt-1 border-t border-[#f4f4f5]">
-              <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">
-                Contas Google de Demonstração:
-              </span>
-
-              <div className="grid grid-cols-1 gap-2">
-                {DEMO_GOOGLE_ACCOUNTS.filter(acc => acc.role === selectedRole).map((acc, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSelectDemoAccount(acc)}
-                    className="p-2.5 rounded-2xl border border-[#e4e4e7] hover:border-[#ea580c] hover:bg-[#fff7ed]/50 transition-all flex items-center justify-between group cursor-pointer text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <SafeAvatar
-                        src={acc.picture}
-                        name={acc.name}
-                        size="sm"
-                        className="w-9 h-9 rounded-full border border-[#e4e4e7]"
+            {/* Email Form */}
+            {(authMode === 'email_signup' || authMode === 'email_login') && (
+              <form onSubmit={handleEmailAuthSubmit} className="space-y-3 pt-1">
+                {authMode === 'email_signup' && (
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Nome Completo</label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Seu nome"
+                        className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
                       />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-[#18181b] group-hover:text-[#ea580c] transition-colors">
-                            {acc.name}
-                          </span>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-md bg-[#f4f4f5] text-[#52525b]">
-                            {acc.role === 'cliente' ? 'Cliente' : 'Prestador PRO'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#71717a] truncate">{acc.email}</p>
-                      </div>
                     </div>
+                  </div>
+                )}
 
-                    <div className="flex items-center gap-1 text-xs font-bold text-[#ea580c] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Entrar</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-                ))}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">E-mail</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="seuemail@gmail.com"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Senha</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : authMode === 'email_signup' ? (
+                    <span>Finalizar Cadastro no Firebase</span>
+                  ) : (
+                    <span>Entrar no Firebase</span>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Logout button if currently logged in */}
+            {currentUser && onLogout && (
+              <div className="pt-2 border-t border-[#f4f4f5] flex justify-between items-center">
+                <div className="text-xs text-slate-500">
+                  Conectado como <span className="font-bold text-slate-800">{currentUser.name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logoutFirebaseAuth();
+                    onLogout();
+                    onClose();
+                  }}
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-rose-50 transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Sair
+                </button>
               </div>
-            </div>
-
-            {/* Security Footer */}
-            <div className="text-[10px] text-[#71717a] flex items-center justify-center gap-1.5 pt-1 text-center">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Sessões estritamente separadas entre Cliente e Prestador</span>
-            </div>
+            )}
           </>
         )}
       </div>

@@ -1,66 +1,153 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "User profile for client or provider",
+    "Usuario": {
+      "title": "Usuario",
+      "description": "Documento de perfil do usuário (cliente, profissional ou admin)",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["cliente", "prestador", "admin"] },
-        "avatar": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "foto": { "type": "string" },
+        "telefone": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["cliente", "profissional", "admin"] },
+        "cidade": { "type": "string" },
+        "bairro": { "type": "string" },
+        "criadoEm": { "type": "string", "format": "date-time" },
+        "atualizadoEm": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "role"]
+      "required": ["uid", "nome", "email", "tipo"]
     },
-    "ServiceRequest": {
-      "title": "ServiceRequest",
-      "description": "A service order or maintenance request created by a client",
+    "Categoria": {
+      "title": "Categoria",
+      "description": "Categorias de serviços prestados",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "clientId": { "type": "string" },
-        "clientName": { "type": "string" },
-        "category": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "urgency": { "type": "string", "enum": ["baixa", "media", "alta", "emergencia"] },
-        "status": { "type": "string", "enum": ["aberto", "em_andamento", "concluido", "cancelado"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "icone": { "type": "string" },
+        "ativa": { "type": "boolean" },
+        "criadoEm": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "clientId", "title", "status"]
+      "required": ["nome", "ativa"]
     },
-    "Proposal": {
-      "title": "Proposal",
-      "description": "A quote or proposal sent by a provider to a service request",
+    "Servico": {
+      "title": "Servico",
+      "description": "Serviço oferecido por um profissional",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "requestId": { "type": "string" },
-        "providerId": { "type": "string" },
-        "providerName": { "type": "string" },
-        "price": { "type": "number" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["pendente", "aceita", "recusada"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "profissionalId": { "type": "string" },
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "categoriaId": { "type": "string" },
+        "categoriaNome": { "type": "string" },
+        "telefone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "cidade": { "type": "string" },
+        "bairro": { "type": "string" },
+        "endereco": { "type": "string" },
+        "preco": { "type": "number" },
+        "imagem": { "type": "string" },
+        "disponivel": { "type": "boolean" },
+        "criadoEm": { "type": "string", "format": "date-time" },
+        "atualizadoEm": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "requestId", "providerId", "price", "status"]
+      "required": ["profissionalId", "nome", "categoriaId", "preco", "disponivel"]
+    },
+    "Solicitacao": {
+      "title": "Solicitacao",
+      "description": "Solicitação de atendimento/serviço feita por um cliente",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "profissionalId": { "type": "string" },
+        "servicoId": { "type": "string" },
+        "servicoNome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "dataSolicitacao": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pendente", "aceita", "recusada", "em_andamento", "concluida", "cancelada"] },
+        "observacao": { "type": "string" },
+        "criadoEm": { "type": "string", "format": "date-time" },
+        "atualizadoEm": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clienteId", "profissionalId", "servicoId", "status"]
+    },
+    "Avaliacao": {
+      "title": "Avaliacao",
+      "description": "Avaliação de um cliente sobre um serviço concluído",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "profissionalId": { "type": "string" },
+        "servicoId": { "type": "string" },
+        "solicitacaoId": { "type": "string" },
+        "nota": { "type": "number", "minimum": 1, "maximum": 5 },
+        "comentario": { "type": "string" },
+        "criadoEm": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clienteId", "profissionalId", "servicoId", "solicitacaoId", "nota"]
+    },
+    "Favorito": {
+      "title": "Favorito",
+      "description": "Serviço marcado como favorito por um usuário",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "usuarioId": { "type": "string" },
+        "servicoId": { "type": "string" },
+        "criadoEm": { "type": "string", "format": "date-time" }
+      },
+      "required": ["usuarioId", "servicoId"]
+    },
+    "Notificacao": {
+      "title": "Notificacao",
+      "description": "Notificação do sistema para o usuário",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "usuarioId": { "type": "string" },
+        "titulo": { "type": "string" },
+        "mensagem": { "type": "string" },
+        "tipo": { "type": "string" },
+        "lida": { "type": "boolean" },
+        "referenciaId": { "type": "string" },
+        "criadoEm": { "type": "string", "format": "date-time" }
+      },
+      "required": ["usuarioId", "titulo", "mensagem", "lida"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": "User",
-      "description": "User profile collection"
+    "/usuarios/{uid}": {
+      "schema": "Usuario",
+      "description": "Coleção de perfis de usuários"
     },
-    "/service_requests/{requestId}": {
-      "schema": "ServiceRequest",
-      "description": "Service requests created by clients"
+    "/categorias/{categoriaId}": {
+      "schema": "Categoria",
+      "description": "Coleção de categorias disponíveis"
     },
-    "/service_requests/{requestId}/proposals/{proposalId}": {
-      "schema": "Proposal",
-      "description": "Proposals submitted for a service request"
+    "/servicos/{servicoId}": {
+      "schema": "Servico",
+      "description": "Coleção de serviços cadastrados"
+    },
+    "/solicitacoes/{solicitacaoId}": {
+      "schema": "Solicitacao",
+      "description": "Coleção de solicitações de atendimento"
+    },
+    "/avaliacoes/{avaliacaoId}": {
+      "schema": "Avaliacao",
+      "description": "Coleção de avaliações de serviços"
+    },
+    "/favoritos/{favoritoId}": {
+      "schema": "Favorito",
+      "description": "Coleção de serviços favoritos dos usuários"
+    },
+    "/notificacoes/{notificacaoId}": {
+      "schema": "Notificacao",
+      "description": "Coleção de notificações dos usuários"
     }
   }
 }
