@@ -6,6 +6,7 @@ interface BottomNavProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   pendingProblemsCount: number;
+  providerPendingCount?: number;
   currentRole: UserRole;
 }
 
@@ -13,6 +14,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   activeTab,
   onTabChange,
   pendingProblemsCount,
+  providerPendingCount = 0,
   currentRole
 }) => {
   const clientTabs = [
@@ -26,7 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   const providerTabs = [
     { id: 'inicio' as TabType, label: 'Painel', fullLabel: 'Painel & Gráficos', icon: BarChart3 },
-    { id: 'problemas' as TabType, label: 'Orçamentos', fullLabel: 'Orçamentos', icon: FileText, badge: 1 },
+    { id: 'problemas' as TabType, label: 'Orçamentos', fullLabel: 'Orçamentos', icon: FileText, badge: providerPendingCount },
     { id: 'agenda' as TabType, label: 'Agenda', fullLabel: 'Agenda', icon: Calendar },
     { id: 'minhacasa' as TabType, label: 'Serviços', fullLabel: 'Serviços', icon: Briefcase },
     { id: 'perfil' as TabType, label: 'Perfil PRO', fullLabel: 'Perfil PRO', icon: User }

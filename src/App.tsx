@@ -67,7 +67,8 @@ import {
   subscribeNotificacoes,
   updateSolicitacaoStatus,
   cancelSolicitacao,
-  createNotificacao
+  createNotificacao,
+  deleteUsuarioByEmail
 } from './services/firestoreService';
 
 const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
@@ -169,6 +170,11 @@ export default function App() {
   useEffect(() => {
     // Seed initial categories if empty
     seedDefaultCategoriasIfEmpty().catch(console.error);
+
+    // Purge requested email profile permanently from Firestore & cache
+    deleteUsuarioByEmail('kellyramos8485@gmail.com').catch((err) =>
+      console.log('Purge kellyramos8485 status:', err)
+    );
 
     // Subscribe to Categorias
     const unsubCategorias = subscribeCategorias((cats) => {
@@ -457,6 +463,9 @@ export default function App() {
   // Counts
   const unreadCount = notifications.filter((n) => !n.read).length;
   const pendingProblemsCount = rooms.reduce((acc, r) => acc + r.problemCount, 0);
+  const providerPendingCount =
+    providerLeads.filter((l) => l.status === 'aberto').length +
+    firestoreSolicitacoes.filter((s) => s.status === 'pendente').length;
 
   // Handlers for Profile Deletion
   const handleDeleteClientProfile = () => {
@@ -1162,6 +1171,7 @@ export default function App() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         pendingProblemsCount={pendingProblemsCount}
+        providerPendingCount={providerPendingCount}
         currentRole={currentRole}
       />
 

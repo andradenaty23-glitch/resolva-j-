@@ -840,20 +840,26 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         </div>
 
         <div className="space-y-3">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`p-4 rounded-2xl border transition-all ${
-                n.read ? 'bg-[#fafafa] border-[#e4e4e7]' : 'bg-white border-[#ea580c] shadow-xs'
-              }`}
-            >
-              <div className="flex justify-between items-start gap-2">
-                <h4 className="text-sm font-bold text-[#18181b]">{n.title}</h4>
-                <span className="text-xs text-[#71717a] shrink-0">{n.time}</span>
-              </div>
-              <p className="text-xs sm:text-sm text-[#52525b] mt-1.5 leading-relaxed">{n.message}</p>
+          {notifications.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 rounded-2xl border border-dashed border-slate-200">
+              Nenhuma notificação no momento.
             </div>
-          ))}
+          ) : (
+            notifications.map((n) => (
+              <div
+                key={n.id}
+                className={`p-4 rounded-2xl border transition-all ${
+                  n.read ? 'bg-[#fafafa] border-[#e4e4e7]' : 'bg-white border-[#ea580c] shadow-xs'
+                }`}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <h4 className="text-sm font-bold text-[#18181b]">{n.title}</h4>
+                  <span className="text-xs text-[#71717a] shrink-0">{n.time}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#52525b] mt-1.5 leading-relaxed">{n.message}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

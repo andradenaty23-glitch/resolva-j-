@@ -609,6 +609,80 @@ export function subscribeAllSolicitacoesAdmin(callback: (solicitacoes: Solicitac
   );
 }
 
+export async function deleteUsuario(uid: string): Promise<void> {
+  const userRef = doc(db, 'usuarios', uid);
+  await deleteDoc(userRef);
+
+  // Clean up user's favorites
+  try {
+    const favsSnap = await getDocs(query(collection(db, 'favoritos'), where('usuarioId', '==', uid)));
+    for (const d of favsSnap.docs) {
+      await deleteDoc(doc(db, 'favoritos', d.id));
+    }
+  } catch (err) {
+    console.warn('Could not clean up user favorites:', err);
+  }
+
+  // Clean up user's notifications
+  try {
+    const notifsSnap = await getDocs(query(collection(db, 'notificacoes'), where('usuarioId', '==', uid)));
+    for (const d of notifsSnap.docs) {
+      await deleteDoc(doc(db, 'notificacoes', d.id));
+    }
+  } catch (err) {
+    console.warn('Could not clean up user notifications:', err);
+  }
+}
+
+export async function deleteUsuarioByEmail(email: string): Promise<{ deletedCount: number; message: string }> {
+  const targetEmail = email.trim().toLowerCase();
+  if (!targetEmail) {
+    return { deletedCount: 0, message: 'E-mail inválido.' };
+  }
+
+  let deletedCount = 0;
+
+  try {
+    const usersCol = collection(db, 'usuarios');
+    const snap = await getDocs(usersCol);
+
+    for (const userDocItem of snap.docs) {
+      const data = userDocItem.data() as UsuarioDoc;
+      if (data.email && data.email.trim().toLowerCase() === targetEmail) {
+        await deleteUsuario(userDocItem.id);
+        deletedCount++;
+      }
+    }
+
+    // Also check local storage for this email and purge if stored
+    try {
+      const clientAuth = localStorage.getItem('resolva_ja_auth_cliente_v2');
+      if (clientAuth && JSON.parse(clientAuth)?.email?.toLowerCase() === targetEmail) {
+        localStorage.removeItem('resolva_ja_auth_cliente_v2');
+        localStorage.removeItem('resolva_ja_profile_cliente_v2');
+      }
+      const providerAuth = localStorage.getItem('resolva_ja_auth_prestador_v2');
+      if (providerAuth && JSON.parse(providerAuth)?.email?.toLowerCase() === targetEmail) {
+        localStorage.removeItem('resolva_ja_auth_prestador_v2');
+        localStorage.removeItem('resolva_ja_profile_prestador_v2');
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+
+    return {
+      deletedCount,
+      message: deletedCount > 0
+        ? `Perfil associado ao e-mail ${targetEmail} foi excluído com sucesso (${deletedCount} registro(s) removido(s)).`
+        : `Nenhum perfil encontrado com o e-mail ${targetEmail}.`
+    };
+  } catch (error: any) {
+    console.error('Error deleting user by email:', error);
+    throw error;
+  }
+}
+
 export const createNotificacao = enviarNotificacao;
 export const addNotificacao = enviarNotificacao;
+
 

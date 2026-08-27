@@ -28,6 +28,8 @@ import {
   subscribeCategorias,
   addCategoria,
   deleteServico,
+  deleteUsuario,
+  deleteUsuarioByEmail,
   seedDefaultCategoriasIfEmpty
 } from '../services/firestoreService';
 
@@ -107,6 +109,38 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
         showFeedback(`Serviço "${name}" removido com sucesso.`);
       } catch (err: any) {
         showFeedback('Erro ao remover: ' + err.message);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (uid: string, name: string, email: string) => {
+    if (window.confirm(`Deseja realmente excluir permanentemente o perfil de "${name}" (${email})?`)) {
+      try {
+        await deleteUsuario(uid);
+        showFeedback(`Perfil de "${email}" foi excluído com sucesso do Firestore.`);
+      } catch (err: any) {
+        showFeedback('Erro ao excluir usuário: ' + err.message);
+      }
+    }
+  };
+
+  const [emailToPurge, setEmailToPurge] = useState('');
+  const [isPurging, setIsPurging] = useState(false);
+
+  const handlePurgeUserByEmail = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const target = emailToPurge.trim();
+    if (!target) return;
+    if (window.confirm(`Excluir todos os registros vinculados ao e-mail ${target}?`)) {
+      setIsPurging(true);
+      try {
+        const res = await deleteUsuarioByEmail(target);
+        showFeedback(res.message);
+        setEmailToPurge('');
+      } catch (err: any) {
+        showFeedback('Erro ao excluir: ' + (err.message || String(err)));
+      } finally {
+        setIsPurging(false);
       }
     }
   };
@@ -241,62 +275,105 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
 
         {/* Tab 1: Usuários */}
         {activeTab === 'usuarios' && (
-          <div className="bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-900/80 text-xs uppercase text-slate-400 border-b border-slate-700">
-                  <tr>
-                    <th className="p-4">Usuário</th>
-                    <th className="p-4">E-mail</th>
-                    <th className="p-4">Tipo</th>
-                    <th className="p-4">Localização</th>
-                    <th className="p-4">Cadastrado Em</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700">
-                  {usuarios
-                    .filter(
-                      (u) =>
-                        u.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
-                    .map((u) => (
-                      <tr key={u.uid} className="hover:bg-slate-750/50">
-                        <td className="p-4 flex items-center gap-3">
-                          <img
-                            src={u.foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
-                            alt={u.nome}
-                            className="w-9 h-9 rounded-full object-cover border border-slate-600"
-                          />
-                          <div>
-                            <div className="font-semibold text-slate-100">{u.nome}</div>
-                            <div className="text-xs text-slate-400 font-mono">UID: {u.uid.slice(0, 10)}...</div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-slate-300">{u.email}</td>
-                        <td className="p-4">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                              u.tipo === 'admin'
-                                ? 'bg-purple-900/80 text-purple-300 border border-purple-700'
-                                : u.tipo === 'profissional'
-                                ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
-                                : 'bg-orange-900/80 text-orange-300 border border-orange-700'
-                            }`}
-                          >
-                            {u.tipo}
-                          </span>
-                        </td>
-                        <td className="p-4 text-slate-300">
-                          {u.bairro || 'Centro'}, {u.cidade || 'São Paulo'}
-                        </td>
-                        <td className="p-4 text-xs text-slate-400">
-                          {u.criadoEm ? new Date(u.criadoEm).toLocaleDateString('pt-BR') : '-'}
+          <div className="space-y-4">
+            {/* Quick Purge by Email Card */}
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-rose-400 text-sm font-semibold">
+                <Trash2 size={18} />
+                <span>Excluir Usuário por E-mail:</span>
+              </div>
+              <form onSubmit={handlePurgeUserByEmail} className="flex flex-1 max-w-md items-center gap-2">
+                <input
+                  type="email"
+                  placeholder="ex: usuario@email.com"
+                  value={emailToPurge}
+                  onChange={(e) => setEmailToPurge(e.target.value)}
+                  className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                />
+                <button
+                  type="submit"
+                  disabled={isPurging || !emailToPurge.trim()}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition cursor-pointer shrink-0"
+                >
+                  {isPurging ? 'Excluindo...' : 'Excluir'}
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-900/80 text-xs uppercase text-slate-400 border-b border-slate-700">
+                    <tr>
+                      <th className="p-4">Usuário</th>
+                      <th className="p-4">E-mail</th>
+                      <th className="p-4">Tipo</th>
+                      <th className="p-4">Localização</th>
+                      <th className="p-4">Cadastrado Em</th>
+                      <th className="p-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700">
+                    {usuarios
+                      .filter(
+                        (u) =>
+                          u.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((u) => (
+                        <tr key={u.uid} className="hover:bg-slate-750/50">
+                          <td className="p-4 flex items-center gap-3">
+                            <img
+                              src={u.foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                              alt={u.nome}
+                              className="w-9 h-9 rounded-full object-cover border border-slate-600"
+                            />
+                            <div>
+                              <div className="font-semibold text-slate-100">{u.nome}</div>
+                              <div className="text-xs text-slate-400 font-mono">UID: {u.uid.slice(0, 10)}...</div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-slate-300 font-mono text-xs sm:text-sm">{u.email}</td>
+                          <td className="p-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                u.tipo === 'admin'
+                                  ? 'bg-purple-900/80 text-purple-300 border border-purple-700'
+                                  : u.tipo === 'profissional'
+                                  ? 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
+                                  : 'bg-orange-900/80 text-orange-300 border border-orange-700'
+                              }`}
+                            >
+                              {u.tipo}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-300">
+                            {u.bairro || 'Centro'}, {u.cidade || 'São Paulo'}
+                          </td>
+                          <td className="p-4 text-xs text-slate-400">
+                            {u.criadoEm ? new Date(u.criadoEm).toLocaleDateString('pt-BR') : '-'}
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => handleDeleteUser(u.uid, u.nome, u.email)}
+                              className="p-2 text-rose-400 hover:text-white hover:bg-rose-600/80 rounded-lg transition cursor-pointer"
+                              title="Excluir usuário do sistema"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {usuarios.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-400 text-sm">
+                          Nenhum usuário cadastrado encontrado.
                         </td>
                       </tr>
-                    ))}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
