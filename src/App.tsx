@@ -68,7 +68,8 @@ import {
   updateSolicitacaoStatus,
   cancelSolicitacao,
   createNotificacao,
-  deleteUsuarioByEmail
+  deleteUsuarioByEmail,
+  purgeAllDataByEmail
 } from './services/firestoreService';
 
 const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
@@ -171,10 +172,24 @@ export default function App() {
     // Seed initial categories if empty
     seedDefaultCategoriasIfEmpty().catch(console.error);
 
-    // Purge requested email profile permanently from Firestore & cache
-    deleteUsuarioByEmail('kellyramos8485@gmail.com').catch((err) =>
-      console.log('Purge kellyramos8485 status:', err)
-    );
+    // Purge requested email profile permanently from Firestore, localStorage and state
+    purgeAllDataByEmail('kellyramos8485@gmail.com')
+      .then((res) => {
+        console.log('Purge kellyramos8485 status:', res);
+        // Clear from current active React memory if loaded
+        if (clientUser?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
+          setClientUser(null);
+          setClientProfile(INITIAL_CLIENT_PROFILE);
+        }
+        if (providerUser?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
+          setProviderUser(null);
+          setProviderProfile(INITIAL_PROVIDER_PROFILE);
+        }
+        if (firestoreUserDoc?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
+          setFirestoreUserDoc(null);
+        }
+      })
+      .catch((err) => console.log('Purge error:', err));
 
     // Subscribe to Categorias
     const unsubCategorias = subscribeCategorias((cats) => {

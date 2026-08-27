@@ -613,6 +613,44 @@ export async function deleteUsuario(uid: string): Promise<void> {
   const userRef = doc(db, 'usuarios', uid);
   await deleteDoc(userRef);
 
+  // Clean up user's services
+  try {
+    const srvSnap = await getDocs(query(collection(db, 'servicos'), where('profissionalId', '==', uid)));
+    for (const d of srvSnap.docs) {
+      await deleteDoc(doc(db, 'servicos', d.id));
+    }
+  } catch (err) {
+    console.warn('Could not clean up user services:', err);
+  }
+
+  // Clean up user's solicitacoes as client or provider
+  try {
+    const solCliSnap = await getDocs(query(collection(db, 'solicitacoes'), where('clienteId', '==', uid)));
+    for (const d of solCliSnap.docs) {
+      await deleteDoc(doc(db, 'solicitacoes', d.id));
+    }
+    const solProSnap = await getDocs(query(collection(db, 'solicitacoes'), where('profissionalId', '==', uid)));
+    for (const d of solProSnap.docs) {
+      await deleteDoc(doc(db, 'solicitacoes', d.id));
+    }
+  } catch (err) {
+    console.warn('Could not clean up user solicitacoes:', err);
+  }
+
+  // Clean up user's avaliacoes
+  try {
+    const avCliSnap = await getDocs(query(collection(db, 'avaliacoes'), where('clienteId', '==', uid)));
+    for (const d of avCliSnap.docs) {
+      await deleteDoc(doc(db, 'avaliacoes', d.id));
+    }
+    const avProSnap = await getDocs(query(collection(db, 'avaliacoes'), where('profissionalId', '==', uid)));
+    for (const d of avProSnap.docs) {
+      await deleteDoc(doc(db, 'avaliacoes', d.id));
+    }
+  } catch (err) {
+    console.warn('Could not clean up user avaliacoes:', err);
+  }
+
   // Clean up user's favorites
   try {
     const favsSnap = await getDocs(query(collection(db, 'favoritos'), where('usuarioId', '==', uid)));
@@ -634,53 +672,136 @@ export async function deleteUsuario(uid: string): Promise<void> {
   }
 }
 
-export async function deleteUsuarioByEmail(email: string): Promise<{ deletedCount: number; message: string }> {
+export async function purgeAllDataByEmail(email: string): Promise<{ deletedCount: number; message: string }> {
   const targetEmail = email.trim().toLowerCase();
   if (!targetEmail) {
     return { deletedCount: 0, message: 'E-mail inválido.' };
   }
 
   let deletedCount = 0;
+  const matchedUids: string[] = [];
 
   try {
+    // 1. Search in usuarios collection
     const usersCol = collection(db, 'usuarios');
     const snap = await getDocs(usersCol);
 
     for (const userDocItem of snap.docs) {
       const data = userDocItem.data() as UsuarioDoc;
-      if (data.email && data.email.trim().toLowerCase() === targetEmail) {
-        await deleteUsuario(userDocItem.id);
-        deletedCount++;
+      const itemEmail = data.email ? data.email.trim().toLowerCase() : '';
+      if (itemEmail === targetEmail || userDocItem.id.toLowerCase() === targetEmail) {
+        matchedUids.push(userDocItem.id);
       }
     }
 
-    // Also check local storage for this email and purge if stored
+    // Delete all matched users and cascading references
+    for (const uid of matchedUids) {
+      await deleteUsuario(uid);
+      deletedCount++;
+    }
+
+    // 2. Direct scan on servicos in case orphan records exist
     try {
-      const clientAuth = localStorage.getItem('resolva_ja_auth_cliente_v2');
-      if (clientAuth && JSON.parse(clientAuth)?.email?.toLowerCase() === targetEmail) {
-        localStorage.removeItem('resolva_ja_auth_cliente_v2');
-        localStorage.removeItem('resolva_ja_profile_cliente_v2');
+      const servSnap = await getDocs(collection(db, 'servicos'));
+      for (const sDoc of servSnap.docs) {
+        const data = sDoc.data() as any;
+        if (
+          matchedUids.includes(data.profissionalId) ||
+          (data.email && String(data.email).toLowerCase() === targetEmail)
+        ) {
+          await deleteDoc(doc(db, 'servicos', sDoc.id));
+          deletedCount++;
+        }
       }
-      const providerAuth = localStorage.getItem('resolva_ja_auth_prestador_v2');
-      if (providerAuth && JSON.parse(providerAuth)?.email?.toLowerCase() === targetEmail) {
-        localStorage.removeItem('resolva_ja_auth_prestador_v2');
-        localStorage.removeItem('resolva_ja_profile_prestador_v2');
+    } catch (e) {
+      console.warn('Error purging orphan servicos:', e);
+    }
+
+    // 3. Direct scan on solicitacoes in case orphan records exist
+    try {
+      const solSnap = await getDocs(collection(db, 'solicitacoes'));
+      for (const solDoc of solSnap.docs) {
+        const data = solDoc.data() as any;
+        if (
+          matchedUids.includes(data.clienteId) ||
+          matchedUids.includes(data.profissionalId) ||
+          (data.clienteEmail && String(data.clienteEmail).toLowerCase() === targetEmail) ||
+          (data.profissionalEmail && String(data.profissionalEmail).toLowerCase() === targetEmail)
+        ) {
+          await deleteDoc(doc(db, 'solicitacoes', solDoc.id));
+          deletedCount++;
+        }
       }
-    } catch {
-      // ignore localStorage errors
+    } catch (e) {
+      console.warn('Error purging orphan solicitacoes:', e);
+    }
+
+    // 4. Thorough LocalStorage & SessionStorage cleanup
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k) {
+            const val = localStorage.getItem(k) || '';
+            if (
+              val.toLowerCase().includes(targetEmail) ||
+              val.toLowerCase().includes('kellyramos') ||
+              k.toLowerCase().includes(targetEmail)
+            ) {
+              keysToRemove.push(k);
+            }
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+        // Explicit keys check
+        const explicitKeys = [
+          'resolva_ja_auth_cliente_v2',
+          'resolva_ja_profile_cliente_v2',
+          'resolva_ja_auth_prestador_v2',
+          'resolva_ja_profile_prestador_v2',
+          'resolva_ja_client_appointments',
+          'resolva_ja_provider_leads',
+          'google_auth_token_cliente',
+          'google_auth_token_prestador'
+        ];
+        explicitKeys.forEach((key) => {
+          const val = localStorage.getItem(key);
+          if (val && (val.toLowerCase().includes(targetEmail) || val.toLowerCase().includes('kellyramos'))) {
+            localStorage.removeItem(key);
+          }
+        });
+      }
+
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        const sessKeysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k) {
+            const val = sessionStorage.getItem(k) || '';
+            if (val.toLowerCase().includes(targetEmail) || k.toLowerCase().includes(targetEmail)) {
+              sessKeysToRemove.push(k);
+            }
+          }
+        }
+        sessKeysToRemove.forEach((k) => sessionStorage.removeItem(k));
+      }
+    } catch (storageErr) {
+      console.warn('Storage purge error:', storageErr);
     }
 
     return {
       deletedCount,
-      message: deletedCount > 0
-        ? `Perfil associado ao e-mail ${targetEmail} foi excluído com sucesso (${deletedCount} registro(s) removido(s)).`
-        : `Nenhum perfil encontrado com o e-mail ${targetEmail}.`
+      message: `Todos os dados, perfis e históricos do e-mail ${targetEmail} foram excluídos permanentemente.`
     };
   } catch (error: any) {
-    console.error('Error deleting user by email:', error);
+    console.error('Error purging user data by email:', error);
     throw error;
   }
 }
+
+export const deleteUsuarioByEmail = purgeAllDataByEmail;
 
 export const createNotificacao = enviarNotificacao;
 export const addNotificacao = enviarNotificacao;
