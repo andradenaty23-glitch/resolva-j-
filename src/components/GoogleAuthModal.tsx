@@ -11,7 +11,10 @@ import {
   Loader2,
   Mail,
   Lock,
-  Sparkles
+  Sparkles,
+  KeyRound,
+  ArrowLeft,
+  Send
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GoogleAuthUser, UserRole, TipoUsuario } from '../types';
@@ -19,6 +22,7 @@ import {
   loginWithGoogle,
   loginWithEmailPassword,
   registerWithEmailPassword,
+  sendPasswordResetLink,
   logoutFirebaseAuth,
   syncUserDocument
 } from '../services/firebaseAuth';
@@ -42,7 +46,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   initialRole = 'cliente'
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
-  const [authMode, setAuthMode] = useState<'google' | 'email_login' | 'email_signup'>('google');
+  const [authMode, setAuthMode] = useState<'google' | 'email_login' | 'email_signup' | 'email_reset'>('google');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -51,6 +55,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [successUser, setSuccessUser] = useState<GoogleAuthUser | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialRole) {
@@ -63,6 +69,8 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setAuthError(null);
       setErrorDetails(null);
       setIsLoading(false);
+      setResetSent(false);
+      setResetMessage(null);
     }
   }, [isOpen]);
 
@@ -156,6 +164,43 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       } else {
         setAuthError('Falha na autenticação. Verifique os dados e tente novamente.');
         setErrorDetails(err.message);
+      }
+    }
+  };
+
+  /**
+   * Password Reset Handler
+   */
+  const handlePasswordResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setAuthError('Informe o e-mail cadastrado para redefinir a senha.');
+      return;
+    }
+
+    setIsLoading(true);
+    setAuthError(null);
+    setErrorDetails(null);
+    setResetSent(false);
+
+    try {
+      await sendPasswordResetLink(cleanEmail);
+      setIsLoading(false);
+      setResetSent(true);
+      setResetMessage(`Enviamos um link de redefinição de senha para ${cleanEmail}.`);
+    } catch (err: any) {
+      setIsLoading(false);
+      console.error('Password reset error:', err);
+      if (err.code === 'auth/user-not-found') {
+        setAuthError('Nenhum usuário cadastrado encontrado com este e-mail no Firebase.');
+      } else if (err.code === 'auth/invalid-email') {
+        setAuthError('Formato de e-mail inválido. Verifique o endereço digitado.');
+      } else if (err.code === 'auth/missing-email') {
+        setAuthError('Por favor, informe seu e-mail.');
+      } else {
+        setAuthError('Não foi possível enviar o e-mail de recuperação no momento.');
+        setErrorDetails(err.message || 'Tente novamente em instantes.');
       }
     }
   };
@@ -325,8 +370,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setAuthMode(authMode === 'email_signup' ? 'google' : 'email_signup')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                onClick={() => {
+                  setAuthMode(authMode === 'email_signup' ? 'google' : 'email_signup');
+                  setAuthError(null);
+                  setErrorDetails(null);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
                   authMode === 'email_signup'
                     ? 'bg-slate-900 text-white border-slate-900'
                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -336,8 +385,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setAuthMode(authMode === 'email_login' ? 'google' : 'email_login')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                onClick={() => {
+                  setAuthMode(authMode === 'email_login' ? 'google' : 'email_login');
+                  setAuthError(null);
+                  setErrorDetails(null);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
                   authMode === 'email_login'
                     ? 'bg-slate-900 text-white border-slate-900'
                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -347,7 +400,96 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </button>
             </div>
 
-            {/* Email Form */}
+            {/* Password Reset Screen */}
+            {authMode === 'email_reset' && (
+              <div className="space-y-3 pt-1 animate-fadeIn">
+                <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Recuperação de Senha</h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                      Informe seu e-mail cadastrado para receber as instruções e o link seguro de redefinição de senha do Firebase.
+                    </p>
+                  </div>
+                </div>
+
+                {resetSent ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col items-center text-center gap-2 animate-fadeIn">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-emerald-950">Link Enviado com Sucesso!</h4>
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      {resetMessage || `Enviamos o link de redefinição para ${email}.`}
+                    </p>
+                    <p className="text-[11px] text-emerald-700/80 mt-1">
+                      Verifique sua caixa de entrada e também a pasta de spam/lixo eletrônico.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('email_login');
+                        setResetSent(false);
+                        setAuthError(null);
+                        setErrorDetails(null);
+                      }}
+                      className="mt-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Voltar para o Login
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handlePasswordResetSubmit} className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 block mb-1">E-mail Cadastrado</label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="seuemail@gmail.com"
+                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || !email.trim()}
+                      className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Enviar Link de Recuperação</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('email_login');
+                        setAuthError(null);
+                        setErrorDetails(null);
+                      }}
+                      className="w-full py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Voltar para Entrar com Senha</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Email Form (Signup & Login) */}
             {(authMode === 'email_signup' || authMode === 'email_login') && (
               <form onSubmit={handleEmailAuthSubmit} className="space-y-3 pt-1">
                 {authMode === 'email_signup' && (
@@ -383,7 +525,23 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Senha</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">Senha</label>
+                    {authMode === 'email_login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('email_reset');
+                          setAuthError(null);
+                          setErrorDetails(null);
+                          setResetSent(false);
+                        }}
+                        className="text-[11px] font-bold text-[#ea580c] hover:text-[#c2410c] hover:underline cursor-pointer"
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -411,6 +569,24 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     <span>Entrar no Firebase</span>
                   )}
                 </button>
+
+                {authMode === 'email_login' && (
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('email_reset');
+                        setAuthError(null);
+                        setErrorDetails(null);
+                        setResetSent(false);
+                      }}
+                      className="text-xs text-slate-500 hover:text-[#ea580c] font-medium transition cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#ea580c]" />
+                      <span>Problemas para entrar? <strong>Recuperar senha</strong></span>
+                    </button>
+                  </div>
+                )}
               </form>
             )}
 

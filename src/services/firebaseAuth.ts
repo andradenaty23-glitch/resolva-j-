@@ -5,6 +5,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
 import {
@@ -210,6 +211,17 @@ export async function loginWithEmailPassword(
   };
 
   return { user: authUser, usuarioDoc };
+}
+
+/**
+ * Send password reset email via Firebase Authentication
+ */
+export async function sendPasswordResetLink(email: string): Promise<void> {
+  const cleanEmail = email.trim();
+  if (!cleanEmail) {
+    throw new Error('Informe um e-mail válido.');
+  }
+  await sendPasswordResetEmail(auth, cleanEmail);
 }
 
 /**
