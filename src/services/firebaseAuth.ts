@@ -26,53 +26,60 @@ export async function syncUserDocument(
   extraData?: Partial<UsuarioDoc>
 ): Promise<UsuarioDoc> {
   const userRef = doc(db, 'usuarios', user.uid);
-  const userSnap = await getDoc(userRef);
-
   const now = new Date().toISOString();
 
-  if (userSnap.exists()) {
-    const existingData = userSnap.data() as UsuarioDoc;
-    // Do not allow changing to admin unless already admin
-    const roleToUse = existingData.tipo || preferredRole || 'cliente';
-
-    const updatePayload: Partial<UsuarioDoc> = {
-      nome: user.displayName || existingData.nome || user.email?.split('@')[0] || 'Usuário',
-      email: user.email || existingData.email || '',
-      foto: user.photoURL || existingData.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=ea580c&color=ffffff&bold=true`,
-      atualizadoEm: now,
-      ...extraData
-    };
-
-    // Protect admin role from unauthorized override
-    if (extraData?.tipo && existingData.tipo !== 'admin' && extraData.tipo === 'admin') {
-      delete updatePayload.tipo;
+  let existingData: UsuarioDoc | null = null;
+  try {
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      existingData = userSnap.data() as UsuarioDoc;
     }
-
-    await updateDoc(userRef, updatePayload as Record<string, any>);
-    return {
-      ...existingData,
-      ...updatePayload
-    };
-  } else {
-    // New user creation
-    const initialRole: TipoUsuario = preferredRole === 'admin' ? 'cliente' : (preferredRole || 'cliente');
-    const newUser: UsuarioDoc = {
-      uid: user.uid,
-      nome: user.displayName || extraData?.nome || user.email?.split('@')[0] || (initialRole === 'cliente' ? 'Cliente Residencial' : 'Profissional PRO'),
-      email: user.email || extraData?.email || '',
-      foto: user.photoURL || extraData?.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=${initialRole === 'cliente' ? 'ea580c' : '16a34a'}&color=ffffff&bold=true`,
-      telefone: user.phoneNumber || extraData?.telefone || '',
-      tipo: initialRole,
-      cidade: extraData?.cidade || 'São Paulo',
-      bairro: extraData?.bairro || 'Centro',
-      criadoEm: now,
-      atualizadoEm: now,
-      ...extraData
-    };
-
-    await setDoc(userRef, newUser);
-    return newUser;
+  } catch (err) {
+    console.warn('Could not fetch existing user doc, creating/updating with setDoc merge:', err);
   }
+
+  const isSuperAdminEmail = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
+
+  let roleToUse: TipoUsuario = 'cliente';
+  if (isSuperAdminEmail) {
+    roleToUse = 'admin';
+  } else if (existingData?.tipo) {
+    roleToUse = existingData.tipo;
+  } else if (preferredRole) {
+    roleToUse = preferredRole === 'admin' ? 'cliente' : preferredRole;
+  }
+
+  const mergedDoc: UsuarioDoc = {
+    uid: user.uid,
+    nome:
+      extraData?.nome ||
+      user.displayName ||
+      existingData?.nome ||
+      user.email?.split('@')[0] ||
+      (roleToUse === 'profissional' ? 'Profissional PRO' : 'Cliente Residencial'),
+    email: user.email || extraData?.email || existingData?.email || '',
+    foto:
+      extraData?.foto ||
+      user.photoURL ||
+      existingData?.foto ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        user.displayName || user.email?.split('@')[0] || 'User'
+      )}&background=${roleToUse === 'profissional' ? '16a34a' : 'ea580c'}&color=ffffff&bold=true`,
+    telefone: extraData?.telefone || user.phoneNumber || existingData?.telefone || '',
+    tipo: roleToUse,
+    cidade: extraData?.cidade || existingData?.cidade || 'São Paulo',
+    bairro: extraData?.bairro || existingData?.bairro || 'Centro',
+    criadoEm: existingData?.criadoEm || now,
+    atualizadoEm: now,
+    ...extraData
+  };
+
+  // Ensure uid and type rules are respected
+  mergedDoc.uid = user.uid;
+  mergedDoc.tipo = roleToUse;
+
+  await setDoc(userRef, mergedDoc, { merge: true });
+  return mergedDoc;
 }
 
 /**
@@ -128,17 +135,22 @@ export async function loginWithGoogle(
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
-    const usuarioDoc = await syncUserDocument(user, preferredRole);
+    const isSuperAdmin = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
+    const roleToUse: TipoUsuario = isSuperAdmin ? 'admin' : preferredRole;
+
+    const usuarioDoc = await syncUserDocument(user, roleToUse);
+    const token = await user.getIdToken().catch(() => undefined);
 
     const googleUser: GoogleAuthUser = {
       id: user.uid,
       email: user.email || '',
-      name: usuarioDoc.nome,
-      picture: usuarioDoc.foto,
-      verifiedEmail: user.emailVerified,
-      role: usuarioDoc.tipo === 'profissional' ? 'prestador' : usuarioDoc.tipo,
+      name: usuarioDoc.nome || user.displayName || 'Usuário Google',
+      picture: usuarioDoc.foto || user.photoURL || '',
+      verifiedEmail: user.emailVerified ?? true,
+      role: usuarioDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
       tipo: usuarioDoc.tipo,
       authProvider: 'google',
+      token,
       connectedAt: new Date().toISOString()
     };
 
@@ -239,7 +251,10 @@ export function onFirebaseAuthStateChanged(
 ): () => void {
   return onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
-      const profile = await getUserProfile(firebaseUser.uid);
+      let profile = await getUserProfile(firebaseUser.uid);
+      if (!profile) {
+        profile = await syncUserDocument(firebaseUser);
+      }
       callback(firebaseUser, profile);
     } else {
       callback(null, null);

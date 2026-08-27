@@ -57,6 +57,8 @@ import {
   getUserDoc,
   logoutFirebaseAuth
 } from './services/firebaseAuth';
+import { db } from './lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import {
   seedDefaultCategoriasIfEmpty,
   subscribeCategorias,
@@ -171,25 +173,6 @@ export default function App() {
   useEffect(() => {
     // Seed initial categories if empty
     seedDefaultCategoriasIfEmpty().catch(console.error);
-
-    // Purge requested email profile permanently from Firestore, localStorage and state
-    purgeAllDataByEmail('kellyramos8485@gmail.com')
-      .then((res) => {
-        console.log('Purge kellyramos8485 status:', res);
-        // Clear from current active React memory if loaded
-        if (clientUser?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
-          setClientUser(null);
-          setClientProfile(INITIAL_CLIENT_PROFILE);
-        }
-        if (providerUser?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
-          setProviderUser(null);
-          setProviderProfile(INITIAL_PROVIDER_PROFILE);
-        }
-        if (firestoreUserDoc?.email?.toLowerCase() === 'kellyramos8485@gmail.com') {
-          setFirestoreUserDoc(null);
-        }
-      })
-      .catch((err) => console.log('Purge error:', err));
 
     // Subscribe to Categorias
     const unsubCategorias = subscribeCategorias((cats) => {
@@ -404,13 +387,14 @@ export default function App() {
 
   // Handle Google Auth Login - strictly isolated per role
   const handleGoogleLoginSuccess = (user: GoogleAuthUser) => {
-    if (user.role === 'cliente') {
+    if (user.role === 'cliente' || user.tipo === 'cliente' || user.tipo === 'admin') {
       setClientUser(user);
       saveClientUser(user);
       setCurrentRole('cliente');
       setClientProfile((prev) => {
         const updated: ClientProfile = {
           ...prev,
+          id: user.id || prev.id,
           name: user.name || prev.name,
           email: user.email || prev.email,
           avatar: user.picture || prev.avatar
@@ -425,6 +409,7 @@ export default function App() {
       setProviderProfile((prev) => {
         const updated: ProviderProfile = {
           ...prev,
+          id: user.id || prev.id,
           name: user.name || prev.name,
           email: user.email || prev.email,
           avatar: user.picture || prev.avatar,
@@ -833,6 +818,36 @@ export default function App() {
     saveClientUser(user);
     setCurrentRole('cliente');
     setActiveTab('inicio');
+
+    // Sync to Firestore usuarios collection
+    if (newClient.email) {
+      const userRef = doc(db, 'usuarios', newClient.id);
+      const userDocData: UsuarioDoc = {
+        uid: newClient.id,
+        nome: newClient.name,
+        email: newClient.email,
+        foto: newClient.avatar,
+        telefone: newClient.phone,
+        tipo: 'cliente',
+        cidade: newClient.address?.city || 'São Paulo',
+        bairro: newClient.address?.neighborhood || 'Centro',
+        criadoEm: new Date().toISOString(),
+        atualizadoEm: new Date().toISOString()
+      };
+      setDoc(userRef, userDocData, { merge: true }).catch((err) => console.warn('Could not sync client to firestore:', err));
+    }
+
+    setNotifications((prev) => [
+      {
+        id: `notif-client-reg-${Date.now()}`,
+        title: 'Bem-vindo(a) ao RESOLVA JÁ!',
+        message: `Olá, ${newClient.name}! Seu cadastro de cliente foi concluído com sucesso.`,
+        time: 'Agora mesmo',
+        read: false,
+        type: 'success'
+      },
+      ...prev
+    ]);
   };
 
   const handleRegisterProvider = (newProvider: ProviderProfile) => {
@@ -852,6 +867,36 @@ export default function App() {
     saveProviderUser(user);
     setCurrentRole('prestador');
     setActiveTab('inicio');
+
+    // Sync to Firestore usuarios collection
+    if (newProvider.email) {
+      const userRef = doc(db, 'usuarios', newProvider.id);
+      const userDocData: UsuarioDoc = {
+        uid: newProvider.id,
+        nome: newProvider.name,
+        email: newProvider.email,
+        foto: newProvider.avatar,
+        telefone: newProvider.phone,
+        tipo: 'profissional',
+        cidade: 'São Paulo',
+        bairro: 'Centro',
+        criadoEm: new Date().toISOString(),
+        atualizadoEm: new Date().toISOString()
+      };
+      setDoc(userRef, userDocData, { merge: true }).catch((err) => console.warn('Could not sync provider to firestore:', err));
+    }
+
+    setNotifications((prev) => [
+      {
+        id: `notif-prov-reg-${Date.now()}`,
+        title: 'Credenciamento Concluído!',
+        message: `Parabéns, ${newProvider.name}! Seu perfil profissional está ativo no painel Resolva Já.`,
+        time: 'Agora mesmo',
+        read: false,
+        type: 'success'
+      },
+      ...prev
+    ]);
   };
 
   return (

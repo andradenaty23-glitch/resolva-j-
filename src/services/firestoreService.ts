@@ -746,7 +746,6 @@ export async function purgeAllDataByEmail(email: string): Promise<{ deletedCount
             const val = localStorage.getItem(k) || '';
             if (
               val.toLowerCase().includes(targetEmail) ||
-              val.toLowerCase().includes('kellyramos') ||
               k.toLowerCase().includes(targetEmail)
             ) {
               keysToRemove.push(k);
@@ -768,7 +767,7 @@ export async function purgeAllDataByEmail(email: string): Promise<{ deletedCount
         ];
         explicitKeys.forEach((key) => {
           const val = localStorage.getItem(key);
-          if (val && (val.toLowerCase().includes(targetEmail) || val.toLowerCase().includes('kellyramos'))) {
+          if (val && val.toLowerCase().includes(targetEmail)) {
             localStorage.removeItem(key);
           }
         });

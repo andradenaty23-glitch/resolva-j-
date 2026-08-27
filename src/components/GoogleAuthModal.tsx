@@ -311,9 +311,35 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             {authError && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2 text-rose-800 text-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
-                <div>
+                <div className="flex-1">
                   <div className="font-bold">{authError}</div>
                   {errorDetails && <div className="text-[11px] text-rose-600 mt-0.5">{errorDetails}</div>}
+                  {authError.includes('já está cadastrado') && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('email_login');
+                          setAuthError(null);
+                          setErrorDetails(null);
+                        }}
+                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold cursor-pointer"
+                      >
+                        Entrar com Senha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('email_reset');
+                          setAuthError(null);
+                          setErrorDetails(null);
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-rose-100 border border-rose-300 text-rose-900 rounded-lg text-[11px] font-bold cursor-pointer"
+                      >
+                        Redefinir Senha
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

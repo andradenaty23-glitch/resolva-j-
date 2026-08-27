@@ -33,12 +33,10 @@ service cloud.firestore {
 
     // 1. Coleção usuarios
     match /usuarios/{uid} {
-      allow read: if isSignedIn();
+      allow read: if true; // Perfis públicos de profissionais e clientes para exibição no catálogo
       allow create: if isOwner(uid) && 
         (incoming().tipo != 'admin' || isAdmin());
-      allow update: if (isOwner(uid) || isAdmin()) &&
-        incoming().uid == uid &&
-        (incoming().tipo == existing().tipo || isAdmin());
+      allow update: if isOwner(uid) || isAdmin();
       allow delete: if isOwner(uid) || isAdmin();
     }
 
@@ -51,7 +49,7 @@ service cloud.firestore {
     // 3. Coleção servicos
     match /servicos/{servicoId} {
       allow read: if true; // Serviços disponíveis são pesquisáveis
-      allow create: if isSignedIn() && incoming().profissionalId == request.auth.uid;
+      allow create: if isSignedIn() && (incoming().profissionalId == request.auth.uid || isAdmin());
       allow update: if isSignedIn() && (existing().profissionalId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (existing().profissionalId == request.auth.uid || isAdmin());
     }
@@ -63,7 +61,7 @@ service cloud.firestore {
         resource.data.profissionalId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isSignedIn() && incoming().clienteId == request.auth.uid;
+      allow create: if isSignedIn() && (incoming().clienteId == request.auth.uid || isAdmin());
       allow update: if isSignedIn() && (
         existing().clienteId == request.auth.uid ||
         existing().profissionalId == request.auth.uid ||
@@ -76,7 +74,7 @@ service cloud.firestore {
     match /avaliacoes/{avaliacaoId} {
       allow read: if true; // Avaliações são públicas para reputação dos profissionais
       allow create: if isSignedIn() && 
-        incoming().clienteId == request.auth.uid &&
+        (incoming().clienteId == request.auth.uid || isAdmin()) &&
         incoming().nota >= 1 && incoming().nota <= 5;
       allow update: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
@@ -84,15 +82,15 @@ service cloud.firestore {
 
     // 6. Coleção favoritos
     match /favoritos/{favoritoId} {
-      allow read: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
-      allow create: if isSignedIn() && incoming().usuarioId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && (incoming().usuarioId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
     }
 
     // 7. Coleção notificacoes
     match /notificacoes/{notificacaoId} {
-      allow read: if isSignedIn() && resource.data.usuarioId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
       allow create: if isSignedIn(); // Usuários autenticados criam notificações em ações
       allow update: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.usuarioId == request.auth.uid || isAdmin());
