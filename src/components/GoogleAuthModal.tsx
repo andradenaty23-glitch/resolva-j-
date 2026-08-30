@@ -108,17 +108,33 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       console.warn('Firebase signInWithPopup failed:', firebaseError?.code, firebaseError?.message);
       setIsLoading(false);
 
-      if (firebaseError?.code === 'auth/popup-closed-by-user') {
-        setAuthError('Janela do Google fechada. Tente novamente ou use o login por e-mail.');
-      } else if (
-        firebaseError?.code === 'auth/unauthorized-domain' ||
-        firebaseError?.code === 'auth/operation-not-allowed'
-      ) {
-        setAuthError('Domínio em modo sandbox. Você pode entrar com e-mail/senha ou usar o acesso rápido.');
-        setAuthMode('email_signup');
+      const code = firebaseError?.code || '';
+      const domain = typeof window !== 'undefined' ? window.location.hostname : 'este domínio';
+
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        setAuthError('Janela de login fechada antes da conclusão. Tente novamente.');
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError('Janela pop-up bloqueada pelo navegador. Redirecionando para login seguro...');
+      } else if (code === 'auth/unauthorized-domain') {
+        setAuthError(`Domínio não autorizado para o login Google: ${domain}`);
+        setErrorDetails(`Adicione este domínio no Firebase Console: Authentication → Settings → Authorized domains → Adicionar "${domain}".`);
+      } else if (code === 'auth/operation-not-allowed') {
+        setAuthError('O provedor de login do Google não está ativado no Firebase Console.');
+        setErrorDetails('Ative o provedor Google em: Firebase Console → Authentication → Sign-in method → Google.');
+      } else if (code === 'auth/account-exists-with-different-credential') {
+        setAuthError('Uma conta já existe com este e-mail associada a outro método.');
+        setErrorDetails('Tente entrar com e-mail e senha.');
+        setAuthMode('email_login');
+      } else if (code === 'auth/user-disabled') {
+        setAuthError('Esta conta de usuário foi desativada.');
+      } else if (code === 'auth/network-request-failed') {
+        setAuthError('Erro de conexão com a rede. Verifique sua internet.');
+      } else if (code === 'auth/invalid-api-key' || code === 'auth/configuration-not-found') {
+        setAuthError('Configuração do Firebase inválida ou ausente.');
+        setErrorDetails(firebaseError?.message);
       } else {
-        setAuthError('Não foi possível autenticar pelo Google no momento.');
-        setErrorDetails(firebaseError?.message || 'Tente pelo formulário de e-mail abaixo.');
+        setAuthError('Não foi possível entrar com sua conta Google neste momento.');
+        setErrorDetails(firebaseError?.message || 'Tente pelo formulário de e-mail/senha.');
       }
     }
   };

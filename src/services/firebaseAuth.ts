@@ -1,5 +1,7 @@
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   User,
@@ -127,6 +129,39 @@ export async function updateUserProfile(
 }
 
 /**
+ * Check redirect result after returning from Google redirect sign-in
+ */
+export async function checkRedirectResult(): Promise<{ user: GoogleAuthUser; usuarioDoc: UsuarioDoc } | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const user = result.user;
+      const isSuperAdmin = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
+      const roleToUse: TipoUsuario = isSuperAdmin ? 'admin' : 'cliente';
+      const usuarioDoc = await syncUserDocument(user, roleToUse);
+      const token = await user.getIdToken().catch(() => undefined);
+      const googleUser: GoogleAuthUser = {
+        id: user.uid,
+        email: user.email || '',
+        name: usuarioDoc.nome || user.displayName || 'Usuário Google',
+        picture: usuarioDoc.foto || user.photoURL || '',
+        verifiedEmail: user.emailVerified ?? true,
+        role: usuarioDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
+        tipo: usuarioDoc.tipo,
+        authProvider: 'google',
+        token,
+        connectedAt: new Date().toISOString()
+      };
+      return { user: googleUser, usuarioDoc };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error checking redirect result:', error);
+    return null;
+  }
+}
+
+/**
  * Google Sign-In with Firebase Authentication
  */
 export async function loginWithGoogle(
@@ -157,6 +192,11 @@ export async function loginWithGoogle(
     return { user: googleUser, usuarioDoc };
   } catch (error: any) {
     console.error('Firebase Google Sign-In error:', error);
+    if (error?.code === 'auth/popup-blocked') {
+      console.log('Popup blocked, attempting signInWithRedirect fallback...');
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
     throw error;
   }
 }

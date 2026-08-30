@@ -55,7 +55,8 @@ import {
   onFirebaseAuthStateChanged,
   syncUserDocument,
   getUserDoc,
-  logoutFirebaseAuth
+  logoutFirebaseAuth,
+  checkRedirectResult
 } from './services/firebaseAuth';
 import { db } from './lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -190,8 +191,14 @@ export default function App() {
     };
   }, []);
 
-  // 2. Firebase Auth Listener
+  // 2. Firebase Auth Listener & Redirect Check
   useEffect(() => {
+    checkRedirectResult().then((res) => {
+      if (res) {
+        handleGoogleLoginSuccess(res.user);
+      }
+    }).catch(console.error);
+
     const unsubAuth = onFirebaseAuthStateChanged(async (fbUser, userDoc) => {
       if (fbUser && userDoc) {
         setFirestoreUserDoc(userDoc);
@@ -201,6 +208,7 @@ export default function App() {
           name: userDoc.nome,
           picture: userDoc.foto || '',
           role: userDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
+          tipo: userDoc.tipo,
           authProvider: 'google',
           verifiedEmail: true,
           connectedAt: userDoc.criadoEm || new Date().toISOString()
@@ -250,7 +258,7 @@ export default function App() {
     let unsubFavs = () => {};
     let unsubNotifs = () => {};
 
-    if (currentRole === 'cliente' && clientProfile.id) {
+    if (currentRole === 'cliente' && clientProfile.id && clientUser) {
       unsubSolicitacoes = subscribeSolicitacoesCliente(clientProfile.id, (sols) => {
         setFirestoreSolicitacoes(sols);
       });
@@ -270,7 +278,7 @@ export default function App() {
           setNotifications((prev) => [...mapped, ...prev.filter((p) => !notifs.some((n) => n.id === p.id))]);
         }
       });
-    } else if (currentRole === 'prestador' && providerProfile.id) {
+    } else if (currentRole === 'prestador' && providerProfile.id && providerUser) {
       unsubSolicitacoes = subscribeSolicitacoesProfissional(providerProfile.id, (sols) => {
         setFirestoreSolicitacoes(sols);
       });
@@ -294,7 +302,7 @@ export default function App() {
       unsubFavs();
       unsubNotifs();
     };
-  }, [currentRole, clientProfile.id, providerProfile.id]);
+  }, [currentRole, clientProfile.id, providerProfile.id, clientUser, providerUser]);
 
   // Map Firestore Solicitacoes to Appointments for Agenda
   const combinedAppointments: Appointment[] = React.useMemo(() => {

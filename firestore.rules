@@ -17,7 +17,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'andradenaty23@gmail.com' ||
+        ('email' in request.auth.token && request.auth.token.email == 'andradenaty23@gmail.com') ||
         (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin')
       );
@@ -36,7 +36,12 @@ service cloud.firestore {
       allow read: if true; // Perfis públicos de profissionais e clientes para exibição no catálogo
       allow create: if isOwner(uid) && 
         (incoming().tipo != 'admin' || isAdmin());
-      allow update: if isOwner(uid) || isAdmin();
+      allow update: if (isOwner(uid) && (
+        !('tipo' in incoming()) || incoming().tipo == existing().tipo || isAdmin()
+      )) || (
+        isSignedIn() && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['avaliacaoMedia', 'totalAvaliacoes', 'atualizadoEm'])
+      ) || isAdmin();
       allow delete: if isOwner(uid) || isAdmin();
     }
 

@@ -26,8 +26,9 @@ import {
   Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ClientProfile, ProviderProfile, UserRole } from '../types';
+import { UserRole, ClientProfile, ProviderProfile } from '../types';
 import { PhotoUploader } from './PhotoUploader';
+import { registerWithEmailPassword, loginWithEmailPassword } from '../services/firebaseAuth';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -143,146 +144,191 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleClientSubmit = (e: React.FormEvent) => {
+  const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newClient: ClientProfile = {
-      id: `client-${Date.now()}`,
-      name: clientName.trim() || 'Usuário Cliente',
-      email: clientEmail.trim() || 'usuario@exemplo.com',
-      phone: clientPhone.trim() || '(11) 98888-7777',
-      cpf: clientCpf.trim(),
-      residenceType,
-      address: {
-        street: street.trim() || 'Rua Principal',
-        number: number.trim() || '100',
-        complement: complement.trim(),
-        neighborhood: neighborhood.trim() || 'Centro',
-        city: city.trim() || 'São Paulo',
-        state: state.trim() || 'SP',
-        cep: cep.trim() || '01001-000'
-      },
-      plan: 'Resolva Já Free',
-      walletBalance: 0.00,
-      cashbackBalance: 0.00,
-      avatar: clientPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(clientName || 'Cliente')}&background=ea580c&color=ffffff&bold=true`,
-      registeredAt: 'Agora'
-    };
-
-    setSuccessMessage('Conta de Cliente criada com sucesso!');
-    setIsSuccess(true);
-    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
-    setTimeout(() => {
-      onRegisterClient(newClient);
-      setIsSuccess(false);
-      onClose();
-    }, 1000);
-  };
-
-  const handleProviderSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newProvider: ProviderProfile = {
-      id: `provider-${Date.now()}`,
-      name: providerName.trim() || 'Profissional PRO',
-      email: providerEmail.trim() || 'prestador@exemplo.com',
-      phone: providerPhone.trim() || '(11) 99999-8888',
-      document: providerDocument.trim() || '29.384.102/0001-92',
-      category,
-      specialties: [category, 'Reparos Residenciais', 'Instalação e Manutenção Especializada'],
-      experienceYears: Number(experienceYears) || 5,
-      laborBaseRate: Number(laborBaseRate) || 120,
-      operatingRadiusKm: Number(operatingRadius) || 20,
-      availability: 'Disponível Agora',
-      verified: true,
-      trustIndex: 95,
-      rating: 5.0,
-      reviewsCount: 1,
-      completedJobsCount: 1,
-      bio: bio.trim() || `Técnico profissional credenciado em ${category} no ecossistema Resolva Já.`,
-      avatar: providerPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(providerName || 'Prestador')}&background=16a34a&color=ffffff&bold=true`,
-      bankAccount: {
-        bank: 'Banco Principal',
-        pixKey: pixKey.trim() || providerEmail.trim() || 'contato@resolvaja.com'
-      },
-      totalEarningsMonth: 0,
-      registeredAt: 'Agora'
-    };
-
-    setSuccessMessage('Credenciamento PRO concluído com sucesso!');
-    setIsSuccess(true);
-    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
-    setTimeout(() => {
-      onRegisterProvider(newProvider);
-      setIsSuccess(false);
-      onClose();
-    }, 1000);
-  };
-
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedRole === 'cliente') {
-      const existingClient: ClientProfile = {
-        id: 'client-1',
-        name: clientName || (loginEmail ? loginEmail.split('@')[0] : 'Cliente Residencial'),
-        email: loginEmail || clientEmail || 'cliente.resolva@gmail.com',
-        phone: clientPhone || '(11) 98765-4321',
-        cpf: clientCpf || '',
+    setIsSuccess(false);
+    setSuccessMessage('');
+    try {
+      const result = await registerWithEmailPassword(
+        clientEmail.trim(),
+        clientPassword,
+        clientName.trim(),
+        'cliente',
+        {
+          telefone: clientPhone.trim(),
+          cidade: city.trim(),
+          bairro: neighborhood.trim()
+        }
+      );
+      
+      const newClient: ClientProfile = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: clientPhone.trim() || '(11) 98888-7777',
+        cpf: clientCpf.trim(),
         residenceType,
         address: {
-          street: street || 'Av. Paulista',
-          number: number || '1000',
-          complement,
-          neighborhood: neighborhood || 'Bela Vista',
-          city: city || 'São Paulo',
-          state: 'SP',
-          cep: cep || '01310-100'
+          street: street.trim(),
+          number: number.trim(),
+          complement: complement.trim(),
+          neighborhood: neighborhood.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          cep: cep.trim()
         },
         plan: 'Resolva Já Free',
         walletBalance: 0.00,
         cashbackBalance: 0.00,
-        avatar: clientPhoto || 'https://ui-avatars.com/api/?name=Cliente+Residencial&background=ea580c&color=ffffff&bold=true',
-        registeredAt: 'Conta ativa'
+        avatar: result.user.picture,
+        registeredAt: 'Agora'
       };
-      setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingClient.name}`);
+
+      setSuccessMessage('Conta de Cliente criada com sucesso!');
       setIsSuccess(true);
+      confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
       setTimeout(() => {
-        onRegisterClient(existingClient);
+        onRegisterClient(newClient);
         setIsSuccess(false);
         onClose();
-      }, 900);
-    } else {
-      const existingProvider: ProviderProfile = {
-        id: 'provider-1',
-        name: providerName || 'Ricardo Silva',
-        email: loginEmail || providerEmail || 'ricardo.silva.reparos@gmail.com',
-        phone: providerPhone || '(11) 98765-4321',
-        document: providerDocument || '29.384.102/0001-92',
+      }, 1000);
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      alert('Erro ao registrar: ' + (err.message || 'Verifique seus dados.'));
+    }
+  };
+
+  const handleProviderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSuccess(false);
+    setSuccessMessage('');
+    try {
+      const result = await registerWithEmailPassword(
+        providerEmail.trim(),
+        providerPassword,
+        providerName.trim(),
+        'profissional',
+        {
+          telefone: providerPhone.trim()
+        }
+      );
+
+      const newProvider: ProviderProfile = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        phone: providerPhone.trim() || '(11) 99999-8888',
+        document: providerDocument.trim(),
         category,
-        specialties: ['Vazamentos Hidráulicos', 'Tubulações PEX/PVC', 'Troca de Registros', 'Instalação de Misturadores'],
-        experienceYears,
-        laborBaseRate,
-        operatingRadiusKm: operatingRadius,
+        specialties: [category, 'Reparos Residenciais', 'Instalação e Manutenção Especializada'],
+        experienceYears: Number(experienceYears) || 5,
+        laborBaseRate: Number(laborBaseRate) || 120,
+        operatingRadiusKm: Number(operatingRadius) || 20,
         availability: 'Disponível Agora',
         verified: true,
-        trustIndex: 94,
-        rating: 4.9,
-        reviewsCount: 142,
-        completedJobsCount: 310,
-        bio: bio || 'Técnico hidráulico certificado com mais de 12 anos de experiência em edifícios residenciais e comerciais em São Paulo.',
-        avatar: providerPhoto || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
+        trustIndex: 95,
+        rating: 5.0,
+        reviewsCount: 1,
+        completedJobsCount: 1,
+        bio: bio.trim() || `Técnico profissional credenciado em ${category} no ecossistema Resolva Já.`,
+        avatar: result.user.picture,
         bankAccount: {
-          bank: 'Banco Inter (077)',
-          pixKey: pixKey || 'ricardo.silva.reparos@gmail.com'
+          bank: 'Banco Principal',
+          pixKey: pixKey.trim() || providerEmail.trim()
         },
-        totalEarningsMonth: 4680,
-        registeredAt: 'Março de 2024'
+        totalEarningsMonth: 0,
+        registeredAt: 'Agora'
       };
-      setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingProvider.name}`);
+
+      setSuccessMessage('Credenciamento PRO concluído com sucesso!');
       setIsSuccess(true);
+      confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
       setTimeout(() => {
-        onRegisterProvider(existingProvider);
+        onRegisterProvider(newProvider);
         setIsSuccess(false);
         onClose();
-      }, 900);
+      }, 1000);
+    } catch (err: any) {
+      console.error('Provider Registration error:', err);
+      alert('Erro ao registrar prestador: ' + (err.message || 'Verifique seus dados.'));
+    }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSuccess(false);
+    setSuccessMessage('');
+    try {
+      const result = await loginWithEmailPassword(loginEmail.trim(), loginPassword);
+
+      if (selectedRole === 'cliente') {
+        const existingClient: ClientProfile = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          phone: result.usuarioDoc.telefone || '(11) 98765-4321',
+          cpf: '',
+          residenceType: 'apartamento',
+          address: {
+            street: 'Av. Paulista',
+            number: '1000',
+            complement: '',
+            neighborhood: result.usuarioDoc.bairro || 'Centro',
+            city: result.usuarioDoc.cidade || 'São Paulo',
+            state: 'SP',
+            cep: '01310-100'
+          },
+          plan: 'Resolva Já Free',
+          walletBalance: 0.00,
+          cashbackBalance: 0.00,
+          avatar: result.user.picture,
+          registeredAt: 'Conta ativa'
+        };
+        setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingClient.name}`);
+        setIsSuccess(true);
+        setTimeout(() => {
+          onRegisterClient(existingClient);
+          setIsSuccess(false);
+          onClose();
+        }, 900);
+      } else {
+        const existingProvider: ProviderProfile = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          phone: result.usuarioDoc.telefone || '(11) 98765-4321',
+          document: '29.384.102/0001-92',
+          category: 'Hidráulica & Encanamento',
+          specialties: ['Vazamentos Hidráulicos', 'Tubulações PEX/PVC', 'Troca de Registros', 'Instalação de Misturadores'],
+          experienceYears: 5,
+          laborBaseRate: 120,
+          operatingRadiusKm: 20,
+          availability: 'Disponível Agora',
+          verified: true,
+          trustIndex: 94,
+          rating: 4.9,
+          reviewsCount: 142,
+          completedJobsCount: 310,
+          bio: 'Profissional da rede Resolva Já.',
+          avatar: result.user.picture,
+          bankAccount: {
+            bank: 'Banco Inter (077)',
+            pixKey: result.user.email
+          },
+          totalEarningsMonth: 4680,
+          registeredAt: 'Ativo'
+        };
+        setSuccessMessage(`Login realizado com sucesso! Bem-vindo(a), ${existingProvider.name}`);
+        setIsSuccess(true);
+        setTimeout(() => {
+          onRegisterProvider(existingProvider);
+          setIsSuccess(false);
+          onClose();
+        }, 900);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      alert('Erro no login: e-mail ou senha inválidos.');
     }
   };
 
