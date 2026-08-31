@@ -103,9 +103,11 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       const result = await loginWithGoogle(tipo);
       if (result) {
         handleCompleteAuth(result.user);
+      } else {
+        setIsLoading(false);
       }
     } catch (firebaseError: any) {
-      console.warn('Firebase signInWithPopup failed:', firebaseError?.code, firebaseError?.message);
+      console.warn('Firebase loginWithGoogle failed:', firebaseError?.code, firebaseError?.message);
       setIsLoading(false);
 
       const code = firebaseError?.code || '';
@@ -114,7 +116,11 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         setAuthError('Janela de login fechada antes da conclusão. Tente novamente.');
       } else if (code === 'auth/popup-blocked') {
-        setAuthError('Janela pop-up bloqueada pelo navegador. Redirecionando para login seguro...');
+        setAuthError('Janela pop-up bloqueada pelo navegador.');
+        setErrorDetails('Verifique se o navegador bloqueou a janela de login ou tente o acesso com e-mail/senha.');
+      } else if (code === 'auth/popup-timeout') {
+        setAuthError('A conexão com o Google demorou para responder.');
+        setErrorDetails('O navegador pode ter bloqueado o pop-up silenciosamente. Tente novamente ou use o login por e-mail/senha.');
       } else if (code === 'auth/unauthorized-domain') {
         setAuthError(`Domínio não autorizado para o login Google: ${domain}`);
         setErrorDetails(`Adicione este domínio no Firebase Console: Authentication → Settings → Authorized domains → Adicionar "${domain}".`);
@@ -133,7 +139,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
         setAuthError('Configuração do Firebase inválida ou ausente.');
         setErrorDetails(firebaseError?.message);
       } else {
-        setAuthError('Não foi possível entrar com sua conta Google neste momento.');
+        setAuthError('Não foi possível conectar ao Firebase neste momento.');
         setErrorDetails(firebaseError?.message || 'Tente pelo formulário de e-mail/senha.');
       }
     }

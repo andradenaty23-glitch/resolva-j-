@@ -29,32 +29,47 @@ import { UsuarioDoc, TipoUsuario, GoogleAuthUser } from '../types';
 export async function findUserDocByEmail(email: string): Promise<{ id: string; data: UsuarioDoc } | null> {
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail) return null;
+  console.log(`[Auth Diagnostic] 🔍 Consulta por e-mail iniciada no Firestore: ${cleanEmail}`);
   try {
     const colRef = collection(db, 'usuarios');
-    const q = query(colRef, where('email', '==', cleanEmail));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const firstDoc = snap.docs[0];
+    const q1 = query(colRef, where('email', '==', cleanEmail));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      const firstDoc = snap1.docs[0];
+      console.log(`[Auth Diagnostic] ✅ Perfil encontrado no Firestore via query por e-mail (Doc ID: ${firstDoc.id})`);
       return { id: firstDoc.id, data: firstDoc.data() as UsuarioDoc };
     }
 
-    // Secondary lookup using doc ID = email or lowercased email
+    if (email !== cleanEmail) {
+      const q2 = query(colRef, where('email', '==', email));
+      const snap2 = await getDocs(q2);
+      if (!snap2.empty) {
+        const firstDoc = snap2.docs[0];
+        console.log(`[Auth Diagnostic] ✅ Perfil encontrado no Firestore via query por e-mail original (Doc ID: ${firstDoc.id})`);
+        return { id: firstDoc.id, data: firstDoc.data() as UsuarioDoc };
+      }
+    }
+
+    // Secondary lookup using doc ID = cleanEmail
     const docByEmailId = await getDoc(doc(db, 'usuarios', cleanEmail));
     if (docByEmailId.exists()) {
+      console.log(`[Auth Diagnostic] ✅ Perfil encontrado no Firestore por Doc ID de e-mail (${cleanEmail})`);
       return { id: docByEmailId.id, data: docByEmailId.data() as UsuarioDoc };
     }
 
-    // Scan collection for case-insensitive email match or legacy document ID format
+    // Scan collection for case-insensitive email match
     const allSnap = await getDocs(colRef);
     for (const d of allSnap.docs) {
       const dData = d.data() as UsuarioDoc;
       if (dData?.email && dData.email.trim().toLowerCase() === cleanEmail) {
+        console.log(`[Auth Diagnostic] ✅ Perfil encontrado via varredura de e-mail (Doc ID: ${d.id})`);
         return { id: d.id, data: dData };
       }
     }
+    console.log(`[Auth Diagnostic] ℹ️ Nenhum perfil pré-existente encontrado no Firestore para o e-mail: ${cleanEmail}`);
     return null;
   } catch (err) {
-    console.warn('Error searching user doc by email:', err);
+    console.warn('[Auth Diagnostic] ⚠️ Erro durante busca por e-mail no Firestore:', err);
     return null;
   }
 }
@@ -70,6 +85,8 @@ export async function syncUserDocument(
   const userRef = doc(db, 'usuarios', user.uid);
   const now = new Date().toISOString();
 
+  console.log(`[Auth Diagnostic] 📄 Iniciando sincronização no Firestore para UID: ${user.uid}`);
+
   let existingData: UsuarioDoc | null = null;
   let oldDocId: string | null = null;
 
@@ -79,17 +96,20 @@ export async function syncUserDocument(
     if (userSnap.exists()) {
       existingData = userSnap.data() as UsuarioDoc;
       oldDocId = userSnap.id;
+      console.log(`[Auth Diagnostic] ✅ Perfil diretamente localizado no Firestore por UID: ${user.uid}`);
     }
   } catch (err) {
-    console.warn('Could not fetch user doc by UID:', err);
+    console.warn('[Auth Diagnostic] ⚠️ Não foi possível consultar o documento diretamente pelo UID:', err);
   }
 
   // 2. If not found by UID, search by email to connect existing Firestore records
   if (!existingData && user.email) {
+    console.log(`[Auth Diagnostic] 🔍 Buscando se existe histórico do e-mail (${user.email}) no Firestore...`);
     const foundByEmail = await findUserDocByEmail(user.email);
     if (foundByEmail) {
       existingData = foundByEmail.data;
       oldDocId = foundByEmail.id;
+      console.log(`[Auth Diagnostic] 🔗 Conectando dados do perfil existente (Doc ID: ${oldDocId}) ao novo UID do Firebase Auth (${user.uid})`);
     }
   }
 
@@ -232,13 +252,39 @@ export async function checkRedirectResult(): Promise<{ user: GoogleAuthUser; usu
 export async function loginWithGoogle(
   preferredRole: TipoUsuario = 'cliente'
 ): Promise<{ user: GoogleAuthUser; usuarioDoc: UsuarioDoc } | null> {
+  console.log('[Auth Diagnostic] 🚀 1. Login com Google iniciado via signInWithPopup...');
+  
+  // Timeout safeguard to prevent infinite hanging when popup is blocked silently by the browser
+  const timeoutMs = 20000;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const err: any = new Error('O login do Google demorou muito para responder. O navegador pode ter bloqueado o pop-up.');
+      err.code = 'auth/popup-timeout';
+      reject(err);
+    }, timeoutMs);
+  });
+
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const popupPromise = signInWithPopup(auth, googleProvider);
+    const result = await Promise.race([popupPromise, timeoutPromise]);
+    if (timeoutId) clearTimeout(timeoutId);
+
     const user = result.user;
+
+    console.log(`[Auth Diagnostic] ✅ 2. Google autenticou com sucesso! Firebase User recebido.`);
+    console.log(`[Auth Diagnostic] 🆔 UID: ${user.uid}`);
+    console.log(`[Auth Diagnostic] 📧 E-mail: ${user.email}`);
+    console.log(`[Auth Diagnostic] 👤 Nome: ${user.displayName || 'Sem nome público'}`);
+
     const isSuperAdmin = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
     const roleToUse: TipoUsuario = isSuperAdmin ? 'admin' : preferredRole;
 
+    console.log('[Auth Diagnostic] 📂 3. Consulta ao Firestore iniciada...');
     const usuarioDoc = await syncUserDocument(user, roleToUse);
+    console.log(`[Auth Diagnostic] 🎉 4. Consulta ao Firestore concluída. Perfil ativo: "${usuarioDoc.nome}" (${usuarioDoc.tipo})`);
+
     const token = await user.getIdToken().catch(() => undefined);
 
     const googleUser: GoogleAuthUser = {
@@ -256,11 +302,17 @@ export async function loginWithGoogle(
 
     return { user: googleUser, usuarioDoc };
   } catch (error: any) {
-    console.error('Firebase Google Sign-In error:', error);
+    if (timeoutId) clearTimeout(timeoutId);
+    console.error('[Auth Diagnostic] ❌ Erro durante o login com Google:', error?.code, error?.message);
     if (error?.code === 'auth/popup-blocked') {
-      console.log('Popup blocked, attempting signInWithRedirect fallback...');
-      await signInWithRedirect(auth, googleProvider);
-      return null;
+      console.log('[Auth Diagnostic] ⚠️ Popup bloqueado. Redirecionando via signInWithRedirect...');
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      } catch (redirectErr) {
+        console.error('[Auth Diagnostic] ❌ Fallback para signInWithRedirect falhou:', redirectErr);
+        throw error;
+      }
     }
     throw error;
   }
@@ -356,8 +408,10 @@ export function onFirebaseAuthStateChanged(
 ): () => void {
   return onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
+      console.log(`[Auth State Change] 🟢 Firebase Auth determinou sessão ativa para UID: ${firebaseUser.uid} (${firebaseUser.email})`);
       let profile = await getUserProfile(firebaseUser.uid);
       if (!profile && firebaseUser.email) {
+        console.log(`[Auth State Change] 🔍 Perfil não encontrado por UID direto. Buscando por e-mail (${firebaseUser.email})...`);
         const foundByEmail = await findUserDocByEmail(firebaseUser.email);
         if (foundByEmail) {
           profile = foundByEmail.data;
@@ -366,8 +420,10 @@ export function onFirebaseAuthStateChanged(
       if (!profile || profile.uid !== firebaseUser.uid) {
         profile = await syncUserDocument(firebaseUser);
       }
+      console.log(`[Auth State Change] ✅ Perfil carregado com sucesso: "${profile.nome}" | Tipo: ${profile.tipo}`);
       callback(firebaseUser, profile);
     } else {
+      console.log('[Auth State Change] ⚪ Nenhuma sessão ativa no Firebase Auth.');
       callback(null, null);
     }
   });
