@@ -7,11 +7,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
  * NÃO utiliza bancos fictícios, nem fallbacks que mascarem a ausência de credenciais reais.
  */
 
-// 1. Extração segura das variáveis de ambiente
-const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+// 1. Extração das variáveis de ambiente com Publishable Key
+const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env || {};
+export const supabaseUrl = (metaEnv.VITE_SUPABASE_URL || '').trim();
+export const supabaseAnonKey = (metaEnv.VITE_SUPABASE_ANON_KEY || '').trim();
 
-// 2. Validação rigorosa da URL e Anon Key
+const envUrl = supabaseUrl;
+const envKey = supabaseAnonKey;
+
+// 2. Validação da URL e Anon Key
 const isValidUrl = (url: string): boolean => {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
@@ -33,8 +37,6 @@ const isKeyValid = (key: string): boolean => {
 };
 
 export const isSupabaseConfigured = isValidUrl(envUrl) && isKeyValid(envKey);
-export const supabaseUrl = envUrl.trim();
-export const supabaseAnonKey = envKey.trim();
 
 // 3. Status de configuração para diagnósticos e interface do usuário
 export interface SupabaseConfigStatus {
