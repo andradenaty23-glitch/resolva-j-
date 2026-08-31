@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   User,
+  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -252,8 +253,14 @@ export async function checkRedirectResult(): Promise<{ user: GoogleAuthUser; usu
 export async function loginWithGoogle(
   preferredRole: TipoUsuario = 'cliente'
 ): Promise<{ user: GoogleAuthUser; usuarioDoc: UsuarioDoc } | null> {
-  console.log('[Auth Diagnostic] 🚀 1. Login com Google iniciado via signInWithPopup...');
+  console.log('[GOOGLE LOGIN] Clique recebido');
+  console.log('[GOOGLE LOGIN] Criando GoogleAuthProvider');
   
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account'
+  });
+
   // Timeout safeguard to prevent infinite hanging when popup is blocked silently by the browser
   const timeoutMs = 20000;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -267,23 +274,26 @@ export async function loginWithGoogle(
   });
 
   try {
-    const popupPromise = signInWithPopup(auth, googleProvider);
+    console.log('[GOOGLE LOGIN] Chamando signInWithPopup');
+    const popupPromise = signInWithPopup(auth, provider);
     const result = await Promise.race([popupPromise, timeoutPromise]);
     if (timeoutId) clearTimeout(timeoutId);
 
+    console.log('[GOOGLE LOGIN] Popup retornou');
     const user = result.user;
 
-    console.log(`[Auth Diagnostic] ✅ 2. Google autenticou com sucesso! Firebase User recebido.`);
-    console.log(`[Auth Diagnostic] 🆔 UID: ${user.uid}`);
+    console.log('[GOOGLE LOGIN] Firebase User recebido');
+    console.log(`[GOOGLE LOGIN] UID recebido: ${user.uid}`);
     console.log(`[Auth Diagnostic] 📧 E-mail: ${user.email}`);
     console.log(`[Auth Diagnostic] 👤 Nome: ${user.displayName || 'Sem nome público'}`);
 
     const isSuperAdmin = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
     const roleToUse: TipoUsuario = isSuperAdmin ? 'admin' : preferredRole;
 
-    console.log('[Auth Diagnostic] 📂 3. Consulta ao Firestore iniciada...');
+    console.log('[GOOGLE LOGIN] Consulta Firestore iniciada');
     const usuarioDoc = await syncUserDocument(user, roleToUse);
-    console.log(`[Auth Diagnostic] 🎉 4. Consulta ao Firestore concluída. Perfil ativo: "${usuarioDoc.nome}" (${usuarioDoc.tipo})`);
+    console.log('[GOOGLE LOGIN] Consulta Firestore concluída');
+    console.log(`[Auth Diagnostic] 🎉 Perfil ativo: "${usuarioDoc.nome}" (${usuarioDoc.tipo})`);
 
     const token = await user.getIdToken().catch(() => undefined);
 
@@ -303,14 +313,14 @@ export async function loginWithGoogle(
     return { user: googleUser, usuarioDoc };
   } catch (error: any) {
     if (timeoutId) clearTimeout(timeoutId);
-    console.error('[Auth Diagnostic] ❌ Erro durante o login com Google:', error?.code, error?.message);
+    console.error('[GOOGLE LOGIN] ❌ Erro durante o login com Google:', error?.code, error?.message, error);
     if (error?.code === 'auth/popup-blocked') {
-      console.log('[Auth Diagnostic] ⚠️ Popup bloqueado. Redirecionando via signInWithRedirect...');
+      console.log('[GOOGLE LOGIN] ⚠️ Popup bloqueado. Tentando redirecionar via signInWithRedirect...');
       try {
-        await signInWithRedirect(auth, googleProvider);
+        await signInWithRedirect(auth, provider);
         return null;
-      } catch (redirectErr) {
-        console.error('[Auth Diagnostic] ❌ Fallback para signInWithRedirect falhou:', redirectErr);
+      } catch (redirectErr: any) {
+        console.error('[GOOGLE LOGIN] ❌ Fallback para signInWithRedirect falhou:', redirectErr?.code, redirectErr?.message);
         throw error;
       }
     }

@@ -93,6 +93,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
    * Firebase Google Sign-In
    */
   const handleTriggerGoogleOAuth = async () => {
+    console.log('[GOOGLE LOGIN] Clique recebido');
     setIsLoading(true);
     setAuthError(null);
     setErrorDetails(null);
@@ -107,7 +108,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
         setIsLoading(false);
       }
     } catch (firebaseError: any) {
-      console.warn('Firebase loginWithGoogle failed:', firebaseError?.code, firebaseError?.message);
+      console.warn('[GOOGLE LOGIN] ❌ Firebase loginWithGoogle falhou:', firebaseError?.code, firebaseError?.message, firebaseError);
       setIsLoading(false);
 
       const code = firebaseError?.code || '';
