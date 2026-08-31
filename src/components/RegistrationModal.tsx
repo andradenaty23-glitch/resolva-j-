@@ -28,7 +28,7 @@ import {
 import confetti from 'canvas-confetti';
 import { UserRole, ClientProfile, ProviderProfile } from '../types';
 import { PhotoUploader } from './PhotoUploader';
-import { registerWithEmailPassword, loginWithEmailPassword } from '../services/firebaseAuth';
+import { registerWithEmailPassword, loginWithEmailPassword, sendPasswordResetLink } from '../services/supabaseAuth';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -536,7 +536,23 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     <input type="checkbox" defaultChecked className="rounded text-[#ea580c] focus:ring-[#ea580c]" />
                     <span>Lembrar neste dispositivo</span>
                   </label>
-                  <button type="button" className="text-[#ea580c] font-bold hover:underline">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const emailTarget = loginEmail.trim() || (selectedRole === 'cliente' ? clientEmail.trim() : providerEmail.trim());
+                      if (!emailTarget) {
+                        alert('Por favor, informe seu e-mail no campo acima para receber o link de recuperação.');
+                        return;
+                      }
+                      try {
+                        await sendPasswordResetLink(emailTarget);
+                        alert(`Link de redefinição de senha enviado com sucesso para ${emailTarget} via Supabase.`);
+                      } catch (err: any) {
+                        alert('Erro ao enviar link de recuperação: ' + (err.message || 'Verifique o e-mail digitado.'));
+                      }
+                    }}
+                    className="text-[#ea580c] font-bold hover:underline cursor-pointer"
+                  >
                     Esqueceu a senha?
                   </button>
                 </div>

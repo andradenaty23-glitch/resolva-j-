@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Image, DollarSign, MapPin, Phone, MessageSquare, Briefcase } from 'lucide-react';
 import { ServicoDoc, CategoriaDoc } from '../types';
-import { addServico, updateServico } from '../services/firestoreService';
+import { addServico, updateServico } from '../services/supabaseDatabase';
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -91,7 +91,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           imagem: imagem.trim(),
           disponivel
         });
-        onSuccess('Serviço atualizado com sucesso no Firestore!');
+        onSuccess('Serviço atualizado com sucesso no Supabase!');
       } else {
         await addServico({
           profissionalId,
@@ -110,7 +110,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           imagem: imagem.trim(),
           disponivel
         });
-        onSuccess('Serviço cadastrado e publicado com sucesso no Firestore!');
+        onSuccess('Serviço cadastrado e publicado com sucesso no Supabase!');
       }
       onClose();
     } catch (err: any) {
@@ -134,7 +134,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               <h2 className="font-bold text-slate-900 dark:text-white text-lg">
                 {initialService ? 'Editar Serviço PRO' : 'Cadastrar Novo Serviço PRO'}
               </h2>
-              <p className="text-xs text-slate-500">Persistência direta no Cloud Firestore</p>
+              <p className="text-xs text-slate-500">Persistência direta no PostgreSQL via Supabase</p>
             </div>
           </div>
           <button
@@ -304,9 +304,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Salvando no Firestore...</span>
+                <span>Salvando no Supabase...</span>
               ) : (
-                <span>{initialService ? 'Salvar Alterações' : 'Publicar Serviço no Firestore'}</span>
+                <span>{initialService ? 'Salvar Alterações' : 'Publicar Serviço no Supabase'}</span>
               )}
             </button>
           </div>

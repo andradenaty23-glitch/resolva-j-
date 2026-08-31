@@ -1,12 +1,9 @@
 import { GoogleAuthUser, UserRole, ClientProfile, ProviderProfile } from '../types';
-import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_CLIENT_PROFILE, INITIAL_PROVIDER_PROFILE } from '../data/mockData';
 
 export const GOOGLE_OAUTH_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-  (firebaseConfig as any)?.oAuthClientId ||
   '';
 
 declare global {
@@ -135,8 +132,8 @@ export async function logoutUser(role: UserRole, token?: string): Promise<void> 
       saveProviderUser(null);
     }
 
-    if (auth.currentUser) {
-      await signOut(auth);
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
     }
     
     if (window.google?.accounts?.id) {

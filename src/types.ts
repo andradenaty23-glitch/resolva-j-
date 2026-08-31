@@ -20,7 +20,7 @@ export type ProblemCategory =
   | 'aquecedor_gas'
   | 'gesso_drywall';
 
-// ================= FIRESTORE DATABASE TYPES =================
+// ================= SUPABASE POSTGRESQL DATABASE TYPES =================
 export type TipoUsuario = 'cliente' | 'profissional' | 'admin';
 
 export interface UsuarioDoc {
@@ -74,6 +74,9 @@ export interface ServicoDoc {
   preco: number;
   imagem: string;
   disponivel: boolean;
+  ativo?: boolean;
+  avaliacaoMedia?: number;
+  totalAvaliacoes?: number;
   criadoEm: string;
   atualizadoEm: string;
 }

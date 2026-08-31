@@ -13,7 +13,9 @@ import {
   XCircle,
   Clock,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Activity,
+  Server
 } from 'lucide-react';
 import {
   UsuarioDoc,
@@ -31,7 +33,8 @@ import {
   deleteUsuario,
   deleteUsuarioByEmail,
   seedDefaultCategoriasIfEmpty
-} from '../services/firestoreService';
+} from '../services/supabaseDatabase';
+import { testSupabaseRealConnection, SupabaseHealthCheckResult } from '../lib/supabaseHealth';
 
 interface AdminPanelScreenProps {
   isOpen?: boolean;
@@ -52,7 +55,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     if (onClose) onClose();
     else if (onBackToHome) onBackToHome();
   };
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'servicos' | 'solicitacoes' | 'categorias'>('usuarios');
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'servicos' | 'solicitacoes' | 'categorias' | 'diagnostico'>('usuarios');
   const [usuarios, setUsuarios] = useState<UsuarioDoc[]>([]);
   const [servicos, setServicos] = useState<ServicoDoc[]>([]);
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoDoc[]>([]);
@@ -63,6 +66,26 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
   const [newCatDesc, setNewCatDesc] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Layers');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  // Health check state
+  const [healthStatus, setHealthStatus] = useState<SupabaseHealthCheckResult | null>(null);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
+
+  const runHealthAudit = async () => {
+    setIsCheckingHealth(true);
+    try {
+      const result = await testSupabaseRealConnection();
+      setHealthStatus(result);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
+
+  useEffect(() => {
+    runHealthAudit();
+  }, []);
 
   useEffect(() => {
     const unsubUsers = subscribeAllUsuarios(setUsuarios);
@@ -87,7 +110,9 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     e.preventDefault();
     if (!newCatName.trim()) return;
     try {
+      const generatedId = newCatName.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') || `cat_${Date.now()}`;
       await addCategoria({
+        id: generatedId,
         nome: newCatName.trim(),
         descricao: newCatDesc.trim() || 'Serviços especializados',
         icone: newCatIcon,
@@ -96,7 +121,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
       setNewCatName('');
       setNewCatDesc('');
       setIsAddingCat(false);
-      showFeedback('Categoria adicionada com sucesso no Firestore!');
+      showFeedback('Categoria adicionada com sucesso no Supabase!');
     } catch (err: any) {
       showFeedback('Erro ao adicionar categoria: ' + err.message);
     }
@@ -117,7 +142,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     if (window.confirm(`Deseja realmente excluir permanentemente o perfil de "${name}" (${email})?`)) {
       try {
         await deleteUsuario(uid);
-        showFeedback(`Perfil de "${email}" foi excluído com sucesso do Firestore.`);
+        showFeedback(`Perfil de "${email}" foi excluído com sucesso do Supabase.`);
       } catch (err: any) {
         showFeedback('Erro ao excluir usuário: ' + err.message);
       }
@@ -147,7 +172,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
 
   const handleSeedCats = async () => {
     await seedDefaultCategoriasIfEmpty();
-    showFeedback('Categorias padrão inicializadas no Firestore!');
+    showFeedback('Categorias padrão inicializadas no Supabase!');
   };
 
   // Metrics
@@ -161,7 +186,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
         <div>
           <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-1">
-            <ShieldAlert size={16} /> Painel de Controle Master • Firebase Firestore
+            <ShieldAlert size={16} /> Painel de Controle Master • Supabase PostgreSQL
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Administração Resolva Já
@@ -208,11 +233,11 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
         </div>
 
         <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4">
-          <div className="text-xs text-slate-400 font-medium">Status Banco Firestore</div>
+          <div className="text-xs text-slate-400 font-medium">Status Banco Supabase</div>
           <div className="text-2xl font-black text-indigo-400 mt-1 flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Ativo
           </div>
-          <div className="text-xs text-slate-400 mt-1">Tempo Real (onSnapshot)</div>
+          <div className="text-xs text-slate-400 mt-1">PostgreSQL Realtime</div>
         </div>
       </div>
 
@@ -258,6 +283,16 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
             }`}
           >
             <Layers size={16} /> Categorias ({categorias.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('diagnostico')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'diagnostico'
+                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                : 'bg-slate-800 text-emerald-400 hover:bg-slate-700'
+            }`}
+          >
+            <Activity size={16} /> Diagnóstico Supabase Real
           </button>
         </div>
 
@@ -490,7 +525,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
         {activeTab === 'categorias' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Categorias no Firestore</h2>
+              <h2 className="text-lg font-bold text-white">Categorias no Supabase</h2>
               <div className="flex gap-2">
                 <button
                   onClick={handleSeedCats}
@@ -555,7 +590,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                     type="submit"
                     className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg"
                   >
-                    Salvar no Firestore
+                    Salvar no Supabase
                   </button>
                 </div>
               </form>
@@ -576,6 +611,137 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Diagnóstico Supabase Real */}
+        {activeTab === 'diagnostico' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-5 border-b border-slate-700">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Server className="w-5 h-5 text-emerald-400" />
+                    Status da Conexão Supabase Real (PostgreSQL + Auth)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Auditoria de integridade em tempo real sem expor chaves ou credenciais sensíveis.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={runHealthAudit}
+                  disabled={isCheckingHealth}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-2 transition cursor-pointer shadow-md"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isCheckingHealth ? 'animate-spin' : ''}`} />
+                  <span>{isCheckingHealth ? 'Testando Conexão...' : 'Executar Teste Agora'}</span>
+                </button>
+              </div>
+
+              {healthStatus && (
+                <div className="mt-6 space-y-6">
+                  {/* Status Banner */}
+                  <div
+                    className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                      healthStatus.state === 'CONFIGURED_AND_HEALTHY'
+                        ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300'
+                        : healthStatus.state === 'UNCONFIGURED'
+                        ? 'bg-amber-950/60 border-amber-700 text-amber-300'
+                        : 'bg-rose-950/60 border-rose-700 text-rose-300'
+                    }`}
+                  >
+                    {healthStatus.state === 'CONFIGURED_AND_HEALTHY' ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : healthStatus.state === 'UNCONFIGURED' ? (
+                      <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <div className="font-bold text-sm">
+                        {healthStatus.state === 'CONFIGURED_AND_HEALTHY'
+                          ? 'Supabase Conectado & Operacional'
+                          : healthStatus.state === 'UNCONFIGURED'
+                          ? 'Configuração Pendente'
+                          : 'Falha de Acesso ao Supabase'}
+                      </div>
+                      <p className="text-xs mt-1 opacity-90">{healthStatus.message}</p>
+                    </div>
+                  </div>
+
+                  {/* Verification Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl">
+                      <div className="text-xs text-slate-400 font-semibold">Supabase Auth</div>
+                      <div className="text-sm font-bold text-white mt-1 flex items-center gap-2">
+                        {healthStatus.canAccessAuth ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Sessão & Auth Ativos</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4 text-rose-400" />
+                            <span>Inacessível</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1">supabase.auth.getSession()</div>
+                    </div>
+
+                    <div className="bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl">
+                      <div className="text-xs text-slate-400 font-semibold">PostgreSQL Queries</div>
+                      <div className="text-sm font-bold text-white mt-1 flex items-center gap-2">
+                        {healthStatus.canQuery ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Consultas SQL Rápidas</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4 text-rose-400" />
+                            <span>Bloqueado ou Sem Permissão</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1">Tabelas e RLS operacionais</div>
+                    </div>
+
+                    <div className="bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl">
+                      <div className="text-xs text-slate-400 font-semibold">Latência de Rede</div>
+                      <div className="text-sm font-bold text-amber-400 mt-1 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-400" />
+                        <span>{healthStatus.latencyMs} ms</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1">Tempo de resposta Supabase</div>
+                    </div>
+                  </div>
+
+                  {/* Tables verified list */}
+                  <div className="bg-slate-900/60 border border-slate-700/80 p-5 rounded-2xl">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
+                      Tabelas do Banco Verificadas
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {Object.entries(healthStatus.tablesVerified).map(([tbl, isOk]) => (
+                        <div
+                          key={tbl}
+                          className="bg-slate-800/90 border border-slate-700 p-3 rounded-xl flex items-center justify-between"
+                        >
+                          <span className="text-xs font-mono font-medium text-slate-200">{tbl}</span>
+                          {isOk ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-slate-500" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

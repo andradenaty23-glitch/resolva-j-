@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { ProblemCategory, Room, ServicoDoc, CategoriaDoc, ClientProfile, FavoritoDoc } from '../types';
 import { SERVICE_DEMANDS_CATALOG, ServiceDemandCategory } from '../data/serviceDemands';
-import { FirestoreServicesCatalog } from './FirestoreServicesCatalog';
+import { SupabaseServicesCatalog } from './SupabaseServicesCatalog';
 
 interface HomeScreenProps {
   onFindSolution: (problemText: string, imageSrc?: string) => void;
@@ -44,8 +44,8 @@ interface HomeScreenProps {
   problemRooms: Room[];
   selectedPhoto: string | null;
   onClearPhoto: () => void;
-  firestoreServicos?: ServicoDoc[];
-  firestoreCategorias?: CategoriaDoc[];
+  supabaseServicos?: ServicoDoc[];
+  supabaseCategorias?: CategoriaDoc[];
   clientProfile?: ClientProfile;
   favoritos?: FavoritoDoc[];
   onRequestService?: (servico: ServicoDoc) => void;
@@ -63,13 +63,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   problemRooms,
   selectedPhoto,
   onClearPhoto,
-  firestoreServicos = [],
-  firestoreCategorias = [],
+  supabaseServicos = [],
+  supabaseCategorias = [],
   clientProfile,
   favoritos = [],
   onRequestService,
   isLoadingServices = false
 }) => {
+  const activeServicos = supabaseServicos;
+  const activeCategorias = supabaseCategorias;
   const [problemDescription, setProblemDescription] = useState('');
   const [activeInputMode, setActiveInputMode] = useState<'digitar' | 'falar' | 'foto'>('digitar');
   const [selectedFilterTab, setSelectedFilterTab] = useState<'todos' | 'urgente' | 'instalacao' | 'reforma'>('todos');
@@ -276,12 +278,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
-      {/* Real Firestore Services Catalog */}
-      {firestoreServicos && firestoreServicos.length > 0 && clientProfile && (
+      {/* Real Supabase Services Catalog */}
+      {activeServicos && activeServicos.length > 0 && clientProfile && (
         <section className="pt-2">
-          <FirestoreServicesCatalog
-            servicos={firestoreServicos}
-            categorias={firestoreCategorias}
+          <SupabaseServicesCatalog
+            servicos={activeServicos}
+            categorias={activeCategorias}
             client={clientProfile}
             favoritos={favoritos}
             onRequestService={(servico) => {

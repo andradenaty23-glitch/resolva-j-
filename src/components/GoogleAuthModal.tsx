@@ -23,9 +23,9 @@ import {
   loginWithEmailPassword,
   registerWithEmailPassword,
   sendPasswordResetLink,
-  logoutFirebaseAuth,
+  logoutSupabaseAuth,
   syncUserDocument
-} from '../services/firebaseAuth';
+} from '../services/supabaseAuth';
 import { SafeAvatar } from './SafeAvatar';
 
 interface GoogleAuthModalProps {
@@ -74,7 +74,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleCompleteAuth = (user: GoogleAuthUser) => {
+  const handleCompleteAuth判定 = (user: GoogleAuthUser) => {
     setIsLoading(false);
     setAuthError(null);
     setErrorDetails(null);
@@ -90,10 +90,10 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   };
 
   /**
-   * Firebase Google Sign-In
+   * Supabase Google Sign-In
    */
   const handleTriggerGoogleOAuth = async () => {
-    console.log('[GOOGLE LOGIN] Clique recebido');
+    console.log('[Supabase Auth] Clique em Entrar com Google recebido');
     setIsLoading(true);
     setAuthError(null);
     setErrorDetails(null);
@@ -103,46 +103,15 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     try {
       const result = await loginWithGoogle(tipo);
       if (result) {
-        handleCompleteAuth(result.user);
+        handleCompleteAuth判定(result.user);
       } else {
         setIsLoading(false);
       }
-    } catch (firebaseError: any) {
-      console.warn('[GOOGLE LOGIN] ❌ Firebase loginWithGoogle falhou:', firebaseError?.code, firebaseError?.message, firebaseError);
+    } catch (err: any) {
+      console.warn('[Supabase Auth] ❌ Falha no login Google:', err);
       setIsLoading(false);
-
-      const code = firebaseError?.code || '';
-      const domain = typeof window !== 'undefined' ? window.location.hostname : 'este domínio';
-
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        setAuthError('Janela de login fechada antes da conclusão. Tente novamente.');
-      } else if (code === 'auth/popup-blocked') {
-        setAuthError('Janela pop-up bloqueada pelo navegador.');
-        setErrorDetails('Verifique se o navegador bloqueou a janela de login ou tente o acesso com e-mail/senha.');
-      } else if (code === 'auth/popup-timeout') {
-        setAuthError('A conexão com o Google demorou para responder.');
-        setErrorDetails('O navegador pode ter bloqueado o pop-up silenciosamente. Tente novamente ou use o login por e-mail/senha.');
-      } else if (code === 'auth/unauthorized-domain') {
-        setAuthError(`Domínio não autorizado para o login Google: ${domain}`);
-        setErrorDetails(`Adicione este domínio no Firebase Console: Authentication → Settings → Authorized domains → Adicionar "${domain}".`);
-      } else if (code === 'auth/operation-not-allowed') {
-        setAuthError('O provedor de login do Google não está ativado no Firebase Console.');
-        setErrorDetails('Ative o provedor Google em: Firebase Console → Authentication → Sign-in method → Google.');
-      } else if (code === 'auth/account-exists-with-different-credential') {
-        setAuthError('Uma conta já existe com este e-mail associada a outro método.');
-        setErrorDetails('Tente entrar com e-mail e senha.');
-        setAuthMode('email_login');
-      } else if (code === 'auth/user-disabled') {
-        setAuthError('Esta conta de usuário foi desativada.');
-      } else if (code === 'auth/network-request-failed') {
-        setAuthError('Erro de conexão com a rede. Verifique sua internet.');
-      } else if (code === 'auth/invalid-api-key' || code === 'auth/configuration-not-found') {
-        setAuthError('Configuração do Firebase inválida ou ausente.');
-        setErrorDetails(firebaseError?.message);
-      } else {
-        setAuthError('Não foi possível conectar ao Firebase neste momento.');
-        setErrorDetails(firebaseError?.message || 'Tente pelo formulário de e-mail/senha.');
-      }
+      setAuthError(err.message || 'Falha ao autenticar com o Google via Supabase.');
+      setErrorDetails('Verifique a conexão ou tente o acesso com e-mail e senha.');
     }
   };
 
@@ -164,28 +133,26 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
     try {
       if (authMode === 'email_signup') {
-        const result = await registerWithEmailPassword(
+        const result依照 = await registerWithEmailPassword(
           email.trim(),
           password,
           name.trim() || email.split('@')[0],
           tipo
         );
-        handleCompleteAuth(result.user);
+        handleCompleteAuth判定(result依照.user);
       } else {
-        const result = await loginWithEmailPassword(email.trim(), password);
-        handleCompleteAuth(result.user);
+        const result依照 = await loginWithEmailPassword(email.trim(), password);
+        handleCompleteAuth判定(result依照.user);
       }
     } catch (err: any) {
       setIsLoading(false);
-      console.error('Email auth error:', err);
-      if (err.code === 'auth/email-already-in-use') {
+      console.error('[Supabase Auth] Erro de autenticação:', err);
+      if (err.message?.includes('already registered') || err.message?.includes('user_already_exists')) {
         setAuthError('Este e-mail já está cadastrado. Alterne para a opção "Entrar com Senha".');
-      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      } else if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid-credential')) {
         setAuthError('E-mail ou senha incorretos.');
-      } else if (err.code === 'auth/weak-password') {
-        setAuthError('A senha deve ter no mínimo 6 caracteres.');
       } else {
-        setAuthError('Falha na autenticação. Verifique os dados e tente novamente.');
+        setAuthError('Falha na autenticação.');
         setErrorDetails(err.message);
       }
     }
@@ -212,19 +179,11 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setIsLoading(false);
       setResetSent(true);
       setResetMessage(`Enviamos um link de redefinição de senha para ${cleanEmail}.`);
-    } catch (err: any) {
+    } catch (err紧: any) {
       setIsLoading(false);
-      console.error('Password reset error:', err);
-      if (err.code === 'auth/user-not-found') {
-        setAuthError('Nenhum usuário cadastrado encontrado com este e-mail no Firebase.');
-      } else if (err.code === 'auth/invalid-email') {
-        setAuthError('Formato de e-mail inválido. Verifique o endereço digitado.');
-      } else if (err.code === 'auth/missing-email') {
-        setAuthError('Por favor, informe seu e-mail.');
-      } else {
-        setAuthError('Não foi possível enviar o e-mail de recuperação no momento.');
-        setErrorDetails(err.message || 'Tente novamente em instantes.');
-      }
+      console.error('[Supabase Auth] Erro ao redefinir senha:', err紧);
+      setAuthError('Não foi possível enviar o e-mail de recuperação.');
+      setErrorDetails(err紧.message || 'Tente novamente em instantes.');
     }
   };
 
@@ -247,9 +206,9 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-slate-900">Autenticado no Firebase!</h3>
+            <h3 className="text-xl font-bold text-slate-900">Autenticado no Supabase!</h3>
             <p className="text-sm text-slate-600">
-              Bem-vindo(a), <span className="font-semibold text-slate-900">{successUser.name}</span>. Dados sincronizados no Cloud Firestore.
+              Bem-vindo(a), <span className="font-semibold text-slate-900">{successUser.name}</span>. Dados sincronizados com segurança.
             </p>
           </div>
         ) : (
@@ -262,10 +221,10 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                    Autenticação Firebase
+                    Autenticação Supabase
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    Acesso seguro via Google Sign-In & Firestore
+                    Acesso seguro via Google Sign-In & PostgreSQL
                   </p>
                 </div>
               </div>
@@ -378,7 +337,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin text-[#ea580c]" />
-                    <span>Conectando ao Firebase...</span>
+                    <span>Conectando ao Supabase...</span>
                   </>
                 ) : (
                   <>
@@ -420,242 +379,205 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setAuthMode(authMode === 'email_signup' ? 'google' : 'email_signup');
+                  setAuthMode('google');
                   setAuthError(null);
-                  setErrorDetails(null);
                 }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                  authMode === 'email_signup'
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  authMode === 'google'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Criar Nova Conta
+                Google Rápido
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setAuthMode(authMode === 'email_login' ? 'google' : 'email_login');
+                  setAuthMode('email_login');
                   setAuthError(null);
-                  setErrorDetails(null);
                 }}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl border transition cursor-pointer ${
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                   authMode === 'email_login'
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Entrar com Senha
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('email_signup');
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  authMode === 'email_signup'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Criar Conta
+              </button>
             </div>
 
-            {/* Password Reset Screen */}
-            {authMode === 'email_reset' && (
-              <div className="space-y-3 pt-1 animate-fadeIn">
-                <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <KeyRound className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Recuperação de Senha</h4>
-                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                      Informe seu e-mail cadastrado para receber as instruções e o link seguro de redefinição de senha do Firebase.
-                    </p>
-                  </div>
-                </div>
-
-                {resetSent ? (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col items-center text-center gap-2 animate-fadeIn">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                      <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-sm font-bold text-emerald-950">Link Enviado com Sucesso!</h4>
-                    <p className="text-xs text-emerald-800 leading-relaxed">
-                      {resetMessage || `Enviamos o link de redefinição para ${email}.`}
-                    </p>
-                    <p className="text-[11px] text-emerald-700/80 mt-1">
-                      Verifique sua caixa de entrada e também a pasta de spam/lixo eletrônico.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode('email_login');
-                        setResetSent(false);
-                        setAuthError(null);
-                        setErrorDetails(null);
-                      }}
-                      className="mt-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <ArrowLeft className="w-4 h-4" /> Voltar para o Login
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handlePasswordResetSubmit} className="space-y-3">
+            {/* Email Forms */}
+            {authMode !== 'google' && (
+              <form
+                onSubmit={authMode === 'email_reset' ? handlePasswordResetSubmit : handleEmailAuthSubmit}
+                className="flex flex-col gap-3 pt-2"
+              >
+                {authMode === 'email_reset' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-amber-800 text-xs">
+                    <KeyRound className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1">E-mail Cadastrado</label>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="seuemail@gmail.com"
-                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
-                        />
+                      <div className="font-bold">Redefinição de Senha</div>
+                      <div className="text-[11px] text-amber-700 mt-0.5">
+                        Informe seu e-mail cadastrado. Um link de redefinição será enviado.
                       </div>
                     </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading || !email.trim()}
-                      className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Enviar Link de Recuperação</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode('email_login');
-                        setAuthError(null);
-                        setErrorDetails(null);
-                      }}
-                      className="w-full py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Voltar para Entrar com Senha</span>
-                    </button>
-                  </form>
+                  </div>
                 )}
-              </div>
-            )}
 
-            {/* Email Form (Signup & Login) */}
-            {(authMode === 'email_signup' || authMode === 'email_login') && (
-              <form onSubmit={handleEmailAuthSubmit} className="space-y-3 pt-1">
+                {resetSent && resetMessage && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-2 text-emerald-800 text-xs">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                    <div className="font-bold">{resetMessage}</div>
+                  </div>
+                )}
+
                 {authMode === 'email_signup' && (
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Nome Completo</label>
+                    <label className="text-xs font-bold text-slate-700 mb-1 block">Nome Completo</label>
                     <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <User className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Seu nome"
-                        className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
+                        placeholder="Seu nome ou razão social"
+                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ea580c]"
                       />
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">E-mail</label>
+                  <label className="text-xs font-bold text-slate-700 mb-1 block">E-mail</label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="seuemail@gmail.com"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
+                      placeholder="seu.email@exemplo.com"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ea580c]"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-slate-600 block">Senha</label>
-                    {authMode === 'email_login' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthMode('email_reset');
-                          setAuthError(null);
-                          setErrorDetails(null);
-                          setResetSent(false);
-                        }}
-                        className="text-[11px] font-bold text-[#ea580c] hover:text-[#c2410c] hover:underline cursor-pointer"
-                      >
-                        Esqueceu a senha?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="password"
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#ea580c]"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : authMode === 'email_signup' ? (
-                    <span>Finalizar Cadastro no Firebase</span>
-                  ) : (
-                    <span>Entrar no Firebase</span>
-                  )}
-                </button>
-
-                {authMode === 'email_login' && (
-                  <div className="text-center pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode('email_reset');
-                        setAuthError(null);
-                        setErrorDetails(null);
-                        setResetSent(false);
-                      }}
-                      className="text-xs text-slate-500 hover:text-[#ea580c] font-medium transition cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <KeyRound className="w-3.5 h-3.5 text-[#ea580c]" />
-                      <span>Problemas para entrar? <strong>Recuperar senha</strong></span>
-                    </button>
+                {authMode !== 'email_reset' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-bold text-slate-700">Senha</label>
+                      {authMode === 'email_login' && (
+                        <button
+                          type="button"
+                          onClick={() => setAuthMode('email_reset')}
+                          className="text-[11px] font-bold text-[#ea580c] hover:underline cursor-pointer"
+                        >
+                          Esqueceu a senha?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ea580c]"
+                      />
+                    </div>
                   </div>
                 )}
+
+                <div className="flex items-center gap-2 mt-1">
+                  {authMode === 'email_reset' && (
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('email_login')}
+                      className="py-2.5 px-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Voltar</span>
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Processando...</span>
+                      </>
+                    ) : authMode === 'email_reset' ? (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Enviar Link de Redefinição</span>
+                      </>
+                    ) : authMode === 'email_signup' ? (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Concluir Cadastro</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-4 h-4" />
+                        <span>Entrar no Sistema</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
 
-            {/* Logout button if currently logged in */}
-            {currentUser && onLogout && (
-              <div className="pt-2 border-t border-[#f4f4f5] flex justify-between items-center">
-                <div className="text-xs text-slate-500">
-                  Conectado como <span className="font-bold text-slate-800">{currentUser.name}</span>
+            {/* Currently Active / Connected Session display if any */}
+            {currentUser && (
+              <div className="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SafeAvatar
+                    src={currentUser.picture}
+                    name={currentUser.name}
+                    size="sm"
+                    className="w-8 h-8 rounded-full border border-slate-200"
+                  />
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">{currentUser.name}</div>
+                    <div className="text-[10px] text-slate-500">{currentUser.email}</div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await logoutFirebaseAuth();
-                    onLogout();
-                    onClose();
-                  }}
-                  className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer py-1 px-2.5 rounded-lg hover:bg-rose-50 transition"
-                >
-                  <LogOut className="w-3.5 h-3.5" /> Sair
-                </button>
+
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await logoutSupabaseAuth();
+                      onLogout();
+                      onClose();
+                    }}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Desconectar</span>
+                  </button>
+                )}
               </div>
             )}
           </>

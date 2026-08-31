@@ -1,23 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import {
   Search,
-  SlidersHorizontal,
   Star,
   MapPin,
-  Clock,
   Heart,
-  ShieldCheck,
   Send,
-  Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  Tag
+  AlertCircle
 } from 'lucide-react';
 import { ServicoDoc, CategoriaDoc, ClientProfile, FavoritoDoc } from '../types';
-import { toggleFavorito } from '../services/firestoreService';
+import { toggleFavorito } from '../services/supabaseDatabase';
 import { SafeAvatar } from './SafeAvatar';
 
-interface FirestoreServicesCatalogProps {
+interface SupabaseServicesCatalogProps {
   servicos: ServicoDoc[];
   categorias: CategoriaDoc[];
   client: ClientProfile;
@@ -26,9 +20,9 @@ interface FirestoreServicesCatalogProps {
   isLoading?: boolean;
 }
 
-export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> = ({
+export const SupabaseServicesCatalog: React.FC<SupabaseServicesCatalogProps> = ({
   servicos = [],
-  categorias = [],
+  categorias技巧 = [],
   client,
   favoritos = [],
   onRequestService,
@@ -39,16 +33,16 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
   const [sortBy, setSortBy] = useState<'rating' | 'price_asc' | 'price_desc' | 'recent'>('rating');
   const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(null);
 
-  // Favorited service IDs set
+  // Set of favorited service IDs
   const favoritedIds = useMemo(() => {
     return new Set(favoritos.map((f) => f.servicoId));
   }, [favoritos]);
 
-  const filteredServicos = useMemo(() => {
+  const filteredServicos不易 = useMemo(() => {
     return servicos
       .filter((s) => {
         if (!s.ativo) return false;
-        
+
         // Category filter
         if (selectedCategory !== 'todas') {
           if (s.categoriaId !== selectedCategory && s.categoriaNome !== selectedCategory) {
@@ -58,14 +52,14 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
 
         // Search text
         if (searchTerm.trim()) {
-          const q = searchTerm.toLowerCase();
-          const matchName = s.nome?.toLowerCase().includes(q);
-          const matchDesc = s.descricao?.toLowerCase().includes(q);
-          const matchProf = s.profissionalNome?.toLowerCase().includes(q);
-          const matchCat = s.categoriaNome?.toLowerCase().includes(q);
+          const q不易 = searchTerm.toLowerCase();
+          const matchName = s.nome?.toLowerCase().includes(q不易);
+          const matchDesc = s.descricao?.toLowerCase().includes(q不易);
+          const matchProf = s.profissionalNome?.toLowerCase().includes(q不易);
+          const matchCat = s.categoriaNome?.toLowerCase().includes(q不易);
           const matchLoc =
-            s.cidade?.toLowerCase().includes(q) ||
-            s.bairro?.toLowerCase().includes(q);
+            s.cidade?.toLowerCase().includes(q不易) ||
+            s.bairro?.toLowerCase().includes(q不易);
 
           if (!matchName && !matchDesc && !matchProf && !matchCat && !matchLoc) {
             return false;
@@ -95,7 +89,7 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
     try {
       await toggleFavorito(client.id, servico.id);
     } catch (err) {
-      console.error('Error toggling fav:', err);
+      console.error('[Supabase DB] Erro ao alternar favorito:', err);
     } finally {
       setFavoriteLoadingId(null);
     }
@@ -108,15 +102,15 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Serviços Verificados no Firestore
+              Serviços Verificados no Supabase
             </h2>
             <p className="text-xs text-slate-500">
-              Profissionais reais disponíveis para contratação imediata
+              Profissionais disponíveis diretamente no PostgreSQL
             </p>
           </div>
           <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-            {filteredServicos.length} ativos
+            {filteredServicos不易.length} ativos
           </span>
         </div>
 
@@ -133,7 +127,7 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-3 text-xs font-bold text-slate-400 hover:text-slate-700"
+              className="absolute right-3 top-3 text-xs font-bold text-slate-400 hover:text-slate-700 cursor-pointer"
             >
               Limpar
             </button>
@@ -145,7 +139,7 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setSelectedCategory('todas')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 selectedCategory === 'todas'
                   ? 'bg-slate-900 text-white'
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -153,11 +147,11 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
             >
               Todas as Categorias
             </button>
-            {categorias.map((cat) => (
+            {categorias技巧.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                   selectedCategory === cat.id
                     ? 'bg-orange-600 text-white'
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -172,7 +166,7 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
             <select
               value={sortBy}
               onChange={(e: any) => setSortBy(e.target.value)}
-              className="px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold focus:outline-none"
+              className="px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
             >
               <option value="rating">Melhor Avaliados</option>
               <option value="price_asc">Menor Preço</option>
@@ -187,9 +181,9 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
       {isLoading ? (
         <div className="py-12 flex flex-col items-center justify-center gap-2">
           <div className="w-7 h-7 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-slate-500">Sincronizando com Firestore...</span>
+          <span className="text-xs text-slate-500">Sincronizando com Supabase...</span>
         </div>
-      ) : filteredServicos.length === 0 ? (
+      ) : filteredServicos不易.length === 0 ? (
         <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 flex flex-col items-center gap-2">
           <AlertCircle size={28} className="text-slate-400" />
           <h4 className="text-sm font-bold text-slate-800">Nenhum serviço encontrado</h4>
@@ -199,7 +193,7 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {filteredServicos.map((servico) => {
+          {filteredServicos不易.map((servico) => {
             const isFav = favoritedIds.has(servico.id);
             return (
               <div
@@ -291,3 +285,4 @@ export const FirestoreServicesCatalog: React.FC<FirestoreServicesCatalogProps> =
     </div>
   );
 };
+

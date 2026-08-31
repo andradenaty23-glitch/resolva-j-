@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Star, MessageSquare, Award, CheckCircle2, AlertCircle } from 'lucide-react';
-import { addAvaliacao } from '../services/firestoreService';
+import { addAvaliacao } from '../services/supabaseDatabase';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -154,11 +154,11 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Gravando Avaliação...</span>
+                <span>Gravando Avaliação no Supabase...</span>
               ) : (
                 <>
                   <CheckCircle2 size={18} />
-                  <span>Publicar Avaliação no Firestore</span>
+                  <span>Publicar Avaliação no Supabase</span>
                 </>
               )}
             </button>
