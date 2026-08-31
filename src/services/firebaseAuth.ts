@@ -13,11 +13,51 @@ import {
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
-  updateDoc
+  updateDoc,
+  collection,
+  query,
+  where
 } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { UsuarioDoc, TipoUsuario, GoogleAuthUser } from '../types';
+
+/**
+ * Search Firestore 'usuarios' collection for an existing document matching the email
+ */
+export async function findUserDocByEmail(email: string): Promise<{ id: string; data: UsuarioDoc } | null> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return null;
+  try {
+    const colRef = collection(db, 'usuarios');
+    const q = query(colRef, where('email', '==', cleanEmail));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const firstDoc = snap.docs[0];
+      return { id: firstDoc.id, data: firstDoc.data() as UsuarioDoc };
+    }
+
+    // Secondary lookup using doc ID = email or lowercased email
+    const docByEmailId = await getDoc(doc(db, 'usuarios', cleanEmail));
+    if (docByEmailId.exists()) {
+      return { id: docByEmailId.id, data: docByEmailId.data() as UsuarioDoc };
+    }
+
+    // Scan collection for case-insensitive email match or legacy document ID format
+    const allSnap = await getDocs(colRef);
+    for (const d of allSnap.docs) {
+      const dData = d.data() as UsuarioDoc;
+      if (dData?.email && dData.email.trim().toLowerCase() === cleanEmail) {
+        return { id: d.id, data: dData };
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('Error searching user doc by email:', err);
+    return null;
+  }
+}
 
 /**
  * Sync or create user document in Firestore 'usuarios' collection
@@ -31,13 +71,26 @@ export async function syncUserDocument(
   const now = new Date().toISOString();
 
   let existingData: UsuarioDoc | null = null;
+  let oldDocId: string | null = null;
+
+  // 1. Try lookup by exact Firebase Auth UID
   try {
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
       existingData = userSnap.data() as UsuarioDoc;
+      oldDocId = userSnap.id;
     }
   } catch (err) {
-    console.warn('Could not fetch existing user doc, creating/updating with setDoc merge:', err);
+    console.warn('Could not fetch user doc by UID:', err);
+  }
+
+  // 2. If not found by UID, search by email to connect existing Firestore records
+  if (!existingData && user.email) {
+    const foundByEmail = await findUserDocByEmail(user.email);
+    if (foundByEmail) {
+      existingData = foundByEmail.data;
+      oldDocId = foundByEmail.id;
+    }
   }
 
   const isSuperAdminEmail = user.email?.toLowerCase() === 'andradenaty23@gmail.com';
@@ -52,6 +105,7 @@ export async function syncUserDocument(
   }
 
   const mergedDoc: UsuarioDoc = {
+    ...existingData,
     uid: user.uid,
     nome:
       extraData?.nome ||
@@ -80,7 +134,18 @@ export async function syncUserDocument(
   mergedDoc.uid = user.uid;
   mergedDoc.tipo = roleToUse;
 
+  // Save/merge into usuarios/{user.uid}
   await setDoc(userRef, mergedDoc, { merge: true });
+
+  // If there was an old legacy document ID, sync it with the new UID so references work
+  if (oldDocId && oldDocId !== user.uid) {
+    try {
+      await setDoc(doc(db, 'usuarios', oldDocId), { ...mergedDoc, uid: user.uid }, { merge: true });
+    } catch (e) {
+      console.warn('Could not sync old user doc ID:', e);
+    }
+  }
+
   return mergedDoc;
 }
 
@@ -146,7 +211,7 @@ export async function checkRedirectResult(): Promise<{ user: GoogleAuthUser; usu
         name: usuarioDoc.nome || user.displayName || 'Usuário Google',
         picture: usuarioDoc.foto || user.photoURL || '',
         verifiedEmail: user.emailVerified ?? true,
-        role: usuarioDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
+        role: usuarioDoc.tipo === 'profissional' ? 'prestador' : usuarioDoc.tipo,
         tipo: usuarioDoc.tipo,
         authProvider: 'google',
         token,
@@ -182,7 +247,7 @@ export async function loginWithGoogle(
       name: usuarioDoc.nome || user.displayName || 'Usuário Google',
       picture: usuarioDoc.foto || user.photoURL || '',
       verifiedEmail: user.emailVerified ?? true,
-      role: usuarioDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
+      role: usuarioDoc.tipo === 'profissional' ? 'prestador' : usuarioDoc.tipo,
       tipo: usuarioDoc.tipo,
       authProvider: 'google',
       token,
@@ -292,7 +357,13 @@ export function onFirebaseAuthStateChanged(
   return onAuthStateChanged(auth, async (firebaseUser) => {
     if (firebaseUser) {
       let profile = await getUserProfile(firebaseUser.uid);
-      if (!profile) {
+      if (!profile && firebaseUser.email) {
+        const foundByEmail = await findUserDocByEmail(firebaseUser.email);
+        if (foundByEmail) {
+          profile = foundByEmail.data;
+        }
+      }
+      if (!profile || profile.uid !== firebaseUser.uid) {
         profile = await syncUserDocument(firebaseUser);
       }
       callback(firebaseUser, profile);
