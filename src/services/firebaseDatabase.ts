@@ -573,3 +573,142 @@ export function subscribeSolicitacoesProfissional(uid: string, cb: (s: Solicitac
 export function cancelSolicitacao(id: string): Promise<void> {
   return updateSolicitacaoStatus(id, 'cancelada');
 }
+
+/**
+ * Mapeia documento de solicitação do Firestore para o modelo de exibição Appointment
+ */
+export function mapSolicitacaoToAppointment(sol: SolicitacaoDoc): any {
+  const statusMap: Record<string, 'pendente' | 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado'> = {
+    pendente: 'pendente',
+    aceita: 'confirmado',
+    em_andamento: 'a_caminho',
+    concluida: 'concluido',
+    recusada: 'cancelado',
+    cancelada: 'cancelado'
+  };
+
+  return {
+    id: sol.id,
+    clientName: sol.clienteNome || 'Cliente Resolva Já',
+    clientPhone: sol.clienteTelefone || '(11) 98765-4321',
+    clientAvatar: sol.clienteFoto || '',
+    professionalName: sol.profissionalNome || 'Profissional Credenciado',
+    professionalAvatar: sol.profissionalFoto || '',
+    role: sol.servicoNome || 'Atendimento Especializado',
+    date: sol.data || (sol.criadoEm ? sol.criadoEm.split('T')[0] : 'Agendado'),
+    time: sol.horario || (sol.criadoEm && sol.criadoEm.includes('T') ? sol.criadoEm.split('T')[1]?.substring(0, 5) : '14:00'),
+    serviceTitle: sol.descricao || sol.servicoNome,
+    room: (sol as any).room || 'Residência',
+    totalCost: sol.valorEstimado || sol.valor || 150,
+    status: statusMap[sol.status] || 'confirmado',
+    address: sol.endereco || 'São Paulo - SP',
+    codigoSeguranca: (sol as any).codigoSeguranca || '4829',
+    garantiaAtiva: (sol as any).garantiaAtiva ?? true,
+    custodiaProtegida: (sol as any).custodiaProtegida ?? true,
+    isBlockedSlot: (sol as any).isBlockedSlot || false,
+    blockReason: (sol as any).blockReason,
+    solicitacaoOriginal: sol
+  };
+}
+
+/**
+ * Criação e Sincronização Direta de Agendamento no Firestore
+ */
+export async function createAgendamentoInDatabase(data: {
+  clienteId: string;
+  clienteNome?: string;
+  clienteTelefone?: string;
+  clienteFoto?: string;
+  profissionalId: string;
+  profissionalNome?: string;
+  profissionalFoto?: string;
+  servicoId?: string;
+  servicoNome?: string;
+  descricao: string;
+  data: string;
+  horario: string;
+  endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  valorEstimado?: number;
+  isBlockedSlot?: boolean;
+  blockReason?: string;
+  room?: string;
+  status?: 'pendente' | 'aceita' | 'em_andamento' | 'concluida' | 'cancelada';
+}): Promise<string> {
+  const path = 'solicitacoes';
+  try {
+    const id = `apt-sync-${Date.now()}`;
+    const securePin = generateSecurityPIN();
+    const docData: any = {
+      id,
+      clienteId: data.clienteId,
+      clienteNome: sanitizeInput(data.clienteNome || 'Cliente Resolva Já', 100),
+      clienteTelefone: data.clienteTelefone ? sanitizeInput(data.clienteTelefone, 30) : '',
+      clienteFoto: data.clienteFoto || '',
+      profissionalId: data.profissionalId,
+      profissionalNome: sanitizeInput(data.profissionalNome || 'Profissional Resolva Já', 100),
+      profissionalFoto: data.profissionalFoto || '',
+      servicoId: data.servicoId || id,
+      servicoNome: sanitizeInput(data.servicoNome || 'Atendimento Agendado', 150),
+      descricao: sanitizeInput(data.descricao || 'Atendimento técnico agendado', 1000),
+      data: data.data,
+      horario: data.horario,
+      dataSolicitacao: data.data,
+      endereco: data.endereco ? sanitizeInput(data.endereco, 300) : 'Endereço combinado',
+      bairro: data.bairro ? sanitizeInput(data.bairro, 100) : '',
+      cidade: data.cidade ? sanitizeInput(data.cidade, 80) : 'São Paulo',
+      valorEstimado: Number(data.valorEstimado) || 0,
+      valor: Number(data.valorEstimado) || 0,
+      status: data.status || 'aceita',
+      codigoSeguranca: securePin,
+      garantiaAtiva: true,
+      custodiaProtegida: true,
+      isBlockedSlot: Boolean(data.isBlockedSlot),
+      blockReason: data.blockReason ? sanitizeInput(data.blockReason, 200) : '',
+      room: data.room || 'Residência',
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString()
+    };
+
+    await setDoc(doc(db, path, id), docData);
+
+    // Notificar cliente e profissional no banco
+    if (data.profissionalId && data.profissionalId !== data.clienteId) {
+      await createNotificacao({
+        usuarioId: data.profissionalId,
+        titulo: data.isBlockedSlot ? 'Novo Bloqueio de Horário' : 'Novo Agendamento Confirmado',
+        mensagem: data.isBlockedSlot
+          ? `Horário bloqueado na sua agenda para ${data.data} às ${data.horario}.`
+          : `Atendimento agendado para ${data.data} às ${data.horario} com ${data.clienteNome || 'Cliente'}.`,
+        tipo: 'success'
+      }).catch(() => {});
+    }
+
+    return id;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+    throw err;
+  }
+}
+
+/**
+ * Exclui ou cancela agendamento do Firestore
+ */
+export async function deleteAgendamentoFromDatabase(id: string): Promise<void> {
+  const path = `solicitacoes/${id}`;
+  try {
+    await deleteDoc(doc(db, 'solicitacoes', id));
+  } catch (err) {
+    // Se não puder deletar fisicamente, marca como cancelada
+    try {
+      await updateDoc(doc(db, 'solicitacoes', id), {
+        status: 'cancelada',
+        atualizadoEm: new Date().toISOString()
+      });
+    } catch (innerErr) {
+      handleFirestoreError(innerErr, OperationType.DELETE, path);
+      throw innerErr;
+    }
+  }
+}

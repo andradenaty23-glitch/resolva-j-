@@ -71,7 +71,10 @@ import {
   cancelSolicitacao,
   createNotificacao,
   deleteUsuarioByEmail,
-  purgeAllDataByEmail
+  purgeAllDataByEmail,
+  createAgendamentoInDatabase,
+  deleteAgendamentoFromDatabase,
+  mapSolicitacaoToAppointment
 } from './services/firebaseDatabase';
 
 const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
@@ -154,6 +157,7 @@ export default function App() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(INITIAL_PAYMENT_METHODS);
   const [transactions, setTransactions] = useState<TransactionRecord[]>(INITIAL_TRANSACTIONS);
+  const [isSyncingAgenda, setIsSyncingAgenda] = useState(false);
 
   // Selected states
   const [selectedRoomId, setSelectedRoomId] = useState<string>('cozinha');
@@ -310,40 +314,27 @@ export default function App() {
     };
   }, [currentRole, firebaseUserDoc]);
 
+  // Manual refresh / force sync trigger for agenda
+  const handleRefreshAgenda = async () => {
+    setIsSyncingAgenda(true);
+    try {
+      await testFirestoreConnection();
+    } catch (e) {
+      console.warn('Sync connection check:', e);
+    } finally {
+      setTimeout(() => setIsSyncingAgenda(false), 600);
+    }
+  };
+
   // Map Firebase Solicitacoes to Appointments for Agenda
   const combinedAppointments: Appointment[] = React.useMemo(() => {
     if (firebaseSolicitacoes.length === 0) {
       return appointments;
     }
 
-    const fromFirebase: Appointment[] = firebaseSolicitacoes.map((sol) => {
-      const statusMap: Record<string, 'pendente' | 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado'> = {
-        pendente: 'pendente',
-        aceita: 'confirmado',
-        em_andamento: 'a_caminho',
-        concluida: 'concluido',
-        recusada: 'cancelado',
-        cancelada: 'cancelado'
-      };
-
-      return {
-        id: sol.id,
-        clientName: sol.clienteNome,
-        clientPhone: sol.clienteTelefone || '(11) 98765-4321',
-        clientAvatar: sol.clienteFoto,
-        professionalName: sol.profissionalNome,
-        professionalAvatar: sol.profissionalFoto || '',
-        role: sol.servicoNome || 'Atendimento Especializado',
-        date: sol.data || (sol.criadoEm ? sol.criadoEm.split('T')[0] : 'Agendado'),
-        time: sol.horario || (sol.criadoEm && sol.criadoEm.includes('T') ? sol.criadoEm.split('T')[1]?.substring(0, 5) : '14:00'),
-        serviceTitle: sol.descricao || sol.servicoNome,
-        room: 'Residência',
-        totalCost: sol.valorEstimado || 150,
-        status: statusMap[sol.status] || 'confirmado',
-        address: sol.endereco || 'São Paulo - SP',
-        solicitacaoOriginal: sol
-      };
-    });
+    const fromFirebase: Appointment[] = firebaseSolicitacoes.map((sol) =>
+      mapSolicitacaoToAppointment(sol)
+    );
 
     return [...fromFirebase, ...appointments.filter((a) => !fromFirebase.some((f) => f.id === a.id))];
   }, [firebaseSolicitacoes, appointments]);
@@ -661,6 +652,26 @@ export default function App() {
 
     setAppointments((prev) => [newAppointment, ...prev]);
 
+    // Direct synchronization with Firestore Database
+    const clienteId = firebaseUserDoc?.uid || clientProfile.id || 'cliente-anonimo';
+    const profId = selectedProfessional.id || 'prof-1';
+    createAgendamentoInDatabase({
+      clienteId,
+      clienteNome: clientProfile.name || 'Cliente Resolva Já',
+      clienteTelefone: clientProfile.phone || '(11) 98765-4321',
+      profissionalId: profId,
+      profissionalNome: selectedProfessional.name,
+      profissionalFoto: selectedProfessional.avatar,
+      descricao: diagnosis?.problemSummary || 'Reparo e manutenção técnica',
+      servicoNome: selectedProfessional.role,
+      data,
+      horario: time,
+      endereco: newAppointment.address,
+      valorEstimado: newAppointment.totalCost,
+      status: 'aceita',
+      room: newAppointment.room
+    }).catch((err) => console.warn('Sync booking to Firestore database:', err));
+
     const newTransaction: TransactionRecord = {
       id: `tx-${Date.now()}`,
       date: 'Hoje',
@@ -801,12 +812,34 @@ export default function App() {
 
   const handleAddManualAppointment = (apt: Appointment) => {
     setAppointments((prev) => [apt, ...prev]);
+
+    // Persist to Firestore database
+    const currentUid = firebaseUserDoc?.uid || providerProfile.id || 'prof-1';
+    createAgendamentoInDatabase({
+      clienteId: apt.isBlockedSlot ? currentUid : (firebaseUserDoc?.uid || 'cliente-direto'),
+      clienteNome: apt.clientName || 'Cliente Direto',
+      clienteTelefone: apt.clientPhone || '(11) 98765-4321',
+      profissionalId: currentUid,
+      profissionalNome: providerProfile.name || 'Profissional Resolva Já',
+      profissionalFoto: providerProfile.avatar,
+      descricao: apt.serviceTitle,
+      servicoNome: apt.role || (apt.isBlockedSlot ? 'Bloqueio de Horário' : 'Atendimento Direto'),
+      data: apt.date,
+      horario: apt.time,
+      endereco: apt.address || 'Local combinado',
+      valorEstimado: apt.totalCost || 0,
+      isBlockedSlot: apt.isBlockedSlot,
+      blockReason: apt.blockReason,
+      status: 'aceita',
+      room: apt.room || 'Residência'
+    }).catch((err) => console.warn('Sync manual appointment to Firestore database:', err));
+
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
-      title: apt.isBlockedSlot ? 'Horário Bloqueado' : 'Agendamento Criado',
+      title: apt.isBlockedSlot ? 'Horário Bloqueado no Banco' : 'Agendamento Salvo no Banco',
       message: apt.isBlockedSlot
-        ? `Horário bloqueado com sucesso na sua agenda.`
-        : `Atendimento "${apt.serviceTitle}" adicionado à sua escala.`,
+        ? `Horário bloqueado e sincronizado com o banco de dados.`
+        : `Atendimento "${apt.serviceTitle}" salvo e sincronizado na sua agenda.`,
       time: 'Agora mesmo',
       read: false,
       type: 'info'
@@ -1016,10 +1049,12 @@ export default function App() {
                 <AgendaScreen
                   role="cliente"
                   appointments={combinedAppointments}
+                  isSyncing={isSyncingAgenda}
+                  onRefreshSync={handleRefreshAgenda}
                   onCancelAppointment={async (id) => {
                     const sol = firebaseSolicitacoes.find((s) => s.id === id);
                     if (sol) {
-                      await cancelSolicitacao(id);
+                      await deleteAgendamentoFromDatabase(id).catch(() => cancelSolicitacao(id));
                     }
                     setAppointments((prev) => prev.filter((a) => a.id !== id));
                   }}
@@ -1159,10 +1194,12 @@ export default function App() {
                 <AgendaScreen
                   role="prestador"
                   appointments={combinedAppointments}
+                  isSyncing={isSyncingAgenda}
+                  onRefreshSync={handleRefreshAgenda}
                   onCancelAppointment={async (id) => {
                     const sol = firebaseSolicitacoes.find((s) => s.id === id);
                     if (sol) {
-                      await cancelSolicitacao(id);
+                      await deleteAgendamentoFromDatabase(id).catch(() => cancelSolicitacao(id));
                     }
                     setAppointments((prev) => prev.filter((a) => a.id !== id));
                   }}

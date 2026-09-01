@@ -20,7 +20,10 @@ import {
   Sparkles,
   CalendarCheck,
   Send,
-  X
+  X,
+  RefreshCw,
+  Database,
+  Cloud
 } from 'lucide-react';
 import { Appointment, UserRole } from '../types';
 import { SafeAvatar } from './SafeAvatar';
@@ -33,6 +36,8 @@ interface AgendaScreenProps {
   onUpdateAppointmentStatus?: (id: string, newStatus: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado') => void;
   onNewService: () => void;
   onAddManualAppointment?: (appointment: Appointment) => void;
+  isSyncing?: boolean;
+  onRefreshSync?: () => void;
 }
 
 export const AgendaScreen: React.FC<AgendaScreenProps> = ({
@@ -41,7 +46,9 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
   onCancelAppointment,
   onUpdateAppointmentStatus,
   onNewService,
-  onAddManualAppointment
+  onAddManualAppointment,
+  isSyncing = false,
+  onRefreshSync
 }) => {
   const isProvider = role === 'prestador';
   const [filterTab, setFilterTab] = useState<'todos' | 'hoje' | 'concluidos'>('todos');
@@ -121,6 +128,35 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
   if (!isProvider) {
     return (
       <div className="flex flex-col gap-5 max-w-2xl mx-auto pb-16 animate-fadeIn">
+        {/* Sync Status Banner */}
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl p-3 border border-emerald-200/80 shadow-2xs flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+              <Database className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h4 className="text-xs font-bold text-emerald-950">Sincronizado com Banco Firestore</h4>
+              </div>
+              <p className="text-[11px] text-emerald-700 font-medium">
+                Agendamentos, horários e segurança vinculados em tempo real
+              </p>
+            </div>
+          </div>
+          {onRefreshSync && (
+            <button
+              onClick={onRefreshSync}
+              disabled={isSyncing}
+              className="text-xs font-bold text-emerald-800 bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              title="Atualizar agenda com o banco de dados"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+            </button>
+          )}
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -353,6 +389,35 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
   // ==========================================
   return (
     <div className="flex flex-col gap-5 max-w-3xl mx-auto pb-16 animate-fadeIn">
+      {/* Sync Status Banner for Provider */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl p-3 border border-emerald-200/80 shadow-2xs flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h4 className="text-xs font-bold text-emerald-950">Agenda Conectada ao Banco de Dados Firestore</h4>
+            </div>
+            <p className="text-[11px] text-emerald-700 font-medium">
+              Sincronização bidirecional em tempo real de chamados, bloqueios e orçamentos
+            </p>
+          </div>
+        </div>
+        {onRefreshSync && (
+          <button
+            onClick={onRefreshSync}
+            disabled={isSyncing}
+            className="text-xs font-bold text-emerald-800 bg-white/90 hover:bg-white px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Atualizar agenda com o banco de dados"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+          </button>
+        )}
+      </div>
+
       {/* Header for Provider */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

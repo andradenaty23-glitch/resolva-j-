@@ -36,12 +36,12 @@
     },
     {
       "name": "solicitacoes",
-      "description": "Service requests",
+      "description": "Service requests and synchronized schedule appointments",
       "rules": [
         "allow read: if request.auth != null && (request.auth.uid == resource.data.clienteId || request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
-        "allow create: if request.auth != null && (request.auth.uid == request.resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow create: if request.auth != null && (request.auth.uid == request.resource.data.clienteId || request.auth.uid == request.resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
         "allow update: if request.auth != null && (request.auth.uid == resource.data.clienteId || request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
-        "allow delete: if request.auth != null && (request.auth.uid == resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+        "allow delete: if request.auth != null && (request.auth.uid == resource.data.clienteId || request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
       ],
       "indexes": [
         {"fields": ["clienteId"], "type": "asc"},

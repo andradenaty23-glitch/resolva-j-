@@ -57,20 +57,28 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (existing().profissionalId == request.auth.uid || isAdmin());
     }
 
-    // 4. Coleção solicitacoes
+    // 4. Coleção solicitacoes / agendamentos
     match /solicitacoes/{solicitacaoId} {
       allow read: if isSignedIn() && (
         resource.data.clienteId == request.auth.uid ||
         resource.data.profissionalId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isSignedIn() && (incoming().clienteId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && (
+        incoming().clienteId == request.auth.uid ||
+        incoming().profissionalId == request.auth.uid ||
+        isAdmin()
+      );
       allow update: if isSignedIn() && (
         existing().clienteId == request.auth.uid ||
         existing().profissionalId == request.auth.uid ||
         isAdmin()
       );
-      allow delete: if isSignedIn() && (existing().clienteId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (
+        existing().clienteId == request.auth.uid ||
+        existing().profissionalId == request.auth.uid ||
+        isAdmin()
+      );
     }
 
     // 5. Coleção avaliacoes
