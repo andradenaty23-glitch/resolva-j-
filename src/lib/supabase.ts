@@ -8,9 +8,10 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
  */
 
 // 1. Extração das variáveis de ambiente com Publishable Key
-const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env || {};
-export const supabaseUrl = (metaEnv.VITE_SUPABASE_URL || '').trim();
-export const supabaseAnonKey = (metaEnv.VITE_SUPABASE_ANON_KEY || '').trim();
+// @ts-ignore
+export const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+// @ts-ignore
+export const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 const envUrl = supabaseUrl;
 const envKey = supabaseAnonKey;
