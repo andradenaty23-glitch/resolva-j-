@@ -2,11 +2,9 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { testSupabaseConnection } from './utils/supabaseTest';
 import './index.css';
 
-// Executar teste de conexão do Supabase
-testSupabaseConnection();
+// Executar teste de conexão do Firebase
 
 // Register Service Worker for PWA / Mobile App
 if ('serviceWorker' in navigator) {

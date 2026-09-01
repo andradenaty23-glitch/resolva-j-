@@ -98,9 +98,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="btn-admin-panel"
               onClick={onOpenAdminPanel}
-              aria-label="Painel de Administração do Supabase"
+              aria-label="Painel de Administração do Firebase"
               className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 p-2 sm:px-2.5 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 min-h-[38px]"
-              title="Auditoria & Painel Supabase (Admin)"
+              title="Auditoria & Painel Firebase (Admin)"
             >
               <ShieldAlert className="w-4 h-4 text-amber-600" />
               <span className="hidden sm:inline">Admin</span>

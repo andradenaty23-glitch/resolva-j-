@@ -23,9 +23,9 @@ import {
   loginWithEmailPassword,
   registerWithEmailPassword,
   sendPasswordResetLink,
-  logoutSupabaseAuth,
+  logoutFirebaseAuth,
   syncUserDocument
-} from '../services/supabaseAuth';
+} from '../services/firebaseAuth';
 import { SafeAvatar } from './SafeAvatar';
 
 interface GoogleAuthModalProps {
@@ -90,10 +90,10 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
   };
 
   /**
-   * Supabase Google Sign-In
+   * Firebase Google Sign-In
    */
   const handleTriggerGoogleOAuth = async () => {
-    console.log('[Supabase Auth] Clique em Entrar com Google recebido');
+    console.log('[Firebase Auth] Clique em Entrar com Google recebido');
     setIsLoading(true);
     setAuthError(null);
     setErrorDetails(null);
@@ -108,9 +108,9 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
         setIsLoading(false);
       }
     } catch (err: any) {
-      console.warn('[Supabase Auth] ❌ Falha no login Google:', err);
+      console.warn('[Firebase Auth] ❌ Falha no login Google:', err);
       setIsLoading(false);
-      setAuthError(err.message || 'Falha ao autenticar com o Google via Supabase.');
+      setAuthError(err.message || 'Falha ao autenticar com o Google via Firebase.');
       setErrorDetails('Verifique a conexão ou tente o acesso com e-mail e senha.');
     }
   };
@@ -146,7 +146,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       }
     } catch (err: any) {
       setIsLoading(false);
-      console.error('[Supabase Auth] Erro de autenticação:', err);
+      console.error('[Firebase Auth] Erro de autenticação:', err);
       if (err.message?.includes('already registered') || err.message?.includes('user_already_exists')) {
         setAuthError('Este e-mail já está cadastrado. Alterne para a opção "Entrar com Senha".');
       } else if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid-credential')) {
@@ -181,7 +181,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setResetMessage(`Enviamos um link de redefinição de senha para ${cleanEmail}.`);
     } catch (err紧: any) {
       setIsLoading(false);
-      console.error('[Supabase Auth] Erro ao redefinir senha:', err紧);
+      console.error('[Firebase Auth] Erro ao redefinir senha:', err紧);
       setAuthError('Não foi possível enviar o e-mail de recuperação.');
       setErrorDetails(err紧.message || 'Tente novamente em instantes.');
     }
@@ -206,7 +206,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-slate-900">Autenticado no Supabase!</h3>
+            <h3 className="text-xl font-bold text-slate-900">Autenticado no Firebase!</h3>
             <p className="text-sm text-slate-600">
               Bem-vindo(a), <span className="font-semibold text-slate-900">{successUser.name}</span>. Dados sincronizados com segurança.
             </p>
@@ -221,7 +221,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                    Autenticação Supabase
+                    Autenticação Firebase
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
                     Acesso seguro via Google Sign-In & PostgreSQL
@@ -337,7 +337,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin text-[#ea580c]" />
-                    <span>Conectando ao Supabase...</span>
+                    <span>Conectando ao Firebase...</span>
                   </>
                 ) : (
                   <>
@@ -568,7 +568,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                   <button
                     type="button"
                     onClick={async () => {
-                      await logoutSupabaseAuth();
+                      await logoutFirebaseAuth();
                       onLogout();
                       onClose();
                     }}

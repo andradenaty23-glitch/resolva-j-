@@ -52,10 +52,10 @@ import {
   logoutUser
 } from './services/googleAuth';
 import {
-  onSupabaseAuthStateChanged,
+  onFirebaseAuthStateChanged,
   syncUserDocument,
-  logoutSupabaseAuth
-} from './services/supabaseAuth';
+  logoutFirebaseAuth
+} from './services/firebaseAuth';
 import {
   seedDefaultCategoriasIfEmpty,
   subscribeCategorias,
@@ -69,7 +69,7 @@ import {
   createNotificacao,
   deleteUsuarioByEmail,
   purgeAllDataByEmail
-} from './services/supabaseDatabase';
+} from './services/firebaseDatabase';
 
 const HomeScreen = React.lazy(() => import('./components/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const DiagnosisScreen = React.lazy(() => import('./components/DiagnosisScreen').then(m => ({ default: m.DiagnosisScreen })));
@@ -101,15 +101,15 @@ export default function App() {
   const [clientUser, setClientUser] = useState<GoogleAuthUser | null>(() => getSavedClientUser());
   const [providerUser, setProviderUser] = useState<GoogleAuthUser | null>(() => getSavedProviderUser());
 
-  // Supabase Real-Time Data States
-  const [supabaseCategorias, setSupabaseCategorias] = useState<CategoriaDoc[]>([]);
-  const [supabaseServicos, setSupabaseServicos] = useState<ServicoDoc[]>([]);
-  const [supabaseSolicitacoes, setSupabaseSolicitacoes] = useState<SolicitacaoDoc[]>([]);
-  const [supabaseFavoritos, setSupabaseFavoritos] = useState<FavoritoDoc[]>([]);
-  const [supabaseUserDoc, setSupabaseUserDoc] = useState<UsuarioDoc | null>(null);
+  // Firebase Real-Time Data States
+  const [firebaseCategorias, setFirebaseCategorias] = useState<CategoriaDoc[]>([]);
+  const [firebaseServicos, setFirebaseServicos] = useState<ServicoDoc[]>([]);
+  const [firebaseSolicitacoes, setFirebaseSolicitacoes] = useState<SolicitacaoDoc[]>([]);
+  const [firebaseFavoritos, setFirebaseFavoritos] = useState<FavoritoDoc[]>([]);
+  const [firebaseUserDoc, setFirebaseUserDoc] = useState<UsuarioDoc | null>(null);
   const [isAdminModeOpen, setIsAdminModeOpen] = useState(false);
 
-  // Supabase Modals
+  // Firebase Modals
   const [selectedServiceToRequest, setSelectedServiceToRequest] = useState<ServicoDoc | null>(null);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedSolicitacaoToReview, setSelectedSolicitacaoToReview] = useState<SolicitacaoDoc | null>(null);
@@ -166,19 +166,19 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
 
-  // 1. Initialize Supabase Realtime & Subscriptions
+  // 1. Initialize Firebase Realtime & Subscriptions
   useEffect(() => {
     // Seed initial categories if empty
     seedDefaultCategoriasIfEmpty().catch(console.error);
 
     // Subscribe to Categorias
     const unsubCategorias = subscribeCategorias((cats) => {
-      setSupabaseCategorias(cats);
+      setFirebaseCategorias(cats);
     });
 
     // Subscribe to Servicos
     const unsubServicos = subscribeServicos((servs) => {
-      setSupabaseServicos(servs);
+      setFirebaseServicos(servs);
     });
 
     return () => {
@@ -187,11 +187,11 @@ export default function App() {
     };
   }, []);
 
-  // 2. Supabase Auth Listener
+  // 2. Firebase Auth Listener
   useEffect(() => {
-    const unsubAuth = onSupabaseAuthStateChanged(async (sbUser, userDoc) => {
+    const unsubAuth = onFirebaseAuthStateChanged(async (sbUser, userDoc) => {
       if (sbUser && userDoc) {
-        setSupabaseUserDoc(userDoc);
+        setFirebaseUserDoc(userDoc);
         const mappedAuthUser: GoogleAuthUser = {
           id: userDoc.uid,
           email: userDoc.email,
@@ -250,10 +250,10 @@ export default function App() {
 
     if (currentRole === 'cliente' && clientProfile.id && clientUser) {
       unsubSolicitacoes = subscribeSolicitacoesCliente(clientProfile.id, (sols) => {
-        setSupabaseSolicitacoes(sols);
+        setFirebaseSolicitacoes(sols);
       });
       unsubFavs = subscribeFavoritos(clientProfile.id, (favs) => {
-        setSupabaseFavoritos(favs);
+        setFirebaseFavoritos(favs);
       });
       unsubNotifs = subscribeNotificacoes(clientProfile.id, (notifs) => {
         if (notifs.length > 0) {
@@ -270,7 +270,7 @@ export default function App() {
       });
     } else if (currentRole === 'prestador' && providerProfile.id && providerUser) {
       unsubSolicitacoes = subscribeSolicitacoesProfissional(providerProfile.id, (sols) => {
-        setSupabaseSolicitacoes(sols);
+        setFirebaseSolicitacoes(sols);
       });
       unsubNotifs = subscribeNotificacoes(providerProfile.id, (notifs) => {
         if (notifs.length > 0) {
@@ -294,13 +294,13 @@ export default function App() {
     };
   }, [currentRole, clientProfile.id, providerProfile.id, clientUser, providerUser]);
 
-  // Map Supabase Solicitacoes to Appointments for Agenda
+  // Map Firebase Solicitacoes to Appointments for Agenda
   const combinedAppointments: Appointment[] = React.useMemo(() => {
-    if (supabaseSolicitacoes.length === 0) {
+    if (firebaseSolicitacoes.length === 0) {
       return appointments;
     }
 
-    const fromSupabase: Appointment[] = supabaseSolicitacoes.map((sol) => {
+    const fromFirebase: Appointment[] = firebaseSolicitacoes.map((sol) => {
       const statusMap: Record<string, 'pendente' | 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado'> = {
         pendente: 'pendente',
         aceita: 'confirmado',
@@ -329,8 +329,8 @@ export default function App() {
       };
     });
 
-    return [...fromSupabase, ...appointments.filter((a) => !fromSupabase.some((f) => f.id === a.id))];
-  }, [supabaseSolicitacoes, appointments]);
+    return [...fromFirebase, ...appointments.filter((a) => !fromFirebase.some((f) => f.id === a.id))];
+  }, [firebaseSolicitacoes, appointments]);
 
   // PWA beforeinstallprompt event handling
   useEffect(() => {
@@ -432,7 +432,7 @@ export default function App() {
   };
 
   const handleLogoutRole = async (role: UserRole) => {
-    await logoutSupabaseAuth();
+    await logoutFirebaseAuth();
     if (role === 'cliente') {
       const token = clientUser?.token;
       setClientUser(null);
@@ -463,7 +463,7 @@ export default function App() {
   const pendingProblemsCount = rooms.reduce((acc, r) => acc + r.problemCount, 0);
   const providerPendingCount =
     providerLeads.filter((l) => l.status === 'aberto').length +
-    supabaseSolicitacoes.filter((s) => s.status === 'pendente').length;
+    firebaseSolicitacoes.filter((s) => s.status === 'pendente').length;
 
   // Handlers for Profile Deletion
   const handleDeleteClientProfile = () => {
@@ -663,7 +663,7 @@ export default function App() {
 
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
-      title: 'Agendamento Confirmado no Supabase',
+      title: 'Agendamento Confirmado no Firebase',
       message: `Atendimento agendado com ${selectedProfessional.name} para ${date} às ${time}. Pagamento protegido em custódia.`,
       time: 'Agora mesmo',
       read: false,
@@ -742,8 +742,8 @@ export default function App() {
   };
 
   const handleUpdateAppointmentStatus = async (id: string, newStatus: 'confirmado' | 'a_caminho' | 'concluido' | 'cancelado') => {
-    // Check if this is a real Supabase solicitation
-    const sol = supabaseSolicitacoes.find((s) => s.id === id);
+    // Check if this is a real Firebase solicitation
+    const sol = firebaseSolicitacoes.find((s) => s.id === id);
     if (sol) {
       const statusMap: Record<string, any> = {
         confirmado: 'aceita',
@@ -754,7 +754,7 @@ export default function App() {
       try {
         await updateSolicitacaoStatus(id, statusMap[newStatus], providerProfile.id);
       } catch (err) {
-        console.error('Error updating supabase solicitation status:', err);
+        console.error('Error updating firebase solicitation status:', err);
       }
     }
 
@@ -817,13 +817,13 @@ export default function App() {
     setCurrentRole('cliente');
     setActiveTab('inicio');
 
-    // Sync to Supabase usuarios table
+    // Sync to Firebase usuarios table
     if (newClient.email) {
       syncUserDocument(user, 'cliente', {
         telefone: newClient.phone,
         cidade: newClient.address?.city || 'São Paulo',
         bairro: newClient.address?.neighborhood || 'Centro'
-      }).catch((err) => console.warn('Could not sync client to Supabase:', err));
+      }).catch((err) => console.warn('Could not sync client to Firebase:', err));
     }
 
     setNotifications((prev) => [
@@ -857,13 +857,13 @@ export default function App() {
     setCurrentRole('prestador');
     setActiveTab('inicio');
 
-    // Sync to Supabase usuarios table
+    // Sync to Firebase usuarios table
     if (newProvider.email) {
       syncUserDocument(user, 'profissional', {
         telefone: newProvider.phone,
         cidade: 'São Paulo',
         bairro: 'Centro'
-      }).catch((err) => console.warn('Could not sync provider to Supabase:', err));
+      }).catch((err) => console.warn('Could not sync provider to Firebase:', err));
     }
 
     setNotifications((prev) => [
@@ -897,7 +897,7 @@ export default function App() {
         onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
         onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
         onOpenAdminPanel={() => setIsAdminModeOpen(true)}
-        isAdmin={supabaseUserDoc?.tipo === 'admin'}
+        isAdmin={firebaseUserDoc?.tipo === 'admin'}
         onOpenSystemStatus={() => {
           alert(
             currentRole === 'cliente'
@@ -942,10 +942,10 @@ export default function App() {
                   problemRooms={rooms.filter((r) => r.problemCount > 0)}
                   selectedPhoto={selectedPhoto}
                   onClearPhoto={() => setSelectedPhoto(null)}
-                  supabaseServicos={supabaseServicos}
-                  supabaseCategorias={supabaseCategorias}
+                  firebaseServicos={firebaseServicos}
+                  firebaseCategorias={firebaseCategorias}
                   clientProfile={clientProfile}
-                  favoritos={supabaseFavoritos}
+                  favoritos={firebaseFavoritos}
                   onRequestService={(servico) => {
                     setSelectedServiceToRequest(servico);
                     setIsRequestModalOpen(true);
@@ -994,9 +994,9 @@ export default function App() {
                   role="cliente"
                   appointments={combinedAppointments}
                   onCancelAppointment={async (id) => {
-                    const sol = supabaseSolicitacoes.find((s) => s.id === id);
+                    const sol = firebaseSolicitacoes.find((s) => s.id === id);
                     if (sol) {
-                      await cancelSolicitacao(id, clientProfile.id);
+                      await cancelSolicitacao(id);
                     }
                     setAppointments((prev) => prev.filter((a) => a.id !== id));
                   }}
@@ -1102,14 +1102,14 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-col gap-3">
-                    <h3 className="text-sm font-bold text-[#18181b]">Histórico de Chamados Supabase</h3>
-                    {supabaseSolicitacoes.length === 0 && providerLeads.length === 0 ? (
+                    <h3 className="text-sm font-bold text-[#18181b]">Histórico de Chamados Firebase</h3>
+                    {firebaseSolicitacoes.length === 0 && providerLeads.length === 0 ? (
                       <div className="p-6 rounded-2xl border border-dashed border-[#e4e4e7] text-center text-xs text-[#71717a]">
                         Nenhum chamado aberto no momento na sua região de atendimento.
                       </div>
                     ) : (
                       <>
-                        {supabaseSolicitacoes.map((sol) => (
+                        {firebaseSolicitacoes.map((sol) => (
                           <div
                             key={sol.id}
                             className="bg-white rounded-2xl p-4 border border-[#e4e4e7] shadow-xs flex justify-between items-center"
@@ -1137,9 +1137,9 @@ export default function App() {
                   role="prestador"
                   appointments={combinedAppointments}
                   onCancelAppointment={async (id) => {
-                    const sol = supabaseSolicitacoes.find((s) => s.id === id);
+                    const sol = firebaseSolicitacoes.find((s) => s.id === id);
                     if (sol) {
-                      await cancelSolicitacao(id, providerProfile.id);
+                      await cancelSolicitacao(id);
                     }
                     setAppointments((prev) => prev.filter((a) => a.id !== id));
                   }}
@@ -1156,7 +1156,7 @@ export default function App() {
                       <h1 className="text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
                         Serviços & Especialidades
                       </h1>
-                      <p className="text-xs text-[#71717a]">Gerencie sua tabela de preços no Supabase (PostgreSQL)</p>
+                      <p className="text-xs text-[#71717a]">Gerencie sua tabela de preços no Firebase (PostgreSQL)</p>
                     </div>
                     <button
                       onClick={() => setIsCreateServiceModalOpen(true)}
@@ -1252,13 +1252,13 @@ export default function App() {
           onClose={() => setIsUpdateModalOpen(false)}
         />
 
-        {/* Supabase Admin Panel */}
+        {/* Firebase Admin Panel */}
         <AdminPanelScreen
           isOpen={isAdminModeOpen}
           onClose={() => setIsAdminModeOpen(false)}
         />
 
-        {/* Supabase Create/Edit Service Modal */}
+        {/* Firebase Create/Edit Service Modal */}
         <ServiceModal
           isOpen={isCreateServiceModalOpen}
           onClose={() => setIsCreateServiceModalOpen(false)}
@@ -1266,10 +1266,10 @@ export default function App() {
           profissionalId={providerProfile.id || 'prov-default'}
           profissionalNome={providerProfile.name}
           profissionalFoto={providerProfile.avatar}
-          categorias={supabaseCategorias}
+          categorias={firebaseCategorias}
         />
 
-        {/* Supabase Request Service Modal */}
+        {/* Firebase Request Service Modal */}
         <RequestServiceModal
           isOpen={isRequestModalOpen}
           onClose={() => {
@@ -1281,7 +1281,7 @@ export default function App() {
             setNotifications((prev) => [
               {
                 id: `notif-sol-${Date.now()}`,
-                title: 'Chamado Gravado no Supabase!',
+                title: 'Chamado Gravado no Firebase!',
                 message: 'Sua solicitação foi salva e o profissional foi notificado via PostgreSQL.',
                 time: 'Agora',
                 read: false,
@@ -1294,7 +1294,7 @@ export default function App() {
           client={clientProfile}
         />
 
-        {/* Supabase Review Modal */}
+        {/* Firebase Review Modal */}
         {selectedSolicitacaoToReview && (
           <ReviewModal
             isOpen={isReviewModalOpen}
@@ -1307,7 +1307,7 @@ export default function App() {
                 {
                   id: `notif-rev-${Date.now()}`,
                   title: 'Avaliação Publicada!',
-                  message: 'Sua nota e comentário foram registrados com sucesso no Supabase.',
+                  message: 'Sua nota e comentário foram registrados com sucesso no Firebase.',
                   time: 'Agora',
                   read: false,
                   type: 'success'

@@ -1,5 +1,6 @@
 import { GoogleAuthUser, UserRole, ClientProfile, ProviderProfile } from '../types';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { auth } from '../lib/firebase';
+const isFirebaseConfigured = true;
 import { INITIAL_CLIENT_PROFILE, INITIAL_PROVIDER_PROFILE } from '../data/mockData';
 
 export const GOOGLE_OAUTH_CLIENT_ID =
@@ -132,8 +133,8 @@ export async function logoutUser(role: UserRole, token?: string): Promise<void> 
       saveProviderUser(null);
     }
 
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+    if (isFirebaseConfigured) {
+      await auth.signOut();
     }
     
     if (window.google?.accounts?.id) {

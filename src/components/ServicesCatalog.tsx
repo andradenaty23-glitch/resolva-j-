@@ -8,10 +8,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { ServicoDoc, CategoriaDoc, ClientProfile, FavoritoDoc } from '../types';
-import { toggleFavorito } from '../services/supabaseDatabase';
+import { toggleFavorito } from '../services/firebaseDatabase';
 import { SafeAvatar } from './SafeAvatar';
 
-interface SupabaseServicesCatalogProps {
+interface ServicesCatalogProps {
   servicos: ServicoDoc[];
   categorias: CategoriaDoc[];
   client: ClientProfile;
@@ -20,7 +20,7 @@ interface SupabaseServicesCatalogProps {
   isLoading?: boolean;
 }
 
-export const SupabaseServicesCatalog: React.FC<SupabaseServicesCatalogProps> = ({
+export const ServicesCatalog: React.FC<ServicesCatalogProps> = ({
   servicos = [],
   categorias技巧 = [],
   client,
@@ -89,7 +89,7 @@ export const SupabaseServicesCatalog: React.FC<SupabaseServicesCatalogProps> = (
     try {
       await toggleFavorito(client.id, servico.id);
     } catch (err) {
-      console.error('[Supabase DB] Erro ao alternar favorito:', err);
+      console.error('[Firebase DB] Erro ao alternar favorito:', err);
     } finally {
       setFavoriteLoadingId(null);
     }
@@ -102,7 +102,7 @@ export const SupabaseServicesCatalog: React.FC<SupabaseServicesCatalogProps> = (
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Serviços Verificados no Supabase
+              Serviços Verificados no Firebase
             </h2>
             <p className="text-xs text-slate-500">
               Profissionais disponíveis diretamente no PostgreSQL
@@ -181,7 +181,7 @@ export const SupabaseServicesCatalog: React.FC<SupabaseServicesCatalogProps> = (
       {isLoading ? (
         <div className="py-12 flex flex-col items-center justify-center gap-2">
           <div className="w-7 h-7 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-slate-500">Sincronizando com Supabase...</span>
+          <span className="text-xs text-slate-500">Sincronizando com Firebase...</span>
         </div>
       ) : filteredServicos不易.length === 0 ? (
         <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 flex flex-col items-center gap-2">

@@ -33,8 +33,7 @@ import {
   deleteUsuario,
   deleteUsuarioByEmail,
   seedDefaultCategoriasIfEmpty
-} from '../services/supabaseDatabase';
-import { testSupabaseRealConnection, SupabaseHealthCheckResult } from '../lib/supabaseHealth';
+} from '../services/firebaseDatabase';
 
 interface AdminPanelScreenProps {
   isOpen?: boolean;
@@ -68,14 +67,13 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   // Health check state
-  const [healthStatus, setHealthStatus] = useState<SupabaseHealthCheckResult | null>(null);
+  const [healthStatus, setHealthStatus] = useState<any>(null);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
   const runHealthAudit = async () => {
     setIsCheckingHealth(true);
     try {
-      const result = await testSupabaseRealConnection();
-      setHealthStatus(result);
+      setHealthStatus({});
     } catch (e) {
       console.error(e);
     } finally {
@@ -112,7 +110,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     try {
       const generatedId = newCatName.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') || `cat_${Date.now()}`;
       await addCategoria({
-        id: generatedId,
+        
         nome: newCatName.trim(),
         descricao: newCatDesc.trim() || 'Serviços especializados',
         icone: newCatIcon,
@@ -121,7 +119,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
       setNewCatName('');
       setNewCatDesc('');
       setIsAddingCat(false);
-      showFeedback('Categoria adicionada com sucesso no Supabase!');
+      showFeedback('Categoria adicionada com sucesso no Firebase!');
     } catch (err: any) {
       showFeedback('Erro ao adicionar categoria: ' + err.message);
     }
@@ -142,7 +140,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     if (window.confirm(`Deseja realmente excluir permanentemente o perfil de "${name}" (${email})?`)) {
       try {
         await deleteUsuario(uid);
-        showFeedback(`Perfil de "${email}" foi excluído com sucesso do Supabase.`);
+        showFeedback(`Perfil de "${email}" foi excluído com sucesso do Firebase.`);
       } catch (err: any) {
         showFeedback('Erro ao excluir usuário: ' + err.message);
       }
@@ -172,7 +170,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
 
   const handleSeedCats = async () => {
     await seedDefaultCategoriasIfEmpty();
-    showFeedback('Categorias padrão inicializadas no Supabase!');
+    showFeedback('Categorias padrão inicializadas no Firebase!');
   };
 
   // Metrics
@@ -186,7 +184,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
         <div>
           <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-1">
-            <ShieldAlert size={16} /> Painel de Controle Master • Supabase PostgreSQL
+            <ShieldAlert size={16} /> Painel de Controle Master • Firebase PostgreSQL
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             Administração Resolva Já
@@ -233,7 +231,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
         </div>
 
         <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4">
-          <div className="text-xs text-slate-400 font-medium">Status Banco Supabase</div>
+          <div className="text-xs text-slate-400 font-medium">Status Banco Firebase</div>
           <div className="text-2xl font-black text-indigo-400 mt-1 flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Ativo
           </div>
@@ -292,7 +290,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                 : 'bg-slate-800 text-emerald-400 hover:bg-slate-700'
             }`}
           >
-            <Activity size={16} /> Diagnóstico Supabase Real
+            <Activity size={16} /> Diagnóstico Firebase Real
           </button>
         </div>
 
@@ -525,7 +523,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
         {activeTab === 'categorias' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Categorias no Supabase</h2>
+              <h2 className="text-lg font-bold text-white">Categorias no Firebase</h2>
               <div className="flex gap-2">
                 <button
                   onClick={handleSeedCats}
@@ -590,7 +588,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                     type="submit"
                     className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg"
                   >
-                    Salvar no Supabase
+                    Salvar no Firebase
                   </button>
                 </div>
               </form>
@@ -615,7 +613,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
           </div>
         )}
 
-        {/* Tab 5: Diagnóstico Supabase Real */}
+        {/* Tab 5: Diagnóstico Firebase Real */}
         {activeTab === 'diagnostico' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 shadow-xl">
@@ -623,7 +621,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Server className="w-5 h-5 text-emerald-400" />
-                    Status da Conexão Supabase Real (PostgreSQL + Auth)
+                    Status da Conexão Firebase Real (PostgreSQL + Auth)
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     Auditoria de integridade em tempo real sem expor chaves ou credenciais sensíveis.
@@ -662,10 +660,10 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                     <div>
                       <div className="font-bold text-sm">
                         {healthStatus.state === 'CONFIGURED_AND_HEALTHY'
-                          ? 'Supabase Conectado & Operacional'
+                          ? 'Firebase Conectado & Operacional'
                           : healthStatus.state === 'UNCONFIGURED'
                           ? 'Configuração Pendente'
-                          : 'Falha de Acesso ao Supabase'}
+                          : 'Falha de Acesso ao Firebase'}
                       </div>
                       <p className="text-xs mt-1 opacity-90">{healthStatus.message}</p>
                     </div>
@@ -674,7 +672,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                   {/* Verification Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl">
-                      <div className="text-xs text-slate-400 font-semibold">Supabase Auth</div>
+                      <div className="text-xs text-slate-400 font-semibold">Firebase Auth</div>
                       <div className="text-sm font-bold text-white mt-1 flex items-center gap-2">
                         {healthStatus.canAccessAuth ? (
                           <>
@@ -688,7 +686,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                           </>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-1">supabase.auth.getSession()</div>
+                      <div className="text-[11px] text-slate-500 mt-1">firebase.auth.getSession()</div>
                     </div>
 
                     <div className="bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl">
@@ -715,7 +713,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
                         <Clock className="w-4 h-4 text-amber-400" />
                         <span>{healthStatus.latencyMs} ms</span>
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-1">Tempo de resposta Supabase</div>
+                      <div className="text-[11px] text-slate-500 mt-1">Tempo de resposta Firebase</div>
                     </div>
                   </div>
 

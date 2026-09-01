@@ -1,153 +1,91 @@
 {
-  "entities": {
-    "Usuario": {
-      "title": "Usuario",
-      "description": "Documento de perfil do usuário (cliente, profissional ou admin)",
-      "type": "object",
-      "properties": {
-        "uid": { "type": "string" },
-        "nome": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "foto": { "type": "string" },
-        "telefone": { "type": "string" },
-        "tipo": { "type": "string", "enum": ["cliente", "profissional", "admin"] },
-        "cidade": { "type": "string" },
-        "bairro": { "type": "string" },
-        "criadoEm": { "type": "string", "format": "date-time" },
-        "atualizadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["uid", "nome", "email", "tipo"]
+  "project_id": "resolva-ja",
+  "collections": [
+    {
+      "name": "usuarios",
+      "description": "User profiles for clients and professionals",
+      "rules": [
+        "allow read: if true;",
+        "allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;",
+        "allow update, delete: if request.auth != null && (request.auth.uid == resource.data.uid || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["tipo"], "type": "asc"}
+      ]
     },
-    "Categoria": {
-      "title": "Categoria",
-      "description": "Categorias de serviços prestados",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "nome": { "type": "string" },
-        "descricao": { "type": "string" },
-        "icone": { "type": "string" },
-        "ativa": { "type": "boolean" },
-        "criadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["nome", "ativa"]
+    {
+      "name": "categorias",
+      "description": "Service categories",
+      "rules": [
+        "allow read: if true;",
+        "allow write: if request.auth != null && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin';"
+      ]
     },
-    "Servico": {
-      "title": "Servico",
-      "description": "Serviço oferecido por um profissional",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "profissionalId": { "type": "string" },
-        "nome": { "type": "string" },
-        "descricao": { "type": "string" },
-        "categoriaId": { "type": "string" },
-        "categoriaNome": { "type": "string" },
-        "telefone": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "cidade": { "type": "string" },
-        "bairro": { "type": "string" },
-        "endereco": { "type": "string" },
-        "preco": { "type": "number" },
-        "imagem": { "type": "string" },
-        "disponivel": { "type": "boolean" },
-        "criadoEm": { "type": "string", "format": "date-time" },
-        "atualizadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["profissionalId", "nome", "categoriaId", "preco", "disponivel"]
+    {
+      "name": "servicos",
+      "description": "Services offered by professionals",
+      "rules": [
+        "allow read: if true;",
+        "allow create: if request.auth != null && (request.auth.uid == request.resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow update, delete: if request.auth != null && (request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["profissionalId"], "type": "asc"},
+        {"fields": ["categoriaId"], "type": "asc"}
+      ]
     },
-    "Solicitacao": {
-      "title": "Solicitacao",
-      "description": "Solicitação de atendimento/serviço feita por um cliente",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "clienteId": { "type": "string" },
-        "profissionalId": { "type": "string" },
-        "servicoId": { "type": "string" },
-        "servicoNome": { "type": "string" },
-        "descricao": { "type": "string" },
-        "dataSolicitacao": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["pendente", "aceita", "recusada", "em_andamento", "concluida", "cancelada"] },
-        "observacao": { "type": "string" },
-        "criadoEm": { "type": "string", "format": "date-time" },
-        "atualizadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["clienteId", "profissionalId", "servicoId", "status"]
+    {
+      "name": "solicitacoes",
+      "description": "Service requests",
+      "rules": [
+        "allow read: if request.auth != null && (request.auth.uid == resource.data.clienteId || request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow create: if request.auth != null && (request.auth.uid == request.resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow update: if request.auth != null && (request.auth.uid == resource.data.clienteId || request.auth.uid == resource.data.profissionalId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow delete: if request.auth != null && (request.auth.uid == resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["clienteId"], "type": "asc"},
+        {"fields": ["profissionalId"], "type": "asc"}
+      ]
     },
-    "Avaliacao": {
-      "title": "Avaliacao",
-      "description": "Avaliação de um cliente sobre um serviço concluído",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "clienteId": { "type": "string" },
-        "profissionalId": { "type": "string" },
-        "servicoId": { "type": "string" },
-        "solicitacaoId": { "type": "string" },
-        "nota": { "type": "number", "minimum": 1, "maximum": 5 },
-        "comentario": { "type": "string" },
-        "criadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["clienteId", "profissionalId", "servicoId", "solicitacaoId", "nota"]
+    {
+      "name": "avaliacoes",
+      "description": "Reviews",
+      "rules": [
+        "allow read: if true;",
+        "allow create: if request.auth != null && (request.auth.uid == request.resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow delete: if request.auth != null && (request.auth.uid == resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow update: if request.auth != null && (request.auth.uid == resource.data.clienteId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["servicoId"], "type": "asc"},
+        {"fields": ["profissionalId"], "type": "asc"}
+      ]
     },
-    "Favorito": {
-      "title": "Favorito",
-      "description": "Serviço marcado como favorito por um usuário",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "usuarioId": { "type": "string" },
-        "servicoId": { "type": "string" },
-        "criadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["usuarioId", "servicoId"]
+    {
+      "name": "favoritos",
+      "description": "Favorites",
+      "rules": [
+        "allow read: if request.auth != null && (request.auth.uid == resource.data.usuarioId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow create: if request.auth != null && request.auth.uid == request.resource.data.usuarioId;",
+        "allow delete: if request.auth != null && (request.auth.uid == resource.data.usuarioId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow update: if request.auth != null && (request.auth.uid == resource.data.usuarioId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["usuarioId"], "type": "asc"}
+      ]
     },
-    "Notificacao": {
-      "title": "Notificacao",
-      "description": "Notificação do sistema para o usuário",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "usuarioId": { "type": "string" },
-        "titulo": { "type": "string" },
-        "mensagem": { "type": "string" },
-        "tipo": { "type": "string" },
-        "lida": { "type": "boolean" },
-        "referenciaId": { "type": "string" },
-        "criadoEm": { "type": "string", "format": "date-time" }
-      },
-      "required": ["usuarioId", "titulo", "mensagem", "lida"]
+    {
+      "name": "notificacoes",
+      "description": "Notifications",
+      "rules": [
+        "allow read: if request.auth != null && (request.auth.uid == resource.data.usuarioId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');",
+        "allow create: if request.auth != null;",
+        "allow update, delete: if request.auth != null && (request.auth.uid == resource.data.usuarioId || get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin');"
+      ],
+      "indexes": [
+        {"fields": ["usuarioId"], "type": "asc"}
+      ]
     }
-  },
-  "firestore": {
-    "/usuarios/{uid}": {
-      "schema": "Usuario",
-      "description": "Coleção de perfis de usuários"
-    },
-    "/categorias/{categoriaId}": {
-      "schema": "Categoria",
-      "description": "Coleção de categorias disponíveis"
-    },
-    "/servicos/{servicoId}": {
-      "schema": "Servico",
-      "description": "Coleção de serviços cadastrados"
-    },
-    "/solicitacoes/{solicitacaoId}": {
-      "schema": "Solicitacao",
-      "description": "Coleção de solicitações de atendimento"
-    },
-    "/avaliacoes/{avaliacaoId}": {
-      "schema": "Avaliacao",
-      "description": "Coleção de avaliações de serviços"
-    },
-    "/favoritos/{favoritoId}": {
-      "schema": "Favorito",
-      "description": "Coleção de serviços favoritos dos usuários"
-    },
-    "/notificacoes/{notificacaoId}": {
-      "schema": "Notificacao",
-      "description": "Coleção de notificações dos usuários"
-    }
-  }
+  ]
 }

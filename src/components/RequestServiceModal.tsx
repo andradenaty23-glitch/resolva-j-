@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, MapPin, MessageSquare, Send, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { ServicoDoc, SolicitacaoDoc, ClientProfile } from '../types';
-import { createSolicitacao } from '../services/supabaseDatabase';
+import { createSolicitacao } from '../services/firebaseDatabase';
 
 interface RequestServiceModalProps {
   isOpen: boolean;
@@ -67,13 +67,13 @@ export const RequestServiceModal: React.FC<RequestServiceModalProps> = ({
         clienteTelefone: client.phone,
         profissionalId: targetProfId,
         profissionalNome: targetProfName,
-        profissionalFoto: servico?.profissionalFoto,
+        
         servicoId: servico?.id || 'servico-direto',
         servicoNome: targetServiceName,
         descricao: descricao.trim(),
-        dataSolicitacao: dataHoraCompleta,
+        data: dataHoraCompleta,
         observacao: observacao.trim(),
-        valor: precoBase,
+        valorEstimado: precoBase,
         endereco
       });
 
@@ -220,7 +220,7 @@ export const RequestServiceModal: React.FC<RequestServiceModalProps> = ({
               className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Gravando Solicitação no Supabase...</span>
+                <span>Gravando Solicitação no Firebase...</span>
               ) : (
                 <>
                   <Send size={18} />

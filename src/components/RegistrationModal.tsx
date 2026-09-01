@@ -28,7 +28,7 @@ import {
 import confetti from 'canvas-confetti';
 import { UserRole, ClientProfile, ProviderProfile } from '../types';
 import { PhotoUploader } from './PhotoUploader';
-import { registerWithEmailPassword, loginWithEmailPassword, sendPasswordResetLink } from '../services/supabaseAuth';
+import { registerWithEmailPassword, loginWithEmailPassword, sendPasswordResetLink } from '../services/firebaseAuth';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -546,7 +546,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       }
                       try {
                         await sendPasswordResetLink(emailTarget);
-                        alert(`Link de redefinição de senha enviado com sucesso para ${emailTarget} via Supabase.`);
+                        alert(`Link de redefinição de senha enviado com sucesso para ${emailTarget} via Firebase.`);
                       } catch (err: any) {
                         alert('Erro ao enviar link de recuperação: ' + (err.message || 'Verifique o e-mail digitado.'));
                       }

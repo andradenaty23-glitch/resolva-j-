@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Image, DollarSign, MapPin, Phone, MessageSquare, Briefcase } from 'lucide-react';
 import { ServicoDoc, CategoriaDoc } from '../types';
-import { addServico, updateServico } from '../services/supabaseDatabase';
+import { addServico, updateServico } from '../services/firebaseDatabase';
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
     initialService?.imagem ||
       'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80'
   );
-  const [disponivel, setDisponivel] = useState(initialService?.disponivel !== false);
+  const [ativo, setAtivo] = useState(initialService?.ativo !== false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -89,9 +89,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           telefone: telefone.trim(),
           whatsapp: whatsapp.trim(),
           imagem: imagem.trim(),
-          disponivel
+          ativo
         });
-        onSuccess('Serviço atualizado com sucesso no Supabase!');
+        onSuccess('Serviço atualizado com sucesso no Firebase!');
       } else {
         await addServico({
           profissionalId,
@@ -108,9 +108,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
           telefone: telefone.trim(),
           whatsapp: whatsapp.trim(),
           imagem: imagem.trim(),
-          disponivel
+          ativo
         });
-        onSuccess('Serviço cadastrado e publicado com sucesso no Supabase!');
+        onSuccess('Serviço cadastrado e publicado com sucesso no Firebase!');
       }
       onClose();
     } catch (err: any) {
@@ -134,7 +134,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               <h2 className="font-bold text-slate-900 dark:text-white text-lg">
                 {initialService ? 'Editar Serviço PRO' : 'Cadastrar Novo Serviço PRO'}
               </h2>
-              <p className="text-xs text-slate-500">Persistência direta no PostgreSQL via Supabase</p>
+              <p className="text-xs text-slate-500">Persistência direta no PostgreSQL via Firebase</p>
             </div>
           </div>
           <button
@@ -291,8 +291,8 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
             </div>
             <input
               type="checkbox"
-              checked={disponivel}
-              onChange={(e) => setDisponivel(e.target.checked)}
+              checked={ativo}
+              onChange={(e) => setAtivo(e.target.checked)}
               className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
             />
           </div>
@@ -304,9 +304,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
               className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Salvando no Supabase...</span>
+                <span>Salvando no Firebase...</span>
               ) : (
-                <span>{initialService ? 'Salvar Alterações' : 'Publicar Serviço no Supabase'}</span>
+                <span>{initialService ? 'Salvar Alterações' : 'Publicar Serviço no Firebase'}</span>
               )}
             </button>
           </div>
