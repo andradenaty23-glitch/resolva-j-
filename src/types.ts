@@ -34,7 +34,7 @@ export interface UsuarioDoc {
   bairro: string;
   criadoEm: string;
   atualizadoEm: string;
-  // Campos complementares opcionais para enriquecer o perfil
+  // Campos complementares opcionais para enriquecer o perfil e segurança
   residenceType?: 'apartamento' | 'casa' | 'comercial';
   endereco?: string;
   cep?: string;
@@ -46,6 +46,13 @@ export interface UsuarioDoc {
   chavePix?: string;
   avaliacaoMedia?: number;
   totalAvaliacoes?: number;
+  // Campos de Verificação de Segurança
+  seloSeguranca?: boolean;
+  cpfVerificado?: boolean;
+  antecedentesVerificados?: boolean;
+  identidadeVerificada?: boolean;
+  statusVerificacao?: 'aprovado' | 'em_analise' | 'pendente';
+  scoreSeguranca?: number;
 }
 
 export interface CategoriaDoc {
@@ -106,6 +113,9 @@ export interface SolicitacaoDoc {
   observacao?: string;
   valor?: number;
   endereco?: string;
+  codigoSeguranca?: string; // PIN de 4 dígitos para confirmação presencial
+  garantiaAtiva?: boolean;
+  custodiaProtegida?: boolean;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -327,6 +337,8 @@ export interface Appointment {
   clienteId?: string;
   profissionalId?: string;
   avaliacaoFeita?: boolean;
+  codigoSeguranca?: string;
+  garantiaAtiva?: boolean;
 }
 
 export interface NotificationItem {

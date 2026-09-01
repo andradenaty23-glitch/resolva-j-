@@ -4,6 +4,7 @@ import {
   query, where, orderBy, onSnapshot, limit, getDocFromServer
 } from 'firebase/firestore';
 import { UsuarioDoc, isMasterAdmin } from './firebaseAuth';
+import { sanitizeInput, generateSecurityPIN } from '../utils/security';
 
 // Tipos
 export interface CategoriaDoc { id: string; nome: string; descricao?: string; icone?: string; ativa?: boolean; criadoEm?: string; }
@@ -256,7 +257,21 @@ export async function createSolicitacao(data: Omit<SolicitacaoDoc, 'id' | 'criad
   const path = 'solicitacoes';
   try {
     const id = `sol-${Date.now()}`;
-    await setDoc(doc(db, path, id), { ...data, id, criadoEm: new Date().toISOString(), atualizadoEm: new Date().toISOString() });
+    const securePin = generateSecurityPIN();
+    const sanitizedData = {
+      ...data,
+      descricao: sanitizeInput(data.descricao || '', 1000),
+      observacao: data.observacao ? sanitizeInput(data.observacao, 500) : '',
+      endereco: data.endereco ? sanitizeInput(data.endereco, 300) : '',
+      servicoNome: sanitizeInput(data.servicoNome || 'Atendimento Especializado', 150),
+      codigoSeguranca: securePin,
+      garantiaAtiva: true,
+      custodiaProtegida: true,
+      id,
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString()
+    };
+    await setDoc(doc(db, path, id), sanitizedData);
     return id;
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, path);
@@ -268,7 +283,7 @@ export async function updateSolicitacaoStatus(id: string, status: SolicitacaoDoc
   const path = `solicitacoes/${id}`;
   try {
     const updates: any = { status, atualizadoEm: new Date().toISOString() };
-    if (observacao !== undefined) updates.observacao = observacao;
+    if (observacao !== undefined) updates.observacao = sanitizeInput(observacao, 500);
     await updateDoc(doc(db, 'solicitacoes', id), updates);
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, path);
@@ -279,7 +294,10 @@ export async function updateSolicitacaoStatus(id: string, status: SolicitacaoDoc
 export async function updateSolicitacao(id: string, updates: Partial<SolicitacaoDoc>): Promise<void> {
   const path = `solicitacoes/${id}`;
   try {
-    await updateDoc(doc(db, 'solicitacoes', id), { ...updates, atualizadoEm: new Date().toISOString() });
+    const sanitized: any = { ...updates, atualizadoEm: new Date().toISOString() };
+    if (sanitized.descricao) sanitized.descricao = sanitizeInput(sanitized.descricao, 1000);
+    if (sanitized.observacao) sanitized.observacao = sanitizeInput(sanitized.observacao, 500);
+    await updateDoc(doc(db, 'solicitacoes', id), sanitized);
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, path);
     throw err;
@@ -306,7 +324,15 @@ export async function addAvaliacao(data: Omit<AvaliacaoDoc, 'id' | 'criadoEm'>):
   const path = 'avaliacoes';
   try {
     const id = `av-${Date.now()}`;
-    await setDoc(doc(db, path, id), { ...data, id, criadoEm: new Date().toISOString() });
+    const sanitizedComment = data.comentario ? sanitizeInput(data.comentario, 1000) : '';
+    const safeRating = Math.max(1, Math.min(5, Number(data.nota) || 5));
+    await setDoc(doc(db, path, id), {
+      ...data,
+      id,
+      nota: safeRating,
+      comentario: sanitizedComment,
+      criadoEm: new Date().toISOString()
+    });
     return id;
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, path);
@@ -487,6 +513,29 @@ export async function deleteUsuarioByEmail(email: string): Promise<{ success: bo
   }
 }
 export const purgeAllDataByEmail = deleteUsuarioByEmail;
+
+export async function updateUsuarioSecurityStatus(
+  uid: string,
+  securityUpdates: {
+    seloSeguranca?: boolean;
+    cpfVerificado?: boolean;
+    antecedentesVerificados?: boolean;
+    identidadeVerificada?: boolean;
+    statusVerificacao?: 'aprovado' | 'em_analise' | 'pendente';
+    scoreSeguranca?: number;
+  }
+): Promise<void> {
+  const path = `usuarios/${uid}`;
+  try {
+    await updateDoc(doc(db, 'usuarios', uid), {
+      ...securityUpdates,
+      atualizadoEm: new Date().toISOString()
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+    throw err;
+  }
+}
 
 export async function addCategoria(cat: Omit<CategoriaDoc, 'id' | 'criadoEm'>): Promise<string> {
   const path = 'categorias';

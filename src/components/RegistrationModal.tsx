@@ -37,6 +37,7 @@ import {
   formatFirebaseAuthError,
   FormattedAuthError
 } from '../services/firebaseAuth';
+import { validateCPF, validateCNPJ, validatePhone, sanitizeInput } from '../utils/security';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -154,6 +155,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     }
   };
 
+  // Live Validation states
+  const clientCpfValidation = clientCpf.trim() ? validateCPF(clientCpf) : null;
+  const clientPhoneValidation = clientPhone.trim() ? validatePhone(clientPhone) : null;
+  
+  const cleanProvDoc = providerDocument.replace(/\D/g, '');
+  const providerDocValidation = cleanProvDoc.length > 0 
+    ? (cleanProvDoc.length <= 11 ? validateCPF(providerDocument) : validateCNPJ(providerDocument))
+    : null;
+  const providerPhoneValidation = providerPhone.trim() ? validatePhone(providerPhone) : null;
+
   if (!isOpen) return null;
 
   const handleClientSubmit = async (e: React.FormEvent) => {
@@ -162,18 +173,48 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setSuccessMessage('');
     setAuthError(null);
     setResetFeedback(null);
+
+    // Security Validations
+    if (clientCpf.trim()) {
+      const checkCpf = validateCPF(clientCpf);
+      if (!checkCpf.valid) {
+        setAuthError({
+          title: 'CPF Inválido',
+          message: `${checkCpf.message}. Para sua segurança, informe um CPF autêntico.`,
+          code: 'auth/invalid-document',
+          isEmailInUse: false,
+          isWrongPassword: false
+        });
+        return;
+      }
+    }
+
+    if (clientPhone.trim()) {
+      const checkPhone = validatePhone(clientPhone);
+      if (!checkPhone.valid) {
+        setAuthError({
+          title: 'Telefone Inválido',
+          message: checkPhone.message,
+          code: 'auth/invalid-phone',
+          isEmailInUse: false,
+          isWrongPassword: false
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       const result = await registerWithEmailPassword(
         clientEmail.trim(),
         clientPassword,
-        clientName.trim(),
+        sanitizeInput(clientName.trim(), 100),
         'cliente',
         {
           telefone: clientPhone.trim(),
-          cidade: city.trim(),
-          bairro: neighborhood.trim()
+          cidade: sanitizeInput(city.trim(), 80),
+          bairro: sanitizeInput(neighborhood.trim(), 80)
         }
       );
       
@@ -185,13 +226,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         cpf: clientCpf.trim(),
         residenceType,
         address: {
-          street: street.trim(),
-          number: number.trim(),
-          complement: complement.trim(),
-          neighborhood: neighborhood.trim(),
-          city: city.trim(),
-          state: state.trim(),
-          cep: cep.trim()
+          street: sanitizeInput(street.trim(), 150),
+          number: sanitizeInput(number.trim(), 20),
+          complement: sanitizeInput(complement.trim(), 50),
+          neighborhood: sanitizeInput(neighborhood.trim(), 100),
+          city: sanitizeInput(city.trim(), 80),
+          state: sanitizeInput(state.trim(), 10),
+          cep: sanitizeInput(cep.trim(), 15)
         },
         plan: 'Resolva Já Free',
         walletBalance: 0.00,
@@ -223,13 +264,65 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setSuccessMessage('');
     setAuthError(null);
     setResetFeedback(null);
+
+    // Security Document Checks
+    const cleanDoc = providerDocument.replace(/\D/g, '');
+    if (cleanDoc.length === 11) {
+      const cpfCheck = validateCPF(providerDocument);
+      if (!cpfCheck.valid) {
+        setAuthError({
+          title: 'Documento CPF Inválido',
+          message: `${cpfCheck.message}. Profissionais devem fornecer CPF ou CNPJ com dígitos verificadores válidos.`,
+          code: 'auth/invalid-document',
+          isEmailInUse: false,
+          isWrongPassword: false
+        });
+        return;
+      }
+    } else if (cleanDoc.length === 14) {
+      const cnpjCheck = validateCNPJ(providerDocument);
+      if (!cnpjCheck.valid) {
+        setAuthError({
+          title: 'Documento CNPJ Inválido',
+          message: `${cnpjCheck.message}. Por favor, revise o número do CNPJ.`,
+          code: 'auth/invalid-document',
+          isEmailInUse: false,
+          isWrongPassword: false
+        });
+        return;
+      }
+    } else {
+      setAuthError({
+        title: 'Documento Incompleto',
+        message: 'Digite um CPF (11 dígitos) ou CNPJ (14 dígitos) válido para o credenciamento de segurança.',
+        code: 'auth/invalid-document',
+        isEmailInUse: false,
+        isWrongPassword: false
+      });
+      return;
+    }
+
+    if (providerPhone.trim()) {
+      const checkPhone = validatePhone(providerPhone);
+      if (!checkPhone.valid) {
+        setAuthError({
+          title: 'Telefone Inválido',
+          message: checkPhone.message,
+          code: 'auth/invalid-phone',
+          isEmailInUse: false,
+          isWrongPassword: false
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       const result = await registerWithEmailPassword(
         providerEmail.trim(),
         providerPassword,
-        providerName.trim(),
+        sanitizeInput(providerName.trim(), 100),
         'profissional',
         {
           telefone: providerPhone.trim()
@@ -249,21 +342,21 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         operatingRadiusKm: Number(operatingRadius) || 20,
         availability: 'Disponível Agora',
         verified: true,
-        trustIndex: 95,
+        trustIndex: 98,
         rating: 5.0,
         reviewsCount: 1,
         completedJobsCount: 1,
-        bio: bio.trim() || `Técnico profissional credenciado em ${category} no ecossistema Resolva Já.`,
+        bio: sanitizeInput(bio.trim() || `Técnico profissional credenciado em ${category} no ecossistema Resolva Já.`, 500),
         avatar: result.user.picture,
         bankAccount: {
           bank: 'Banco Principal',
-          pixKey: pixKey.trim() || providerEmail.trim()
+          pixKey: sanitizeInput(pixKey.trim() || providerEmail.trim(), 100)
         },
         totalEarningsMonth: 0,
         registeredAt: 'Agora'
       };
 
-      setSuccessMessage('Credenciamento PRO concluído com sucesso!');
+      setSuccessMessage('Credenciamento PRO com Verificação de Segurança concluído!');
       setIsSuccess(true);
       confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
       setTimeout(() => {
@@ -760,13 +853,26 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">CPF (Opcional)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-bold text-[#18181b]">CPF (Opcional)</label>
+                          {clientCpfValidation && (
+                            <span className={`text-[10px] font-bold ${clientCpfValidation.valid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {clientCpfValidation.valid ? '✓ Válido' : 'Inválido'}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           placeholder="000.000.000-00"
                           value={clientCpf}
                           onChange={(e) => setClientCpf(formatCpfCnpj(e.target.value))}
-                          className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                          className={`w-full p-2.5 rounded-xl border text-xs focus:outline-hidden ${
+                            clientCpfValidation && !clientCpfValidation.valid
+                              ? 'border-rose-300 focus:border-rose-500 bg-rose-50/20'
+                              : clientCpfValidation?.valid
+                              ? 'border-emerald-300 focus:border-emerald-500 bg-emerald-50/20'
+                              : 'border-[#e4e4e7] focus:border-[#ea580c]'
+                          }`}
                         />
                       </div>
                     </div>
@@ -948,14 +1054,27 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-[#18181b] block mb-1">CNPJ ou CPF Profissional</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-bold text-[#18181b]">CNPJ ou CPF Profissional</label>
+                          {providerDocValidation && (
+                            <span className={`text-[10px] font-bold ${providerDocValidation.valid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {providerDocValidation.valid ? `✓ ${cleanProvDoc.length <= 11 ? 'CPF' : 'CNPJ'} Autêntico` : 'Inválido'}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           required
                           placeholder="00.000.000/0001-00 ou CPF"
                           value={providerDocument}
                           onChange={(e) => setProviderDocument(formatCpfCnpj(e.target.value))}
-                          className="w-full p-2.5 rounded-xl border border-[#e4e4e7] text-xs focus:border-[#ea580c] focus:outline-hidden"
+                          className={`w-full p-2.5 rounded-xl border text-xs focus:outline-hidden ${
+                            providerDocValidation && !providerDocValidation.valid
+                              ? 'border-rose-300 focus:border-rose-500 bg-rose-50/20'
+                              : providerDocValidation?.valid
+                              ? 'border-emerald-300 focus:border-emerald-500 bg-emerald-50/20'
+                              : 'border-[#e4e4e7] focus:border-[#ea580c]'
+                          }`}
                         />
                       </div>
                     </div>

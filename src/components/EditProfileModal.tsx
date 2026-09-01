@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, User, MapPin, Phone, Mail, Building2, Save, Check } from 'lucide-react';
+import { X, User, MapPin, Phone, Mail, Building2, Save, Check, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ClientProfile } from '../types';
+import { validateCPF, validatePhone, sanitizeInput } from '../utils/security';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -30,25 +31,42 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [state, setState] = useState(client.address?.state || 'SP');
   const [cep, setCep] = useState(client.address?.cep || '');
   const [isSaved, setIsSaved] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
+  // Validation states
+  const cpfValidation = cpf.trim() ? validateCPF(cpf) : null;
+  const phoneValidation = phone.trim() ? validatePhone(phone) : null;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+
+    if (cpf.trim() && cpfValidation && !cpfValidation.valid) {
+      setErrorMessage(cpfValidation.message);
+      return;
+    }
+
+    if (phone.trim() && phoneValidation && !phoneValidation.valid) {
+      setErrorMessage(phoneValidation.message);
+      return;
+    }
+
     onSave({
-      name: name.trim() || client.name,
-      email: email.trim() || client.email,
-      phone: phone.trim(),
-      cpf: cpf.trim(),
+      name: sanitizeInput(name.trim() || client.name, 100),
+      email: sanitizeInput(email.trim() || client.email, 100),
+      phone: phoneValidation?.formatted || sanitizeInput(phone.trim(), 20),
+      cpf: cpfValidation?.formatted || sanitizeInput(cpf.trim(), 20),
       residenceType,
       address: {
-        street: street.trim(),
-        number: number.trim(),
-        complement: complement.trim(),
-        neighborhood: neighborhood.trim(),
-        city: city.trim() || 'São Paulo',
-        state: state.trim() || 'SP',
-        cep: cep.trim()
+        street: sanitizeInput(street.trim(), 150),
+        number: sanitizeInput(number.trim(), 20),
+        complement: sanitizeInput(complement.trim(), 50),
+        neighborhood: sanitizeInput(neighborhood.trim(), 100),
+        city: sanitizeInput(city.trim() || 'São Paulo', 80),
+        state: sanitizeInput(state.trim() || 'SP', 10),
+        cep: sanitizeInput(cep.trim(), 15)
       }
     });
 
@@ -89,6 +107,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Dados Pessoais */}
             <div className="space-y-3">
               <h4 className="text-xs font-extrabold text-[#71717a] uppercase tracking-wider">
@@ -119,25 +144,56 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-[#52525b] block mb-1">Telefone / WhatsApp</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-[#52525b]">Telefone / WhatsApp</label>
+                    {phoneValidation && (
+                      <span className={`text-[10px] font-bold ${phoneValidation.valid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {phoneValidation.valid ? '✓ Válido' : 'Formato incompleto'}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(11) 90000-0000"
-                    className="w-full bg-[#fafafa] border border-[#e4e4e7] rounded-xl px-3.5 py-2.5 text-sm text-[#18181b] focus:border-[#ea580c] focus:outline-hidden"
+                    className={`w-full bg-[#fafafa] border rounded-xl px-3.5 py-2.5 text-sm text-[#18181b] focus:outline-hidden ${
+                      phoneValidation && !phoneValidation.valid ? 'border-amber-400 focus:border-amber-500' : 'border-[#e4e4e7] focus:border-[#ea580c]'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#52525b] block mb-1">CPF (opcional)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-[#52525b] flex items-center gap-1">
+                    <span>CPF (com validação de segurança)</span>
+                    <ShieldCheck size={14} className="text-emerald-600" />
+                  </label>
+                  {cpfValidation && (
+                    <span className={`text-[10px] font-bold flex items-center gap-0.5 ${cpfValidation.valid ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {cpfValidation.valid ? (
+                        <>
+                          <CheckCircle2 size={12} /> Autêntico
+                        </>
+                      ) : (
+                        'CPF Inválido'
+                      )}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={cpf}
                   onChange={(e) => setCpf(e.target.value)}
                   placeholder="000.000.000-00"
-                  className="w-full bg-[#fafafa] border border-[#e4e4e7] rounded-xl px-3.5 py-2.5 text-sm text-[#18181b] focus:border-[#ea580c] focus:outline-hidden"
+                  className={`w-full bg-[#fafafa] border rounded-xl px-3.5 py-2.5 text-sm text-[#18181b] focus:outline-hidden ${
+                    cpfValidation && !cpfValidation.valid
+                      ? 'border-rose-400 focus:border-rose-500'
+                      : cpfValidation?.valid
+                      ? 'border-emerald-400 focus:border-emerald-500 bg-emerald-50/20'
+                      : 'border-[#e4e4e7] focus:border-[#ea580c]'
+                  }`}
                 />
               </div>
             </div>

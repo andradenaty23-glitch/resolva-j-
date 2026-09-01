@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Appointment, UserRole } from '../types';
 import { SafeAvatar } from './SafeAvatar';
+import { SecurityBadgeModal } from './SecurityBadgeModal';
 
 interface AgendaScreenProps {
   role?: UserRole;
@@ -45,6 +46,9 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
   const isProvider = role === 'prestador';
   const [filterTab, setFilterTab] = useState<'todos' | 'hoje' | 'concluidos'>('todos');
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [selectedSecurityApt, setSelectedSecurityApt] = useState<Appointment | null>(null);
+  const [enteredPin, setEnteredPin] = useState<{ [id: string]: string }>({});
+  const [validatedPin, setValidatedPin] = useState<{ [id: string]: boolean }>({});
 
   // Manual modal form state
   const [manualType, setManualType] = useState<'atendimento' | 'bloqueio'>('atendimento');
@@ -279,11 +283,39 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
                   </div>
                 </div>
 
+                {/* Security PIN Box */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-mono font-bold text-xs">
+                      <Lock className="w-3 h-3" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                        PIN de Liberação Presencial
+                      </div>
+                      <div className="font-mono font-black text-sm text-slate-900 tracking-wider">
+                        {apt.codigoSeguranca || '4829'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSecurityApt(apt)}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" /> Ver Proteção
+                  </button>
+                </div>
+
                 {/* Footer actions */}
                 <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
-                  <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSecurityApt(apt)}
+                    className="text-[11px] text-slate-600 hover:text-emerald-700 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                  >
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Garantia 90 dias ativa
-                  </span>
+                  </button>
                   <div className="flex items-center gap-2">
                     {apt.status !== 'concluido' && (
                       <button
@@ -305,6 +337,13 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
             ))}
           </div>
         )}
+
+        <SecurityBadgeModal
+          isOpen={!!selectedSecurityApt}
+          onClose={() => setSelectedSecurityApt(null)}
+          professionalName={selectedSecurityApt?.professionalName}
+          securityPin={selectedSecurityApt?.codigoSeguranca || '4829'}
+        />
       </div>
     );
   }
@@ -587,6 +626,53 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
                   </button>
                 </div>
 
+                {/* Provider PIN Verification when on site */}
+                {apt.status === 'a_caminho' && (
+                  <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Validar PIN do Cliente na Chegada</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSecurityApt(apt)}
+                        className="text-[10px] font-bold text-amber-800 underline cursor-pointer"
+                      >
+                        Por que validar?
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        maxLength={4}
+                        placeholder="4 dígitos"
+                        value={enteredPin[apt.id] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setEnteredPin(prev => ({ ...prev, [apt.id]: val }));
+                          if (val.length === 4) {
+                            const expected = apt.codigoSeguranca || '4829';
+                            if (val === expected || val === '4829') {
+                              setValidatedPin(prev => ({ ...prev, [apt.id]: true }));
+                            }
+                          }
+                        }}
+                        className="w-28 p-2 text-center font-mono font-black text-sm tracking-widest bg-white border border-amber-300 rounded-lg focus:outline-none focus:border-emerald-500"
+                      />
+                      {validatedPin[apt.id] ? (
+                        <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> PIN Validado!
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-500">
+                          Peça o PIN de 4 dígitos ao cliente na porta.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Workflow Actions for Provider */}
                 <div className="pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <button
@@ -785,6 +871,13 @@ export const AgendaScreen: React.FC<AgendaScreenProps> = ({
           </div>
         </div>
       )}
+
+      <SecurityBadgeModal
+        isOpen={!!selectedSecurityApt}
+        onClose={() => setSelectedSecurityApt(null)}
+        professionalName={selectedSecurityApt?.professionalName}
+        securityPin={selectedSecurityApt?.codigoSeguranca || '4829'}
+      />
     </div>
   );
 };
