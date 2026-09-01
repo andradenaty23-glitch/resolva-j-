@@ -58,6 +58,7 @@ import {
   isMasterAdmin
 } from './services/firebaseAuth';
 import {
+  testFirestoreConnection,
   seedDefaultCategoriasIfEmpty,
   subscribeCategorias,
   subscribeServicos,
@@ -171,6 +172,9 @@ export default function App() {
 
   // 1. Initialize Firebase Realtime & Subscriptions
   useEffect(() => {
+    // Validate connection to Firestore on boot
+    testFirestoreConnection().catch(console.error);
+
     // Seed initial categories if empty
     seedDefaultCategoriasIfEmpty().catch(console.error);
 
@@ -257,43 +261,46 @@ export default function App() {
     let unsubFavs = () => {};
     let unsubNotifs = () => {};
 
-    if (currentRole === 'cliente' && clientProfile.id && clientUser) {
-      unsubSolicitacoes = subscribeSolicitacoesCliente(clientProfile.id, (sols) => {
-        setFirebaseSolicitacoes(sols);
-      });
-      unsubFavs = subscribeFavoritos(clientProfile.id, (favs) => {
-        setFirebaseFavoritos(favs);
-      });
-      unsubNotifs = subscribeNotificacoes(clientProfile.id, (notifs) => {
-        if (notifs.length > 0) {
-          const mapped: NotificationItem[] = notifs.map((n) => ({
-            id: n.id,
-            title: n.titulo,
-            message: n.mensagem,
-            time: 'Hoje',
-            read: n.lida,
-            type: n.tipo === 'success' ? 'success' : n.tipo === 'alert' || n.tipo === 'warning' ? 'alert' : 'info'
-          }));
-          setNotifications((prev) => [...mapped, ...prev.filter((p) => !notifs.some((n) => n.id === p.id))]);
-        }
-      });
-    } else if (currentRole === 'prestador' && providerProfile.id && providerUser) {
-      unsubSolicitacoes = subscribeSolicitacoesProfissional(providerProfile.id, (sols) => {
-        setFirebaseSolicitacoes(sols);
-      });
-      unsubNotifs = subscribeNotificacoes(providerProfile.id, (notifs) => {
-        if (notifs.length > 0) {
-          const mapped: NotificationItem[] = notifs.map((n) => ({
-            id: n.id,
-            title: n.titulo,
-            message: n.mensagem,
-            time: 'Hoje',
-            read: n.lida,
-            type: n.tipo === 'success' ? 'success' : n.tipo === 'alert' || n.tipo === 'warning' ? 'alert' : 'info'
-          }));
-          setNotifications((prev) => [...mapped, ...prev.filter((p) => !notifs.some((n) => n.id === p.id))]);
-        }
-      });
+    if (firebaseUserDoc && firebaseUserDoc.uid) {
+      const activeUid = firebaseUserDoc.uid;
+      if (currentRole === 'cliente') {
+        unsubSolicitacoes = subscribeSolicitacoesCliente(activeUid, (sols) => {
+          setFirebaseSolicitacoes(sols);
+        });
+        unsubFavs = subscribeFavoritos(activeUid, (favs) => {
+          setFirebaseFavoritos(favs);
+        });
+        unsubNotifs = subscribeNotificacoes(activeUid, (notifs) => {
+          if (notifs.length > 0) {
+            const mapped: NotificationItem[] = notifs.map((n) => ({
+              id: n.id,
+              title: n.titulo,
+              message: n.mensagem,
+              time: 'Hoje',
+              read: n.lida,
+              type: n.tipo === 'success' ? 'success' : n.tipo === 'alert' || n.tipo === 'warning' ? 'alert' : 'info'
+            }));
+            setNotifications((prev) => [...mapped, ...prev.filter((p) => !notifs.some((n) => n.id === p.id))]);
+          }
+        });
+      } else if (currentRole === 'prestador') {
+        unsubSolicitacoes = subscribeSolicitacoesProfissional(activeUid, (sols) => {
+          setFirebaseSolicitacoes(sols);
+        });
+        unsubNotifs = subscribeNotificacoes(activeUid, (notifs) => {
+          if (notifs.length > 0) {
+            const mapped: NotificationItem[] = notifs.map((n) => ({
+              id: n.id,
+              title: n.titulo,
+              message: n.mensagem,
+              time: 'Hoje',
+              read: n.lida,
+              type: n.tipo === 'success' ? 'success' : n.tipo === 'alert' || n.tipo === 'warning' ? 'alert' : 'info'
+            }));
+            setNotifications((prev) => [...mapped, ...prev.filter((p) => !notifs.some((n) => n.id === p.id))]);
+          }
+        });
+      }
     }
 
     return () => {
@@ -301,7 +308,7 @@ export default function App() {
       unsubFavs();
       unsubNotifs();
     };
-  }, [currentRole, clientProfile.id, providerProfile.id, clientUser, providerUser]);
+  }, [currentRole, firebaseUserDoc]);
 
   // Map Firebase Solicitacoes to Appointments for Agenda
   const combinedAppointments: Appointment[] = React.useMemo(() => {

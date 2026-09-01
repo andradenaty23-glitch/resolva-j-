@@ -113,6 +113,8 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
   }, []);
 
   useEffect(() => {
+    if (!isMasterAdmin(currentUserEmail)) return;
+
     const unsubUsers = subscribeAllUsuarios(setUsuarios);
     const unsubServicos = subscribeAllServicosAdmin(setServicos);
     const unsubSols = subscribeAllSolicitacoesAdmin(setSolicitacoes);
@@ -124,7 +126,7 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
       unsubSols();
       unsubCats();
     };
-  }, []);
+  }, [currentUserEmail]);
 
   const showFeedback = (msg: string) => {
     setActionFeedback(msg);
