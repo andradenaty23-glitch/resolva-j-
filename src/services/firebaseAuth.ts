@@ -212,3 +212,99 @@ export async function updateUsuarioDoc(
   const snap = await getDoc(ref);
   return snap.data() as UsuarioDoc;
 }
+
+export interface FormattedAuthError {
+  title: string;
+  message: string;
+  code: string;
+  isEmailInUse: boolean;
+  isWrongPassword: boolean;
+}
+
+export function formatFirebaseAuthError(err: any): FormattedAuthError {
+  const code = err?.code || (typeof err?.message === 'string' ? (err.message.match(/auth\/[a-z0-9-]+/i)?.[0] || '') : '');
+  const messageStr = err?.message || '';
+
+  if (code === 'auth/email-already-in-use' || messageStr.includes('email-already-in-use') || messageStr.includes('already registered')) {
+    return {
+      title: 'E-mail Já Cadastrado',
+      message: 'Este endereço de e-mail já possui uma conta no Resolva Já. Você pode fazer login direto com sua senha ou redefini-la.',
+      code: 'auth/email-already-in-use',
+      isEmailInUse: true,
+      isWrongPassword: false
+    };
+  }
+  if (code === 'auth/weak-password' || messageStr.includes('weak-password')) {
+    return {
+      title: 'Senha Muito Curta',
+      message: 'A senha deve ter no mínimo 6 caracteres para garantir a segurança da sua conta.',
+      code: 'auth/weak-password',
+      isEmailInUse: false,
+      isWrongPassword: false
+    };
+  }
+  if (code === 'auth/invalid-email' || messageStr.includes('invalid-email')) {
+    return {
+      title: 'E-mail Inválido',
+      message: 'Por favor, digite um formato de e-mail válido (ex: seu.nome@email.com).',
+      code: 'auth/invalid-email',
+      isEmailInUse: false,
+      isWrongPassword: false
+    };
+  }
+  if (
+    code === 'auth/invalid-credential' ||
+    code === 'auth/user-not-found' ||
+    code === 'auth/wrong-password' ||
+    messageStr.includes('invalid-credential') ||
+    messageStr.includes('user-not-found') ||
+    messageStr.includes('wrong-password')
+  ) {
+    return {
+      title: 'Credenciais Incorretas',
+      message: 'E-mail ou senha inválidos. Verifique suas informações e tente novamente.',
+      code: 'auth/invalid-credential',
+      isEmailInUse: false,
+      isWrongPassword: true
+    };
+  }
+  if (code === 'auth/too-many-requests' || messageStr.includes('too-many-requests')) {
+    return {
+      title: 'Muitas Tentativas',
+      message: 'O acesso a esta conta foi bloqueado temporariamente por excesso de tentativas. Tente novamente em instantes ou redefina a senha.',
+      code: 'auth/too-many-requests',
+      isEmailInUse: false,
+      isWrongPassword: false
+    };
+  }
+  if (code === 'auth/popup-closed-by-user' || messageStr.includes('popup-closed-by-user')) {
+    return {
+      title: 'Login Cancelado',
+      message: 'A janela de login com o Google foi fechada antes da conclusão.',
+      code: 'auth/popup-closed-by-user',
+      isEmailInUse: false,
+      isWrongPassword: false
+    };
+  }
+  if (code === 'auth/network-request-failed' || messageStr.includes('network-request-failed')) {
+    return {
+      title: 'Erro de Conexão',
+      message: 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.',
+      code: 'auth/network-request-failed',
+      isEmailInUse: false,
+      isWrongPassword: false
+    };
+  }
+
+  const cleanMessage = err?.message
+    ? err.message.replace(/^Firebase:\s*/i, '').replace(/Error\s*\([a-z0-9\/-]+\):?/i, '').trim()
+    : 'Ocorreu um erro ao processar sua solicitação.';
+
+  return {
+    title: 'Erro na Operação',
+    message: cleanMessage || 'Verifique seus dados e tente novamente.',
+    code: code || 'unknown',
+    isEmailInUse: false,
+    isWrongPassword: false
+  };
+}

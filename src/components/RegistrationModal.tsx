@@ -23,12 +23,20 @@ import {
   Store,
   Check,
   Search,
-  Loader2
+  Loader2,
+  AlertCircle,
+  KeyRound
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserRole, ClientProfile, ProviderProfile } from '../types';
 import { PhotoUploader } from './PhotoUploader';
-import { registerWithEmailPassword, loginWithEmailPassword, sendPasswordResetLink } from '../services/firebaseAuth';
+import { 
+  registerWithEmailPassword, 
+  loginWithEmailPassword, 
+  sendPasswordResetLink,
+  formatFirebaseAuthError,
+  FormattedAuthError
+} from '../services/firebaseAuth';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -87,6 +95,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [authError, setAuthError] = useState<FormattedAuthError | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // Formatting helpers
   const formatPhone = (val: string) => {
@@ -148,6 +160,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     e.preventDefault();
     setIsSuccess(false);
     setSuccessMessage('');
+    setAuthError(null);
+    setResetFeedback(null);
+    setIsSubmitting(true);
+
     try {
       const result = await registerWithEmailPassword(
         clientEmail.trim(),
@@ -194,7 +210,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }, 1000);
     } catch (err: any) {
       console.error('Registration error:', err);
-      alert('Erro ao registrar: ' + (err.message || 'Verifique seus dados.'));
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -202,6 +221,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     e.preventDefault();
     setIsSuccess(false);
     setSuccessMessage('');
+    setAuthError(null);
+    setResetFeedback(null);
+    setIsSubmitting(true);
+
     try {
       const result = await registerWithEmailPassword(
         providerEmail.trim(),
@@ -250,7 +273,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }, 1000);
     } catch (err: any) {
       console.error('Provider Registration error:', err);
-      alert('Erro ao registrar prestador: ' + (err.message || 'Verifique seus dados.'));
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -258,6 +284,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     e.preventDefault();
     setIsSuccess(false);
     setSuccessMessage('');
+    setAuthError(null);
+    setResetFeedback(null);
+    setIsSubmitting(true);
+
     try {
       const result = await loginWithEmailPassword(loginEmail.trim(), loginPassword);
 
@@ -328,7 +358,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      alert('Erro no login: e-mail ou senha inválidos.');
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -385,7 +418,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div className="flex bg-[#f4f4f5] p-1 rounded-2xl border border-[#e4e4e7]">
               <button
                 type="button"
-                onClick={() => setModalMode('cadastro')}
+                onClick={() => {
+                  setModalMode('cadastro');
+                  setAuthError(null);
+                  setResetFeedback(null);
+                }}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   modalMode === 'cadastro'
                     ? 'bg-white text-[#18181b] shadow-xs'
@@ -397,7 +434,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setModalMode('login')}
+                onClick={() => {
+                  setModalMode('login');
+                  setAuthError(null);
+                  setResetFeedback(null);
+                }}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   modalMode === 'login'
                     ? 'bg-white text-[#18181b] shadow-xs'
@@ -414,7 +455,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <button
                 type="button"
                 id="tab-cad-cliente"
-                onClick={() => setSelectedRole('cliente')}
+                onClick={() => {
+                  setSelectedRole('cliente');
+                  setAuthError(null);
+                }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   selectedRole === 'cliente'
                     ? 'bg-[#18181b] text-white shadow-xs'
@@ -428,7 +472,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <button
                 type="button"
                 id="tab-cad-prestador"
-                onClick={() => setSelectedRole('prestador')}
+                onClick={() => {
+                  setSelectedRole('prestador');
+                  setAuthError(null);
+                }}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   selectedRole === 'prestador'
                     ? 'bg-[#ea580c] text-white shadow-xs'
@@ -439,6 +486,97 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <span>Prestador PRO</span>
               </button>
             </div>
+
+            {/* In-Modal Alert Card for Auth Errors */}
+            {authError && (
+              <div className="bg-amber-50/90 border-2 border-amber-300/80 rounded-2xl p-4 flex flex-col gap-2.5 animate-fadeIn shadow-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-950">{authError.title}</h4>
+                      <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">{authError.message}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAuthError(null)}
+                    className="text-amber-500 hover:text-amber-800 p-1 cursor-pointer transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {authError.isEmailInUse && (
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200/80 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const typedEmail = (selectedRole === 'cliente' ? clientEmail.trim() : providerEmail.trim()) || loginEmail.trim();
+                        if (typedEmail) setLoginEmail(typedEmail);
+                        setModalMode('login');
+                        setAuthError(null);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-[#18181b] hover:bg-black text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Fazer Login com este E-mail</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isSendingReset}
+                      onClick={async () => {
+                        const typedEmail = (selectedRole === 'cliente' ? clientEmail.trim() : providerEmail.trim()) || loginEmail.trim();
+                        if (!typedEmail) return;
+                        setIsSendingReset(true);
+                        try {
+                          await sendPasswordResetLink(typedEmail);
+                          setResetFeedback({
+                            type: 'success',
+                            message: `Link de redefinição de senha enviado para ${typedEmail}. Verifique sua caixa de entrada e spam!`
+                          });
+                          setAuthError(null);
+                        } catch (e: any) {
+                          const errFmt = formatFirebaseAuthError(e);
+                          setAuthError(errFmt);
+                        } finally {
+                          setIsSendingReset(false);
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white border border-amber-300 hover:bg-amber-100/60 text-amber-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#ea580c]" />
+                      <span>{isSendingReset ? 'Enviando link...' : 'Esqueci Minha Senha'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* In-Modal Feedback Card for Reset or Success */}
+            {resetFeedback && (
+              <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-start justify-between gap-2 animate-fadeIn shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-950">E-mail de Recuperação Enviado</h4>
+                    <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">{resetFeedback.message}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setResetFeedback(null)}
+                  className="text-emerald-500 hover:text-emerald-800 p-1 cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Google Quick 1-Click Auth Button */}
             {onOpenGoogleAuth && (
@@ -538,35 +676,60 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   </label>
                   <button
                     type="button"
+                    disabled={isSendingReset}
                     onClick={async () => {
                       const emailTarget = loginEmail.trim() || (selectedRole === 'cliente' ? clientEmail.trim() : providerEmail.trim());
                       if (!emailTarget) {
-                        alert('Por favor, informe seu e-mail no campo acima para receber o link de recuperação.');
+                        setAuthError({
+                          title: 'Informe seu E-mail',
+                          message: 'Por favor, digite seu e-mail no campo acima para receber as instruções de recuperação de senha.',
+                          code: 'auth/missing-email',
+                          isEmailInUse: false,
+                          isWrongPassword: false
+                        });
                         return;
                       }
+                      setIsSendingReset(true);
+                      setAuthError(null);
                       try {
                         await sendPasswordResetLink(emailTarget);
-                        alert(`Link de redefinição de senha enviado com sucesso para ${emailTarget} via Firebase.`);
+                        setResetFeedback({
+                          type: 'success',
+                          message: `Enviamos as instruções para redefinir a senha do e-mail ${emailTarget}. Verifique sua caixa de entrada.`
+                        });
                       } catch (err: any) {
-                        alert('Erro ao enviar link de recuperação: ' + (err.message || 'Verifique o e-mail digitado.'));
+                        const formatted = formatFirebaseAuthError(err);
+                        setAuthError(formatted);
+                      } finally {
+                        setIsSendingReset(false);
                       }
                     }}
                     className="text-[#ea580c] font-bold hover:underline cursor-pointer"
                   >
-                    Esqueceu a senha?
+                    {isSendingReset ? 'Enviando...' : 'Esqueceu a senha?'}
                   </button>
                 </div>
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className={`w-full py-3.5 rounded-full text-white font-bold text-xs shadow-md transition-all mt-1 cursor-pointer flex items-center justify-center gap-2 ${
                     selectedRole === 'cliente'
                       ? 'bg-[#18181b] hover:bg-[#27272a]'
                       : 'bg-[#ea580c] hover:bg-[#c2410c]'
-                  }`}
+                  } ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  <LogIn className="w-4 h-4" />
-                  <span>Entrar como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Autenticando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      <span>Entrar como {selectedRole === 'cliente' ? 'Cliente Residencial' : 'Prestador PRO'}</span>
+                    </>
+                  )}
                 </button>
               </form>
             ) : (
@@ -741,10 +904,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     <button
                       type="submit"
                       id="btn-submit-cliente"
-                      className="w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                      disabled={isSubmitting}
+                      className={`w-full py-3.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 ${
+                        isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <UserPlus className="w-4 h-4" />
-                      <span>Concluir Cadastro de Cliente</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Cadastrando Cliente...</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4" />
+                          <span>Concluir Cadastro de Cliente</span>
+                        </>
+                      )}
                     </button>
                   </form>
                 ) : (
@@ -910,10 +1085,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     <button
                       type="submit"
                       id="btn-submit-prestador"
-                      className="w-full py-3.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                      disabled={isSubmitting}
+                      className={`w-full py-3.5 rounded-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-xs shadow-md transition-all mt-2 cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 ${
+                        isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Concluir Credenciamento PRO</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Credenciando Prestador...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Concluir Credenciamento PRO</span>
+                        </>
+                      )}
                     </button>
                   </form>
                 )}

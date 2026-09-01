@@ -67,13 +67,13 @@ export const RequestServiceModal: React.FC<RequestServiceModalProps> = ({
         clienteTelefone: client.phone,
         profissionalId: targetProfId,
         profissionalNome: targetProfName,
-        
         servicoId: servico?.id || 'servico-direto',
         servicoNome: targetServiceName,
         descricao: descricao.trim(),
-        data: dataHoraCompleta,
+        dataSolicitacao: dataHoraCompleta,
+        status: 'pendente',
         observacao: observacao.trim(),
-        valorEstimado: precoBase,
+        valor: precoBase,
         endereco
       });
 

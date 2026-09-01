@@ -24,7 +24,8 @@ import {
   registerWithEmailPassword,
   sendPasswordResetLink,
   logoutFirebaseAuth,
-  syncUserDocument
+  syncUserDocument,
+  formatFirebaseAuthError
 } from '../services/firebaseAuth';
 import { SafeAvatar } from './SafeAvatar';
 
@@ -74,7 +75,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleCompleteAuth判定 = (user: GoogleAuthUser) => {
+  const handleCompleteAuth = (user: GoogleAuthUser) => {
     setIsLoading(false);
     setAuthError(null);
     setErrorDetails(null);
@@ -103,14 +104,15 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
     try {
       const result = await loginWithGoogle(tipo);
       if (result) {
-        handleCompleteAuth判定(result.user);
+        handleCompleteAuth(result.user);
       } else {
         setIsLoading(false);
       }
     } catch (err: any) {
       console.warn('[Firebase Auth] ❌ Falha no login Google:', err);
       setIsLoading(false);
-      setAuthError(err.message || 'Falha ao autenticar com o Google via Firebase.');
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted.message);
       setErrorDetails('Verifique a conexão ou tente o acesso com e-mail e senha.');
     }
   };
@@ -133,27 +135,24 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
     try {
       if (authMode === 'email_signup') {
-        const result依照 = await registerWithEmailPassword(
+        const result = await registerWithEmailPassword(
           email.trim(),
           password,
           name.trim() || email.split('@')[0],
           tipo
         );
-        handleCompleteAuth判定(result依照.user);
+        handleCompleteAuth(result.user);
       } else {
-        const result依照 = await loginWithEmailPassword(email.trim(), password);
-        handleCompleteAuth判定(result依照.user);
+        const result = await loginWithEmailPassword(email.trim(), password);
+        handleCompleteAuth(result.user);
       }
     } catch (err: any) {
       setIsLoading(false);
       console.error('[Firebase Auth] Erro de autenticação:', err);
-      if (err.message?.includes('already registered') || err.message?.includes('user_already_exists')) {
-        setAuthError('Este e-mail já está cadastrado. Alterne para a opção "Entrar com Senha".');
-      } else if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid-credential')) {
-        setAuthError('E-mail ou senha incorretos.');
-      } else {
-        setAuthError('Falha na autenticação.');
-        setErrorDetails(err.message);
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted.message);
+      if (formatted.isEmailInUse) {
+        setErrorDetails('Alterne para a aba "Entrar com Senha" ou recupere sua senha.');
       }
     }
   };
@@ -179,11 +178,12 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
       setIsLoading(false);
       setResetSent(true);
       setResetMessage(`Enviamos um link de redefinição de senha para ${cleanEmail}.`);
-    } catch (err紧: any) {
+    } catch (err: any) {
       setIsLoading(false);
-      console.error('[Firebase Auth] Erro ao redefinir senha:', err紧);
-      setAuthError('Não foi possível enviar o e-mail de recuperação.');
-      setErrorDetails(err紧.message || 'Tente novamente em instantes.');
+      console.error('[Firebase Auth] Erro ao redefinir senha:', err);
+      const formatted = formatFirebaseAuthError(err);
+      setAuthError(formatted.title);
+      setErrorDetails(formatted.message);
     }
   };
 

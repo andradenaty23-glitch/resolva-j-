@@ -8,7 +8,34 @@ import { UsuarioDoc } from './firebaseAuth';
 // Tipos
 export interface CategoriaDoc { id: string; nome: string; descricao?: string; icone?: string; ativa?: boolean; criadoEm?: string; }
 export interface ServicoDoc { id: string; profissionalId: string; profissionalNome: string; profissionalFoto?: string; nome: string; descricao: string; categoriaId: string; categoriaNome: string; preco: number; cidade: string; bairro?: string; endereco?: string; telefone?: string; whatsapp?: string; imagem?: string; ativo?: boolean; avaliacaoMedia?: number; totalAvaliacoes?: number; criadoEm?: string; atualizadoEm?: string; }
-export interface SolicitacaoDoc { id: string; servicoId: string; servicoNome: string; categoriaId: string; categoriaNome: string; clienteId: string; clienteNome: string; clienteEmail: string; clienteTelefone?: string; clienteFoto?: string; profissionalId: string; profissionalNome: string; endereco: string; bairro?: string; cidade: string; data: string; horario: string; descricao: string; valorEstimado: number; status: 'pendente' | 'aceita' | 'em_andamento' | 'concluida' | 'cancelada' | 'recusada'; observacao?: string; criadoEm?: string; atualizadoEm?: string; }
+export interface SolicitacaoDoc {
+  id: string;
+  servicoId: string;
+  servicoNome: string;
+  categoriaId?: string;
+  categoriaNome?: string;
+  clienteId: string;
+  clienteNome?: string;
+  clienteEmail?: string;
+  clienteTelefone?: string;
+  clienteFoto?: string;
+  profissionalId: string;
+  profissionalNome?: string;
+  profissionalFoto?: string;
+  endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  data?: string;
+  horario?: string;
+  dataSolicitacao?: string;
+  descricao: string;
+  valorEstimado?: number;
+  valor?: number;
+  status: 'pendente' | 'aceita' | 'em_andamento' | 'concluida' | 'cancelada' | 'recusada';
+  observacao?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
 export interface AvaliacaoDoc { id: string; solicitacaoId: string; servicoId: string; profissionalId: string; clienteId: string; clienteNome: string; clienteFoto?: string; nota: number; comentario?: string; criadoEm?: string; }
 export interface FavoritoDoc { id: string; usuarioId: string; servicoId: string; criadoEm?: string; }
 export interface NotificacaoDoc { id: string; usuarioId: string; titulo: string; mensagem: string; lida: boolean; linkAcao?: string; tipo?: 'info' | 'sucesso' | 'alerta' | 'erro' | 'success' | 'alert' | 'warning'; criadoEm?: string; }
