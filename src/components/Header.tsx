@@ -93,8 +93,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Admin Panel Quick Action */}
-          {onOpenAdminPanel && (
+          {/* Admin Panel Quick Action - Only for Master Admin */}
+          {isAdmin && onOpenAdminPanel && (
             <button
               id="btn-admin-panel"
               onClick={onOpenAdminPanel}

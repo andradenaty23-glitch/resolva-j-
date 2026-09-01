@@ -12,6 +12,17 @@ import {
 
 export type TipoUsuario = 'cliente' | 'profissional' | 'admin';
 
+export const MASTER_ADMIN_EMAIL = 'andradenaty23@gmail.com';
+
+export function isMasterAdmin(emailOrUser?: string | { email?: string; tipo?: string } | null): boolean {
+  if (!emailOrUser) return false;
+  if (typeof emailOrUser === 'string') {
+    return emailOrUser.toLowerCase().trim() === MASTER_ADMIN_EMAIL;
+  }
+  const email = emailOrUser.email?.toLowerCase().trim();
+  return email === MASTER_ADMIN_EMAIL;
+}
+
 export interface GoogleAuthUser {
   id: string;
   email: string;
@@ -62,35 +73,40 @@ export async function syncUserDocument(
   extraFields?: Partial<UsuarioDoc>
 ): Promise<UsuarioDoc> {
   const uid = user.uid || user.id;
-  const email = user.email || '';
-  const nome = user.displayName || email.split('@')[0] || 'Usuário';
-  const foto = user.photoURL || '';
+  const rawEmail = user.email || '';
+  const email = rawEmail.toLowerCase().trim();
+  const nome = user.displayName || user.name || (email ? email.split('@')[0] : 'Usuário');
+  const foto = user.photoURL || user.picture || '';
+
+  const isMaster = email === MASTER_ADMIN_EMAIL;
+  const safeTipo: TipoUsuario = isMaster
+    ? 'admin'
+    : (tipoOverride === 'profissional' ? 'profissional' : 'cliente');
 
   const existing = await getFirebaseUserDoc(uid);
-  
-  const safeTipo: TipoUsuario = (tipoOverride === 'profissional' || tipoOverride === 'admin') 
-    ? (tipoOverride === 'admin' ? (existing?.tipo === 'admin' ? 'admin' : 'cliente') : tipoOverride)
-    : 'cliente';
 
   if (existing) {
+    const forcedTipo: TipoUsuario = isMaster
+      ? 'admin'
+      : (existing.tipo === 'admin' ? 'cliente' : (tipoOverride === 'profissional' ? 'profissional' : existing.tipo || 'cliente'));
+
     const updates: Partial<UsuarioDoc> = {
       atualizadoEm: new Date().toISOString(),
       ...(nome && !existing.nome ? { nome } : {}),
       ...(foto && !existing.foto ? { foto } : {}),
-      ...(extraFields ? { ...extraFields } : {})
+      ...(extraFields ? { ...extraFields } : {}),
+      tipo: forcedTipo
     };
-    if (updates.tipo && updates.tipo === 'admin' && existing.tipo !== 'admin') {
-      delete updates.tipo;
-    }
+
     const ref = doc(db, 'usuarios', uid);
     await updateDoc(ref, updates);
-    return { ...existing, ...updates };
+    return { ...existing, ...updates, tipo: forcedTipo };
   }
 
   const newUserDoc: UsuarioDoc = {
     uid,
     nome,
-    email,
+    email: rawEmail || email,
     foto,
     telefone: extraFields?.telefone || '',
     tipo: safeTipo,
@@ -146,8 +162,8 @@ export async function registerWithEmailPassword(
     email: user.email || email,
     name: nome,
     picture: '',
-    role: tipo === 'profissional' ? 'prestador' : 'cliente',
-    tipo,
+    role: userDoc.tipo === 'profissional' ? 'prestador' : 'cliente',
+    tipo: userDoc.tipo,
     authProvider: 'email',
     verifiedEmail: user.emailVerified,
     connectedAt: new Date().toISOString()

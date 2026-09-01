@@ -17,9 +17,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        ('email' in request.auth.token && request.auth.token.email == 'andradenaty23@gmail.com') ||
-        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.tipo == 'admin')
+        ('email' in request.auth.token && request.auth.token.email.lower() == 'andradenaty23@gmail.com')
       );
     }
 
@@ -37,7 +35,7 @@ service cloud.firestore {
       allow create: if isOwner(uid) && 
         (incoming().tipo != 'admin' || isAdmin());
       allow update: if (isOwner(uid) && (
-        !('tipo' in incoming()) || incoming().tipo == existing().tipo || isAdmin()
+        !('tipo' in incoming()) || incoming().tipo != 'admin' || isAdmin()
       )) || (
         isSignedIn() && 
         incoming().diff(existing()).affectedKeys().hasOnly(['avaliacaoMedia', 'totalAvaliacoes', 'atualizadoEm'])

@@ -34,6 +34,7 @@ import {
   deleteUsuarioByEmail,
   seedDefaultCategoriasIfEmpty
 } from '../services/firebaseDatabase';
+import { isMasterAdmin, MASTER_ADMIN_EMAIL } from '../services/firebaseAuth';
 
 interface AdminPanelScreenProps {
   isOpen?: boolean;
@@ -54,6 +55,32 @@ export const AdminPanelScreen: React.FC<AdminPanelScreenProps> = ({
     if (onClose) onClose();
     else if (onBackToHome) onBackToHome();
   };
+
+  // Strictly guard panel access to master admin
+  if (currentUserEmail && !isMasterAdmin(currentUserEmail)) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center shadow-xl border border-slate-200 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Acesso Restrito</h3>
+            <p className="text-xs text-slate-600 mt-1">
+              O Painel Administrativo do Resolva Já é restrito exclusivamente ao e-mail master autorizado ({MASTER_ADMIN_EMAIL}).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold cursor-pointer transition-colors"
+          >
+            Voltar ao Aplicativo
+          </button>
+        </div>
+      </div>
+    );
+  }
   const [activeTab, setActiveTab] = useState<'usuarios' | 'servicos' | 'solicitacoes' | 'categorias' | 'diagnostico'>('usuarios');
   const [usuarios, setUsuarios] = useState<UsuarioDoc[]>([]);
   const [servicos, setServicos] = useState<ServicoDoc[]>([]);

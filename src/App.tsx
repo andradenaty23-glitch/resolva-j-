@@ -54,7 +54,8 @@ import {
 import {
   onFirebaseAuthStateChanged,
   syncUserDocument,
-  logoutFirebaseAuth
+  logoutFirebaseAuth,
+  isMasterAdmin
 } from './services/firebaseAuth';
 import {
   seedDefaultCategoriasIfEmpty,
@@ -879,6 +880,13 @@ export default function App() {
     ]);
   };
 
+  const isCurrentUserAdmin = Boolean(
+    isMasterAdmin(firebaseUserDoc?.email) ||
+    isMasterAdmin(currentAuthUser?.email) ||
+    isMasterAdmin(clientUser?.email) ||
+    isMasterAdmin(providerUser?.email)
+  );
+
   return (
     <div className="bg-[#f8fafc] text-[#0f172a] min-h-screen flex flex-col font-sans antialiased selection:bg-[#dbeafe] selection:text-[#1d4ed8]">
       {/* Top App Header with Role Switcher & Google Auth / App install CTA */}
@@ -897,7 +905,7 @@ export default function App() {
         onOpenInstallModal={() => setIsInstallAppModalOpen(true)}
         onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
         onOpenAdminPanel={() => setIsAdminModeOpen(true)}
-        isAdmin={firebaseUserDoc?.tipo === 'admin'}
+        isAdmin={isCurrentUserAdmin}
         onOpenSystemStatus={() => {
           alert(
             currentRole === 'cliente'
@@ -1252,11 +1260,14 @@ export default function App() {
           onClose={() => setIsUpdateModalOpen(false)}
         />
 
-        {/* Firebase Admin Panel */}
-        <AdminPanelScreen
-          isOpen={isAdminModeOpen}
-          onClose={() => setIsAdminModeOpen(false)}
-        />
+        {/* Firebase Admin Panel - strictly for Master Admin */}
+        {isCurrentUserAdmin && (
+          <AdminPanelScreen
+            isOpen={isAdminModeOpen}
+            onClose={() => setIsAdminModeOpen(false)}
+            currentUserEmail={firebaseUserDoc?.email || currentAuthUser?.email || ''}
+          />
+        )}
 
         {/* Firebase Create/Edit Service Modal */}
         <ServiceModal
