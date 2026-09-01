@@ -61,6 +61,7 @@ import {
   seedDefaultCategoriasIfEmpty,
   subscribeCategorias,
   subscribeServicos,
+  subscribeProfissionais,
   subscribeSolicitacoesCliente,
   subscribeSolicitacoesProfissional,
   subscribeFavoritos,
@@ -105,6 +106,7 @@ export default function App() {
   // Firebase Real-Time Data States
   const [firebaseCategorias, setFirebaseCategorias] = useState<CategoriaDoc[]>([]);
   const [firebaseServicos, setFirebaseServicos] = useState<ServicoDoc[]>([]);
+  const [firebaseProfissionais, setFirebaseProfissionais] = useState<UsuarioDoc[]>([]);
   const [firebaseSolicitacoes, setFirebaseSolicitacoes] = useState<SolicitacaoDoc[]>([]);
   const [firebaseFavoritos, setFirebaseFavoritos] = useState<FavoritoDoc[]>([]);
   const [firebaseUserDoc, setFirebaseUserDoc] = useState<UsuarioDoc | null>(null);
@@ -182,9 +184,15 @@ export default function App() {
       setFirebaseServicos(servs);
     });
 
+    // Subscribe to Profissionais (users with role 'profissional')
+    const unsubProfissionais = subscribeProfissionais((profs) => {
+      setFirebaseProfissionais(profs);
+    });
+
     return () => {
       unsubCategorias();
       unsubServicos();
+      unsubProfissionais();
     };
   }, []);
 
@@ -528,7 +536,7 @@ export default function App() {
 
   // Handler for Client: Dynamic AI diagnosis generator
   const handleFindSolution = (problemText: string, imageSrc?: string) => {
-    const match = matchServiceDemand(problemText, imageSrc);
+    const match = matchServiceDemand(problemText, imageSrc, firebaseServicos, firebaseProfissionais);
 
     const newDiagnosis: DiagnosisResult = {
       id: `diag-${Date.now()}`,

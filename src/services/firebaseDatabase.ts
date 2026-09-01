@@ -53,18 +53,32 @@ export function subscribeServicos(callback: (servicos: ServicoDoc[]) => void): (
   const q = query(collection(db, 'servicos'), orderBy('criadoEm', 'desc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => d.data() as ServicoDoc));
+  }, (err) => {
+    console.warn('[Firebase] Erro ao subscrever serviços:', err);
   });
 }
 export function subscribeServicosRecentes(limite: number = 6, callback: (servicos: ServicoDoc[]) => void): () => void {
   const q = query(collection(db, 'servicos'), where('ativo', '==', true), orderBy('criadoEm', 'desc'), limit(limite));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => d.data() as ServicoDoc));
+  }, (err) => {
+    console.warn('[Firebase] Erro ao subscrever serviços recentes:', err);
   });
 }
 export function subscribeServicosByProfissional(profissionalId: string, callback: (servicos: ServicoDoc[]) => void): () => void {
   const q = query(collection(db, 'servicos'), where('profissionalId', '==', profissionalId), orderBy('criadoEm', 'desc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => d.data() as ServicoDoc));
+  }, (err) => {
+    console.warn('[Firebase] Erro ao subscrever serviços do profissional:', err);
+  });
+}
+export function subscribeProfissionais(callback: (profissionais: UsuarioDoc[]) => void): () => void {
+  const q = query(collection(db, 'usuarios'), where('tipo', '==', 'profissional'));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => d.data() as UsuarioDoc));
+  }, (err) => {
+    console.warn('[Firebase] Erro ao subscrever profissionais:', err);
   });
 }
 export async function addServico(servico: Omit<ServicoDoc, 'id' | 'criadoEm' | 'atualizadoEm'>): Promise<string> {
