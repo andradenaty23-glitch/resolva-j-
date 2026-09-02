@@ -664,7 +664,7 @@ export default function App() {
       profissionalFoto: selectedProfessional.avatar,
       descricao: diagnosis?.problemSummary || 'Reparo e manutenção técnica',
       servicoNome: selectedProfessional.role,
-      data,
+      data: date,
       horario: time,
       endereco: newAppointment.address,
       valorEstimado: newAppointment.totalCost,
