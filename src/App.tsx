@@ -748,6 +748,25 @@ export default function App() {
         address: `${targetLead.neighborhood}`
       };
       setAppointments((prev) => [newApt, ...prev]);
+
+      // Sincronizar ao banco de dados Firestore
+      const profId = firebaseUserDoc?.uid || providerProfile.id || 'prof-1';
+      createAgendamentoInDatabase({
+        clienteId: 'cliente-desconhecido',
+        clienteNome: targetLead.clientName,
+        clienteTelefone: '(11) 98765-4321',
+        profissionalId: profId,
+        profissionalNome: providerProfile.name,
+        profissionalFoto: providerProfile.avatar,
+        descricao: targetLead.serviceTitle,
+        servicoNome: providerProfile.specialties?.[0] || 'Técnico Especialista',
+        data: 'Amanhã',
+        horario: '14:00 - 16:00',
+        endereco: targetLead.neighborhood,
+        valorEstimado: value,
+        status: 'aceita',
+        room: targetLead.room
+      }).catch((err) => console.warn('Sync quote appointment to Firestore database:', err));
     }
 
     const newNotif: NotificationItem = {

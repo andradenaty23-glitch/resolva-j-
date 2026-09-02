@@ -863,6 +863,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         </div>
                         <input
                           type="text"
+                          pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                          title="Digite o CPF no formato 000.000.000-00"
                           placeholder="000.000.000-00"
                           value={clientCpf}
                           onChange={(e) => setClientCpf(formatCpfCnpj(e.target.value))}
@@ -894,6 +896,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="tel"
                           required
+                          pattern="\(\d{2}\) \d{4,5}-\d{4}"
+                          title="Digite um telefone válido, ex: (11) 90000-0000"
                           placeholder="(11) 90000-0000"
                           value={clientPhone}
                           onChange={(e) => setClientPhone(formatPhone(e.target.value))}
@@ -1065,6 +1069,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="text"
                           required
+                          pattern="(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})"
+                          title="Digite o CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00) completo"
                           placeholder="00.000.000/0001-00 ou CPF"
                           value={providerDocument}
                           onChange={(e) => setProviderDocument(formatCpfCnpj(e.target.value))}
@@ -1096,6 +1102,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                         <input
                           type="tel"
                           required
+                          pattern="\(\d{2}\) \d{4,5}-\d{4}"
+                          title="Digite um telefone válido, ex: (11) 90000-0000"
                           placeholder="(11) 90000-0000"
                           value={providerPhone}
                           onChange={(e) => setProviderPhone(formatPhone(e.target.value))}
